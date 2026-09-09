@@ -75,3 +75,26 @@ CREATE TABLE holdings (
     CONSTRAINT uq_client_ticker
         UNIQUE (client_id, ticker)
 );
+
+CREATE TABLE prices (
+    price_id BIGSERIAL PRIMARY KEY,
+    ticker VARCHAR(100) NOT NULL,
+    price NUMERIC(18,2) NOT NULL,
+    previous_close NUMERIC(18,2),
+    open NUMERIC(18,2),
+    high NUMERIC(18,2),
+    low NUMERIC(18,2),
+    volume BIGINT,
+    recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+    CONSTRAINT fk_prices_ticker
+        FOREIGN KEY (ticker)
+        REFERENCES instruments(ticker)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_price_positive
+        CHECK (price >= 0),
+
+    CONSTRAINT uq_ticker_recorded_at
+        UNIQUE (ticker, recorded_at)
+);
