@@ -1,19 +1,11 @@
-CREATE TABLE admin (
-	admin_id SERIAL PRIMARY KEY,
+CREATE TABLE employees (
+	employee_id SERIAL PRIMARY KEY,
 	email VARCHAR(255) UNIQUE NOT NULL,
 	username VARCHAR(255) UNIQUE NOT NULL,
 	password VARCHAR(255) NOT NULL,
 	first_name VARCHAR(255) NOT NULL,
-	last_name VARCHAR(255) NOT NULL
-);
-
-CREATE TABLE reporter (
-	rep_id SERIAL PRIMARY KEY,
-	email VARCHAR(255) UNIQUE NOT NULL,
-	username VARCHAR(255) UNIQUE NOT NULL,
-	password VARCHAR(255) NOT NULL,
-	first_name VARCHAR(255) NOT NULL,
-	last_name VARCHAR(255) NOT NULL
+	last_name VARCHAR(255) NOT NULL,
+	role VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE instruments (
@@ -27,7 +19,7 @@ CREATE TABLE instruments (
 	CHECK (asset_type IN ('STOCK', 'FOREX', 'CRYPTO'));
 );
 
-CREATE TABLE client(
+CREATE TABLE clients(
 client_id BIGSERIAL PRIMARY KEY,
 email VARCHAR(255) NOT NULL UNIQUE,
 username VARCHAR(100) NOT NULL UNIQUE,
@@ -38,9 +30,9 @@ cash_amount NUMERIC(15,2) NOT NULL DEFAULT 0.00
 );
 
 
-CREATE TABLE transaction(
+CREATE TABLE transactions(
 transaction_id BIGSERIAL PRIMARY KEY,
-client_id BIGINT NOT NULL REFERENCES client(client_id),
+client_id BIGINT NOT NULL REFERENCES clients(client_id),
 withdrawal NUMERIC(15,2) NOT NULL DEFAULT 0.00 CHECK (withdrawal >= 0),
 deposit NUMERIC(15,2) NOT NULL DEFAULT 0.00 CHECK (deposit >= 0),
 created_at TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -57,7 +49,7 @@ order_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 FOREIGN KEY (ticker)
 	REFERENCES instruments(ticker),
 FOREIGN KEY (client_id)
-	REFERENCES client(client_id)
+	REFERENCES clients(client_id)
 );
 
 CREATE TABLE holdings (
@@ -69,7 +61,7 @@ CREATE TABLE holdings (
 
     CONSTRAINT fk_client
         FOREIGN KEY (client_id)
-        REFERENCES client (client_id)
+        REFERENCES clients (client_id)
         ON DELETE CASCADE,
 
     CONSTRAINT fk_ticker
