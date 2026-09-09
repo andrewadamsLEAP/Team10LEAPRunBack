@@ -1,26 +1,24 @@
-INSERT INTO admin (email, username, password, first_name, last_name) VALUES
-('admintest@gmail.com', 'admin_test', 'CTRLALTDELETE', 'Admin', 'Test'),
-('admin2@example.com', 'admin_agarcia', 'Maple9!Harbor', 'Ana', 'Garcia'),
-('admin3@example.com', 'admin_mchen', 'Bronze_Kite42', 'Michael', 'Chen'),
-('admin4@example.com', 'admin_pkumar', 'Quartz88-Wind', 'Priya', 'Kumar'),
-('admin5@example.com', 'admin_ljohnson', 'Cobalt!Trail15', 'Laura', 'Johnson'),
-('admin6@example.com', 'admin_dwilliams', 'Ember-Fox2026', 'David', 'Williams'),
-('admin7@example.com', 'admin_smartin', 'Willow63!Storm', 'Sophia', 'Martin'),
-('admin8@example.com', 'admin_rlee', 'Granite_Owl91', 'Robert', 'Lee'),
-('admin9@example.com', 'admin_ebrown', 'Sunset27-Reef', 'Emily', 'Brown'),
-('admin10@example.com', 'admin_twilson', 'Ironclad!Path8', 'Thomas', 'Wilson');
-
-INSERT INTO reporter (email, username, password, first_name, last_name) VALUES
-('reportertest@example.com', 'rep_test', 'CTRLALTDELETE', 'Rep', 'Test'),
-('reporter2@example.com', 'rep_jtaylor', 'Copper!Vista56', 'James', 'Taylor'),
-('reporter3@example.com', 'rep_nthomas', 'Nimbus-Creek19', 'Nina', 'Thomas'),
-('reporter4@example.com', 'rep_omoore', 'Onyx82!Meadow', 'Oscar', 'Moore'),
-('reporter5@example.com', 'rep_hjackson', 'Hazel_Summit47', 'Hannah', 'Jackson'),
-('reporter6@example.com', 'rep_bwhite', 'Birch-Falcon63', 'Brian', 'White'),
-('reporter7@example.com', 'rep_charris', 'Cedar!Ridge29', 'Chloe', 'Harris'),
-('reporter8@example.com', 'rep_gmartinez', 'Garnet_Wave71', 'George', 'Martinez'),
-('reporter9@example.com', 'rep_svance', 'Slate-Hollow05', 'Sarah', 'Vance'),
-('reporter10@example.com', 'rep_rclark', 'Rustic!Beacon40', 'Ryan', 'Clark');
+INSERT INTO employees (email, username, password, first_name, last_name, role) VALUES
+('admintest@gmail.com', 'admin_test', 'CTRLALTDELETE', 'Admin', 'Test', 'ADMIN'),
+('admin2@example.com', 'admin_agarcia', 'Maple9!Harbor', 'Ana', 'Garcia', 'ADMIN'),
+('admin3@example.com', 'admin_mchen', 'Bronze_Kite42', 'Michael', 'Chen', 'ADMIN'),
+('admin4@example.com', 'admin_pkumar', 'Quartz88-Wind', 'Priya', 'Kumar', 'ADMIN'),
+('admin5@example.com', 'admin_ljohnson', 'Cobalt!Trail15', 'Laura', 'Johnson', 'ADMIN'),
+('admin6@example.com', 'admin_dwilliams', 'Ember-Fox2026', 'David', 'Williams', 'ADMIN'),
+('admin7@example.com', 'admin_smartin', 'Willow63!Storm', 'Sophia', 'Martin', 'ADMIN'),
+('admin8@example.com', 'admin_rlee', 'Granite_Owl91', 'Robert', 'Lee', 'ADMIN'),
+('admin9@example.com', 'admin_ebrown', 'Sunset27-Reef', 'Emily', 'Brown', 'ADMIN'),
+('admin10@example.com', 'admin_twilson', 'Ironclad!Path8', 'Thomas', 'Wilson', 'ADMIN'),
+('reportertest@example.com', 'rep_test', 'CTRLALTDELETE', 'Rep', 'Test', 'REPORTER'),
+('reporter2@example.com', 'rep_jtaylor', 'Copper!Vista56', 'James', 'Taylor', 'REPORTER'),
+('reporter3@example.com', 'rep_nthomas', 'Nimbus-Creek19', 'Nina', 'Thomas', 'REPORTER'),
+('reporter4@example.com', 'rep_omoore', 'Onyx82!Meadow', 'Oscar', 'Moore', 'REPORTER'),
+('reporter5@example.com', 'rep_hjackson', 'Hazel_Summit47', 'Hannah', 'Jackson', 'REPORTER'),
+('reporter6@example.com', 'rep_bwhite', 'Birch-Falcon63', 'Brian', 'White', 'REPORTER'),
+('reporter7@example.com', 'rep_charris', 'Cedar!Ridge29', 'Chloe', 'Harris', 'REPORTER'),
+('reporter8@example.com', 'rep_gmartinez', 'Garnet_Wave71', 'George', 'Martinez', 'REPORTER'),
+('reporter9@example.com', 'rep_svance', 'Slate-Hollow05', 'Sarah', 'Vance', 'REPORTER'),
+('reporter10@example.com', 'rep_rclark', 'Rustic!Beacon40', 'Ryan', 'Clark', 'REPORTER');
 
 INSERT INTO prices (ticker, price, timestamp) VALUES
 ('AAPL',  229.450000, '2026-08-31 14:00:00+00'),
@@ -60,7 +58,7 @@ INSERT INTO instruments (ticker, previous_close, open, volume, avg_volume, asset
 ('XRP-USD',      2.840000,      2.910000, 1254300, 1345000, 'CRYPTO'),
 ('ADA-USD',      0.842000,      0.856000,  634200,  701000, 'CRYPTO');
 
-INSERT INTO client (email, username, password, first_name, last_name, cash_amount)
+INSERT INTO clients (email, username, password, first_name, last_name, cash_amount)
 VALUES
 ('client@gmail.com' , 'leap', 'password','nathan' , 'kevin' , 150.00), 
 ('aoife.murphy@gmail.com', 'aoife_m', 'hash_aoife', 'Aoife', 'Murphy', 120.00),
@@ -74,15 +72,33 @@ VALUES
 ('emma.carroll@gmail.com', 'emma_c', 'hash_emma', 'Emma', 'Carroll', 760.00),
 ('jack.higgins@gmail.com', 'jack_h', 'hash_jack', 'Jack', 'Higgins', 5.75);
 
+INSERT INTO transactions (client_id, withdrawal, deposit, created_at) VALUES
+(1, 0.00, 150.00, '2026-08-31 10:00:00+00'),
+(2, 0.00, 120.00, '2026-08-31 10:15:00+00'),
+(3, 0.00, 75.50, '2026-08-31 10:30:00+00'),
+(4, 0.00, 300.00, '2026-08-31 10:45:00+00'),
+(5, 0.00, 500.00, '2026-08-31 11:00:00+00'),
+(6, 0.00, 9999.99, '2026-08-31 11:15:00+00'),
+(7, 0.00, 55.25, '2026-08-31 11:30:00+00'),
+(8, 0.00, 480.10, '2026-08-31 11:45:00+00'),
+(9, 0.00, 12.00, '2026-08-31 12:00:00+00'),
+(10, 0.00, 760.00, '2026-08-31 12:15:00+00');
+
 
 INSERT INTO orders (ticker, client_id, order_type, order_status, price, quantity) VALUES
 ('AAPL', 1, 'BUY', 'FULFILLED', 225.50, 10),
 ('MSFT', 2, 'BUY', 'PENDING', 510.75, 5),
 ('TSLA', 1, 'SELL', 'FULFILLED', 225.50, 10),
-('BTC', 3, 'BUY', 'PENDING', 225.50, 10),
-('ETH', 4, 'BUY', 'CANCELLED', 225.50, 10),
+('BTC-USD', 3, 'BUY', 'PENDING', 225.50, 10),
+('ETH-USD', 4, 'BUY', 'CANCELLED', 225.50, 10),
 ('AAPL', 2, 'SELL', 'PENDING', 225.50, 10),
 ('MSFT', 3, 'BUY', 'FULFILLED', 225.50, 10),
 ('TSLA', 4, 'BUY', 'CANCELLED', 225.50, 10),
-('BTC', 1, 'SELL', 'FULFILLED', 225.50, 10),
-('ETH', 2, 'BUY', 'PENDING', 225.50, 10);
+('BTC-USD', 1, 'SELL', 'FULFILLED', 225.50, 10),
+('ETH-USD', 2, 'BUY', 'PENDING', 225.50, 10),
+('NVDA', 5, 'BUY', 'FULFILLED', 183.50, 8),
+('GOOGL', 6, 'BUY', 'FULFILLED', 188.00, 12),
+('EURUSD', 7, 'BUY', 'PENDING', 1.165, 100),
+('GBPUSD', 8, 'BUY', 'FULFILLED', 1.348, 50),
+('USDJPY', 9, 'BUY', 'PENDING', 148.50, 25),
+('AMZN', 10, 'BUY', 'FULFILLED', 231.50, 7);
