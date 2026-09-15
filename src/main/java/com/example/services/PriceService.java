@@ -5,6 +5,7 @@ import com.example.repositories.PriceRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.ObjectMapper;
 
 import java.net.URI;
@@ -24,10 +25,11 @@ public class PriceService {
 
     @Value("${finnhub.api.key}")
     private String finnhubKey;
-    String baseurl = "https://finnhub.io/api/quote?symbol=";
-    public static final List<String> TICKERS = List.of("GME");
+    String baseurl = "https://finnhub.io/api/v1/quote?symbol=";
+    public static final List<String> TICKERS = List.of("AAPL");
 
     @Scheduled(fixedRate = 30000)
+    @Transactional
     public void pullData() throws Exception {
         if (finnhubKey == null || finnhubKey.isEmpty()) {
             throw new IllegalStateException(

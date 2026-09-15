@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.time.OffsetDateTime;
 
 @Entity
 
@@ -43,8 +44,8 @@ public class Prices {
     private BigDecimal previous_close;
     
     @JsonProperty("t")
-    
-    private Long timestamp;
+
+    private OffsetDateTime quote_timestamp;
 
     public Long getId() {
         return id;
@@ -118,12 +119,12 @@ public class Prices {
         this.previous_close = previous_close;
     }
 
-    public Long getTimestamp() {
-        return timestamp;
+    public OffsetDateTime getQuote_timestamp() {
+        return quote_timestamp;
     }
 
-    public void setTimestamp(Long timestamp) {
-        this.timestamp = timestamp;
+    public void setQuote_timestamp(OffsetDateTime quote_timestamp) {
+        this.quote_timestamp = quote_timestamp;
     }
 
 
