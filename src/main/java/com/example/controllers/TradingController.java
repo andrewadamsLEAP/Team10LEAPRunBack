@@ -23,9 +23,12 @@ public class TradingController {
     // Test endpoint to verify trading controller is working
     @GetMapping("/test")
     public String test() {
+        System.out.println("test running");
         try {
+            System.out.println("test working");
             return "Test endpoint is working!";
         } catch (Exception e) {
+            System.out.println("test failing");
             e.printStackTrace();
             return "Error executing sample query: " + e.getMessage();
         }
