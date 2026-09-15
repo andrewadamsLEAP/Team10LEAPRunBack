@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @ComponentScan("com.example")
 @EnableJpaRepositories(basePackages = "com.example.repositories")
-@EntityScan(basePackages = "com.example.dbclasses")
+@EntityScan(basePackages = "com.example.entities")
 public class TradingAppApplication {
 
 	public static void main(String[] args) {

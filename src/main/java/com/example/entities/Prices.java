@@ -1,4 +1,4 @@
-package com.example.dbclasses;
+package com.example.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 
 @Entity
-
+@Table(name = "prices")
 public class Prices {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

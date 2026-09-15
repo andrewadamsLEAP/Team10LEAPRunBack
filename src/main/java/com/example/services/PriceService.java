@@ -1,6 +1,6 @@
 package com.example.services;
 
-import com.example.dbclasses.Prices;
+import com.example.entities.Prices;
 import com.example.repositories.PriceRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
