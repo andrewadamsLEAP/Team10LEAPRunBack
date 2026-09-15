@@ -20,7 +20,42 @@ INSERT INTO employees (email, username, password, first_name, last_name, role) V
 ('reporter9@example.com', 'rep_svance', 'Slate-Hollow05', 'Sarah', 'Vance', 'REPORTER'),
 ('reporter10@example.com', 'rep_rclark', 'Rustic!Beacon40', 'Ryan', 'Clark', 'REPORTER');
 
-INSERT INTO prices (ticker, price, timestamp) VALUES
+INSERT INTO instruments (ticker, previous_close, open, volume, avg_volume, asset_type) VALUES
+('MMM', 0, 0, 0, 0, 'STOCK'),
+('AXP', 0, 0, 0, 0, 'STOCK'),
+('AMGN', 0, 0, 0, 0, 'STOCK'),
+('AMZN', 0, 0, 0, 0, 'STOCK'),
+('AAPL', 0, 0, 0, 0, 'STOCK'),
+('GOOGL', 0, 0, 0, 0, 'STOCK'),
+('TSLA', 0, 0, 0, 0, 'STOCK'),
+('BA', 0, 0, 0, 0, 'STOCK'),
+('CAT', 0, 0, 0, 0, 'STOCK'),
+('CVX', 0, 0, 0, 0, 'STOCK'),
+('CSCO', 0, 0, 0, 0, 'STOCK'),
+('KO', 0, 0, 0, 0, 'STOCK'),
+('DIS', 0, 0, 0, 0, 'STOCK'),
+('GS', 0, 0, 0, 0, 'STOCK'),
+('HD', 0, 0, 0, 0, 'STOCK'),
+('HON', 0, 0, 0, 0, 'STOCK'),
+('IBM', 0, 0, 0, 0, 'STOCK'),
+('JNJ', 0, 0, 0, 0, 'STOCK'),
+('JPM', 0, 0, 0, 0, 'STOCK'),
+('MCD', 0, 0, 0, 0, 'STOCK'),
+('MRK', 0, 0, 0, 0, 'STOCK'),
+('MSFT', 0, 0, 0, 0, 'STOCK'),
+('NKE', 0, 0, 0, 0, 'STOCK'),
+('NVDA', 0, 0, 0, 0, 'STOCK'),
+('PG', 0, 0, 0, 0, 'STOCK'),
+('CRM', 0, 0, 0, 0, 'STOCK'),
+('SHW', 0, 0, 0, 0, 'STOCK'),
+('TRV', 0, 0, 0, 0, 'STOCK'),
+('UNH', 0, 0, 0, 0, 'STOCK'),
+('VZ', 0, 0, 0, 0, 'STOCK'),
+('V', 0, 0, 0, 0, 'STOCK'),
+('WMT', 0, 0, 0, 0, 'STOCK')
+ON CONFLICT (ticker) DO NOTHING;
+
+INSERT INTO prices (ticker, price, recorded_at) VALUES
 ('AAPL',  229.450000, '2026-08-31 14:00:00+00'),
 ('AAPL',  230.120000, '2026-08-31 15:00:00+00'),
 ('AAPL',  228.970000, '2026-08-31 16:00:00+00'),
@@ -56,7 +91,8 @@ INSERT INTO instruments (ticker, previous_close, open, volume, avg_volume, asset
 ('ETH-USD',   4350.750000,   4382.200000,  512300,  548000, 'CRYPTO'),
 ('SOL-USD',    198.450000,    201.120000,  845600,  912000, 'CRYPTO'),
 ('XRP-USD',      2.840000,      2.910000, 1254300, 1345000, 'CRYPTO'),
-('ADA-USD',      0.842000,      0.856000,  634200,  701000, 'CRYPTO');
+('ADA-USD',      0.842000,      0.856000,  634200,  701000, 'CRYPTO')
+ON CONFLICT (ticker) DO NOTHING;
 
 INSERT INTO clients (email, username, password, first_name, last_name, cash_amount)
 VALUES

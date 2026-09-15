@@ -10,10 +10,10 @@ CREATE TABLE employees (
 
 CREATE TABLE instruments (
     ticker VARCHAR(100) PRIMARY KEY,
-    previous_close float8 NOT NULL,
-    open float8 NOT NULL,
-    volume integer NOT NULL,
-    avg_volume float8 NOT NULL,
+    previous_close float8 NOT NULL DEFAULT 0,
+    open float8 NOT NULL DEFAULT 0,
+    volume integer NOT NULL DEFAULT 0,
+    avg_volume float8 NOT NULL DEFAULT 0,
     asset_type VARCHAR(50) NOT NULL,
     CONSTRAINT chk_asset_type
 	CHECK (asset_type IN ('STOCK', 'FOREX', 'CRYPTO'));
@@ -81,11 +81,13 @@ CREATE TABLE prices (
     price_id BIGSERIAL PRIMARY KEY,
     ticker VARCHAR(100) NOT NULL,
     price NUMERIC(18,2) NOT NULL,
+    change_amount NUMERIC(18,4),
+    percent_change NUMERIC(18,4),
     previous_close NUMERIC(18,2),
     open NUMERIC(18,2),
     high NUMERIC(18,2),
     low NUMERIC(18,2),
-    volume BIGINT,
+    quote_timestamp TIMESTAMPTZ,
     recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     CONSTRAINT fk_prices_ticker
@@ -99,3 +101,6 @@ CREATE TABLE prices (
     CONSTRAINT uq_ticker_recorded_at
         UNIQUE (ticker, recorded_at)
 );
+
+    CREATE INDEX idx_prices_ticker_recorded_at
+        ON prices (ticker, recorded_at DESC);
