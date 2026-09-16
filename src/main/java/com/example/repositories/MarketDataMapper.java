@@ -14,10 +14,12 @@ import java.util.Map;
 @Mapper
 public interface MarketDataMapper {
 
+    // Finds the most recent quote timestamp for a ticker so the service can avoid refreshing it too soon.
     @Select("SELECT recorded_at FROM prices WHERE ticker = #{ticker} "
             + "ORDER BY recorded_at DESC LIMIT 1")
     OffsetDateTime findLastRecordedAt(@Param("ticker") String ticker);
 
+    // Stores the current Finnhub quote and its related price-change values in the prices table.
     @Insert("INSERT INTO prices (ticker, price, change_amount, percent_change, previous_close, "
             + "open, high, low, quote_timestamp) "
             + "VALUES (#{ticker}, #{price}, #{changeAmount}, #{percentChange}, #{previousClose}, "
@@ -33,6 +35,8 @@ public interface MarketDataMapper {
             @Param("low") BigDecimal low,
             @Param("quoteTimestamp") OffsetDateTime quoteTimestamp);
 
+    // Returns the newest stored quote for every ticker in the supplied list.
+    // The dynamic foreach block safely creates one parameterized IN value per ticker.
     @Select({
             "<script>",
             "SELECT ticker, price, change_amount, percent_change, previous_close, open, high, low, "
@@ -47,11 +51,13 @@ public interface MarketDataMapper {
     })
     List<Map<String, Object>> findLatestPrices(@Param("tickers") List<String> tickers);
 
+    // Returns the newest stored quote for one ticker.
     @Select("SELECT ticker, price, change_amount, percent_change, previous_close, open, high, low, "
             + "quote_timestamp, recorded_at FROM prices WHERE ticker = #{ticker} "
             + "ORDER BY recorded_at DESC LIMIT 1")
     List<Map<String, Object>> findLatestPrice(@Param("ticker") String ticker);
 
+    // Returns all stored quotes for one ticker within the requested recorded_at date range.
     @Select("SELECT ticker, price, change_amount, percent_change, previous_close, open, high, low, "
             + "quote_timestamp, recorded_at FROM prices WHERE ticker = #{ticker} "
             + "AND recorded_at >= #{from} AND recorded_at <= #{to} ORDER BY recorded_at")
@@ -60,9 +66,12 @@ public interface MarketDataMapper {
             @Param("from") OffsetDateTime from,
             @Param("to") OffsetDateTime to);
 
+    // Returns all stock tickers from the instruments table in alphabetical order.
     @Select("SELECT ticker FROM instruments WHERE asset_type = 'STOCK' ORDER BY ticker")
     List<String> findTickers();
 
+    // Inserts the DOW 30 tickers that are missing from instruments without duplicating existing rows.
+    // MyBatis expands the list into one parameterized multi-row INSERT statement.
     @Insert({
             "<script>",
             "INSERT INTO instruments (ticker, asset_type) VALUES",
@@ -74,6 +83,8 @@ public interface MarketDataMapper {
     })
     void ensureDowInstruments(@Param("tickers") List<String> tickers);
 
+    // Upgrades the prices table for the current market-data schema and creates its lookup index.
+    // The PostgreSQL block is idempotent, so startup can safely run it more than once.
     @Update("""
             DO $$
             BEGIN
