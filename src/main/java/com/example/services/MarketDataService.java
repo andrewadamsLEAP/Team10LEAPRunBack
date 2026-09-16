@@ -6,7 +6,6 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -28,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 // ------------------------------------
-// marketDataService is a Spring service that handles market data operations, including retrieving orders for clients and refreshing stock prices for the DOW 30. It uses JdbcTemplate for database interactions and RestClient to fetch data from the Finnhub API. The service ensures that the database schema is correct and that all necessary instruments are present before performing operations. It also includes a scheduled task to refresh stock prices every 30 seconds.
+// marketDataService is a Spring service that handles market data operations, including retrieving orders for clients and refreshing stock prices for the DOW 30. It uses MyBatis through MarketDataRepository for database interactions and RestClient to fetch data from the Finnhub API. The service ensures that the database schema is correct and that all necessary instruments are present before performing operations. It also includes a scheduled task to refresh stock prices every 30 seconds.
 // -------------------------------------
 
 @Service
@@ -43,7 +42,6 @@ public class MarketDataService {
             "DIS", "GS", "HD", "HON", "IBM", "JNJ", "JPM", "MCD", "MRK", "MSFT",
             "NKE", "NVDA", "PG", "CRM", "SHW", "TRV", "UNH", "VZ", "V", "WMT");
 
-    private final JdbcTemplate jdbcTemplate;
     private final MarketDataRepository marketDataRepository;
     private final RestClient finnhubClient;
     private final boolean refreshAll;
@@ -58,9 +56,8 @@ public class MarketDataService {
     private int lastSuccessfulTickerCount;
     private int lastFailedTickerCount;
 
-    // Constructor for TradingService, initializes JdbcTemplate and RestClient with Finnhub base URL and refreshAll flag.
+    // Constructor initializes the repository facade and RestClient with the Finnhub base URL and refresh settings.
     public MarketDataService(
-            JdbcTemplate jdbcTemplate,
             MarketDataRepository marketDataRepository,
             @Value("${finnhub.base-url:https://finnhub.io/api/v1}") String finnhubBaseUrl,
             @Value("${finnhub.refresh-all:false}") boolean refreshAll,
@@ -70,7 +67,6 @@ public class MarketDataService {
                 @Value("${finnhub.max-retries:2}") int maxRetries,
                 @Value("${finnhub.retry-backoff-ms:250}") long retryBackoffMs,
                 @Value("${finnhub.skip-outside-market-hours:false}") boolean skipOutsideMarketHours) {
-        this.jdbcTemplate = jdbcTemplate;
         this.marketDataRepository = marketDataRepository;
             JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(
                 java.net.http.HttpClient.newBuilder()
@@ -250,42 +246,13 @@ public class MarketDataService {
 
         // Ensure the instruments table has all the DOW 30 tickers.
     private void ensureDowInstruments() {
-        for (String ticker : DOW_30) {
-            jdbcTemplate.update(
-                "INSERT INTO instruments (ticker, asset_type) "
-                    + "VALUES (?, 'STOCK') ON CONFLICT (ticker) DO NOTHING",
-                    ticker);
-        }
+        marketDataRepository.ensureDowInstruments(DOW_30);
     }
 
 
     // Ensure the prices table has the correct schema. If the "timestamp" column exists, it renames it to "recorded_at". It also adds any missing columns with appropriate data types and default values.
     private void ensurePricesSchema() {
-        jdbcTemplate.execute("""
-                DO $$
-                BEGIN
-                    IF EXISTS (
-                        SELECT 1 FROM information_schema.columns
-                        WHERE table_name = 'prices' AND column_name = 'timestamp'
-                    ) AND NOT EXISTS (
-                        SELECT 1 FROM information_schema.columns
-                        WHERE table_name = 'prices' AND column_name = 'recorded_at'
-                    ) THEN
-                        ALTER TABLE prices RENAME COLUMN "timestamp" TO recorded_at;
-                    END IF;
-
-                    ALTER TABLE prices ADD COLUMN IF NOT EXISTS recorded_at TIMESTAMPTZ NOT NULL DEFAULT now();
-                    ALTER TABLE prices ADD COLUMN IF NOT EXISTS change_amount NUMERIC(18,4);
-                    ALTER TABLE prices ADD COLUMN IF NOT EXISTS percent_change NUMERIC(18,4);
-                    ALTER TABLE prices ADD COLUMN IF NOT EXISTS previous_close NUMERIC(18,2);
-                    ALTER TABLE prices ADD COLUMN IF NOT EXISTS open NUMERIC(18,2);
-                    ALTER TABLE prices ADD COLUMN IF NOT EXISTS high NUMERIC(18,2);
-                    ALTER TABLE prices ADD COLUMN IF NOT EXISTS low NUMERIC(18,2);
-                    ALTER TABLE prices ADD COLUMN IF NOT EXISTS quote_timestamp TIMESTAMPTZ;
-                    CREATE INDEX IF NOT EXISTS idx_prices_ticker_recorded_at
-                        ON prices (ticker, recorded_at DESC);
-                END $$;
-                """);
+        marketDataRepository.ensurePricesSchema();
     }
 
     //Finnhubquote that we are grabbing via the API
