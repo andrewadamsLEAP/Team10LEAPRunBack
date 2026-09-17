@@ -80,22 +80,11 @@ CREATE TABLE holdings (
 CREATE TABLE prices (
     price_id BIGSERIAL PRIMARY KEY,
     ticker VARCHAR(100) NOT NULL,
-    price NUMERIC(18,2) NOT NULL,
-    previous_close NUMERIC(18,2),
-    open NUMERIC(18,2),
-    high NUMERIC(18,2),
-    low NUMERIC(18,2),
-    volume BIGINT,
-    recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
-    CONSTRAINT fk_prices_ticker
-        FOREIGN KEY (ticker)
-        REFERENCES instruments(ticker)
-        ON DELETE CASCADE,
-
-    CONSTRAINT chk_price_positive
-        CHECK (price >= 0),
-
-    CONSTRAINT uq_ticker_recorded_at
-        UNIQUE (ticker, recorded_at)
-);
+    askprice NUMERIC(18,2) NOT NULL,
+	asksize INTEGER NOT NULL,
+	bidprice NUMERIC(18,2) NOT NULL,
+	bidsize INTEGER NOT NULL,
+	askexchange VARCHAR(10),
+	bidexchange VARCHAR(10),
+	tape VARCHAR(3) CONSTRAINT checker CHECK(tape IN ('A' , 'B', 'C')),
+    recorded_at TIMESTAMPTZ NOT NULL DEFAULT now());
