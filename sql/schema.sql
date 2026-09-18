@@ -1,11 +1,11 @@
 CREATE TABLE employees (
-	employee_id SERIAL PRIMARY KEY,
-	email VARCHAR(255) UNIQUE NOT NULL,
-	username VARCHAR(255) UNIQUE NOT NULL,
-	password VARCHAR(255) NOT NULL,
-	first_name VARCHAR(255) NOT NULL,
-	last_name VARCHAR(255) NOT NULL,
-	role VARCHAR(50) NOT NULL
+    employee_id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    username VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(255) NOT NULL,
+    last_name VARCHAR(255) NOT NULL,
+    role VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE instruments (
@@ -15,42 +15,57 @@ CREATE TABLE instruments (
     volume integer NOT NULL DEFAULT 0,
     avg_volume float8 NOT NULL DEFAULT 0,
     asset_type VARCHAR(50) NOT NULL,
+
     CONSTRAINT chk_asset_type
-	CHECK (asset_type IN ('STOCK', 'FOREX', 'CRYPTO'));
+        CHECK (asset_type IN ('STOCK', 'FOREX', 'CRYPTO'))
 );
 
-CREATE TABLE clients(
-client_id BIGSERIAL PRIMARY KEY,
-email VARCHAR(255) NOT NULL UNIQUE,
-username VARCHAR(100) NOT NULL UNIQUE,
-password VARCHAR(255) NOT NULL,
-first_name VARCHAR(100) NOT NULL,
-last_name VARCHAR(100) NOT NULL,
-cash_amount NUMERIC(15,2) NOT NULL DEFAULT 0.00
+CREATE TABLE clients (
+    client_id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    username VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    first_name VARCHAR(100) NOT NULL,
+    last_name VARCHAR(100) NOT NULL,
+    cash_amount NUMERIC(15,2) NOT NULL DEFAULT 0.00
 );
 
-
-CREATE TABLE transactions(
-transaction_id BIGSERIAL PRIMARY KEY,
-client_id BIGINT NOT NULL REFERENCES clients(client_id),
-withdrawal NUMERIC(15,2) NOT NULL DEFAULT 0.00 CHECK (withdrawal >= 0),
-deposit NUMERIC(15,2) NOT NULL DEFAULT 0.00 CHECK (deposit >= 0),
-created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE transactions (
+    transaction_id BIGSERIAL PRIMARY KEY,
+    client_id BIGINT NOT NULL REFERENCES clients(client_id),
+    withdrawal NUMERIC(15,2) NOT NULL DEFAULT 0.00 CHECK (withdrawal >= 0),
+    deposit NUMERIC(15,2) NOT NULL DEFAULT 0.00 CHECK (deposit >= 0),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
 CREATE TABLE orders (
-order_id BIGSERIAL PRIMARY KEY,
-ticker VARCHAR(100) NOT NULL,
-client_id BIGINT NOT NULL,
-order_type VARCHAR(10) NOT NULL,
-order_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    CONSTRAINT chk_order_status CHECK (order_status IN ('pending', 'fullfilled', 'canceled', 'CANCELED', 'PENDING', 'FULFILLED')),
-price NUMERIC(18,2) NOT NULL,
-quantity INTEGER NOT NULL,
-order_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (ticker)
-	REFERENCES instruments(ticker),
-FOREIGN KEY (client_id)
-	REFERENCES clients(client_id)
+    order_id BIGSERIAL PRIMARY KEY,
+    ticker VARCHAR(100) NOT NULL,
+    client_id BIGINT NOT NULL,
+    order_type VARCHAR(10) NOT NULL,
+    order_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+
+    CONSTRAINT chk_order_status
+        CHECK (
+            order_status IN (
+                'pending',
+                'fullfilled',
+                'canceled',
+                'CANCELED',
+                'PENDING',
+                'FULFILLED'
+            )
+        ),
+
+    price NUMERIC(18,2) NOT NULL,
+    quantity INTEGER NOT NULL,
+    order_date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (ticker)
+        REFERENCES instruments(ticker),
+
+    FOREIGN KEY (client_id)
+        REFERENCES clients(client_id)
 );
 
 CREATE TABLE holdings (
@@ -62,12 +77,12 @@ CREATE TABLE holdings (
 
     CONSTRAINT fk_client
         FOREIGN KEY (client_id)
-        REFERENCES clients (client_id)
+        REFERENCES clients(client_id)
         ON DELETE CASCADE,
 
     CONSTRAINT fk_ticker
         FOREIGN KEY (ticker)
-        REFERENCES instruments (ticker)
+        REFERENCES instruments(ticker)
         ON DELETE CASCADE,
 
     CONSTRAINT chk_quantity_positive
@@ -79,15 +94,24 @@ CREATE TABLE holdings (
 
 CREATE TABLE prices (
     price_id BIGSERIAL PRIMARY KEY,
+
     ticker VARCHAR(100) NOT NULL,
-    price NUMERIC(18,2) NOT NULL,
-    change_amount NUMERIC(18,4),
-    percent_change NUMERIC(18,4),
-    previous_close NUMERIC(18,2),
-    open NUMERIC(18,2),
-    high NUMERIC(18,2),
-    low NUMERIC(18,2),
+
+    -- Alpaca quote data
+    ask_price NUMERIC(18,4),
+    ask_size NUMERIC(18,4),
+    ask_exchange VARCHAR(10),
+
+    bid_price NUMERIC(18,4),
+    bid_size NUMERIC(18,4),
+    bid_exchange VARCHAR(10),
+
+    tape VARCHAR(10),
+
+    -- Exact timestamp supplied by Alpaca
     quote_timestamp TIMESTAMPTZ,
+
+    -- Timestamp when our application recorded the quote
     recorded_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     CONSTRAINT fk_prices_ticker
@@ -95,12 +119,9 @@ CREATE TABLE prices (
         REFERENCES instruments(ticker)
         ON DELETE CASCADE,
 
-    CONSTRAINT chk_price_positive
-        CHECK (price >= 0),
-
     CONSTRAINT uq_ticker_recorded_at
         UNIQUE (ticker, recorded_at)
 );
 
-    CREATE INDEX idx_prices_ticker_recorded_at
-        ON prices (ticker, recorded_at DESC);
+CREATE INDEX idx_prices_ticker_recorded_at
+    ON prices (ticker, recorded_at DESC);

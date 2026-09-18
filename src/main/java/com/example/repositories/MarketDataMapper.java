@@ -1,8 +1,11 @@
 package com.example.repositories;
 
+import com.example.services.MarketDataService.Instrument;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
@@ -14,101 +17,260 @@ import java.util.Map;
 @Mapper
 public interface MarketDataMapper {
 
-    // Finds the most recent quote timestamp for a ticker so the service can avoid refreshing it too soon.
-    @Select("SELECT recorded_at FROM prices WHERE ticker = #{ticker} "
-            + "ORDER BY recorded_at DESC LIMIT 1")
-    OffsetDateTime findLastRecordedAt(@Param("ticker") String ticker);
+    @Select("""
+        SELECT recorded_at
+        FROM prices
+        WHERE ticker = #{ticker}
+        ORDER BY recorded_at DESC
+        LIMIT 1
+        """)
+    OffsetDateTime findLastRecordedAt(
+            @Param("ticker") String ticker);
 
-    // Stores the current Finnhub quote and its related price-change values in the prices table.
-    @Insert("INSERT INTO prices (ticker, price, change_amount, percent_change, previous_close, "
-            + "open, high, low, quote_timestamp) "
-            + "VALUES (#{ticker}, #{price}, #{changeAmount}, #{percentChange}, #{previousClose}, "
-            + "#{open}, #{high}, #{low}, #{quoteTimestamp})")
-    void saveQuote(
-            @Param("ticker") String ticker,
-            @Param("price") BigDecimal price,
-            @Param("changeAmount") BigDecimal changeAmount,
-            @Param("percentChange") BigDecimal percentChange,
-            @Param("previousClose") BigDecimal previousClose,
-            @Param("open") BigDecimal open,
-            @Param("high") BigDecimal high,
-            @Param("low") BigDecimal low,
-            @Param("quoteTimestamp") OffsetDateTime quoteTimestamp);
+    @Select("""
+        SELECT
+            ticker,
+            asset_type AS assetType
+        FROM instruments
+        ORDER BY asset_type, ticker
+        """)
+    @Results({
+            @Result(
+                    property = "ticker",
+                    column = "ticker"),
 
-    // Returns the newest stored quote for every ticker in the supplied list.
-    // The dynamic foreach block safely creates one parameterized IN value per ticker.
-    @Select({
-            "<script>",
-            "SELECT ticker, price, change_amount, percent_change, previous_close, open, high, low, "
-                    + "quote_timestamp, recorded_at FROM (SELECT p.*, ROW_NUMBER() OVER "
-                    + "(PARTITION BY ticker ORDER BY recorded_at DESC) AS row_number "
-                    + "FROM prices p WHERE ticker IN ",
-            "<foreach collection='tickers' item='ticker' open='(' separator=',' close=')'>",
-            "#{ticker}",
-            "</foreach>",
-            ") latest WHERE row_number = 1 ORDER BY ticker",
-            "</script>"
+            @Result(
+                    property = "assetType",
+                    column = "assetType")
     })
-    List<Map<String, Object>> findLatestPrices(@Param("tickers") List<String> tickers);
+    List<Instrument> findInstruments();
 
-    // Returns the newest stored quote for one ticker.
-    @Select("SELECT ticker, price, change_amount, percent_change, previous_close, open, high, low, "
-            + "quote_timestamp, recorded_at FROM prices WHERE ticker = #{ticker} "
-            + "ORDER BY recorded_at DESC LIMIT 1")
-    List<Map<String, Object>> findLatestPrice(@Param("ticker") String ticker);
-
-    // Returns all stored quotes for one ticker within the requested recorded_at date range.
-    @Select("SELECT ticker, price, change_amount, percent_change, previous_close, open, high, low, "
-            + "quote_timestamp, recorded_at FROM prices WHERE ticker = #{ticker} "
-            + "AND recorded_at >= #{from} AND recorded_at <= #{to} ORDER BY recorded_at")
-    List<Map<String, Object>> findPriceHistory(
-            @Param("ticker") String ticker,
-            @Param("from") OffsetDateTime from,
-            @Param("to") OffsetDateTime to);
-
-    // Returns all stock tickers from the instruments table in alphabetical order.
-    @Select("SELECT ticker FROM instruments WHERE asset_type = 'STOCK' ORDER BY ticker")
+    @Select("""
+        SELECT ticker
+        FROM instruments
+        ORDER BY ticker
+        """)
     List<String> findTickers();
 
-    // Inserts the DOW 30 tickers that are missing from instruments without duplicating existing rows.
-    // MyBatis expands the list into one parameterized multi-row INSERT statement.
-    @Insert({
-            "<script>",
-            "INSERT INTO instruments (ticker, asset_type) VALUES",
-            "<foreach collection='tickers' item='ticker' separator=','>",
-            "(#{ticker}, 'STOCK')",
-            "</foreach>",
-            "ON CONFLICT (ticker) DO NOTHING",
-            "</script>"
-    })
-    void ensureDowInstruments(@Param("tickers") List<String> tickers);
+    @Insert("""
+        INSERT INTO prices (
+            ticker,
+            ask_price,
+            ask_size,
+            ask_exchange,
+            bid_price,
+            bid_size,
+            bid_exchange,
+            tape,
+            quote_timestamp
+        )
+        VALUES (
+            #{ticker},
+            #{askPrice},
+            #{askSize},
+            #{askExchange},
+            #{bidPrice},
+            #{bidSize},
+            #{bidExchange},
+            #{tape},
+            #{quoteTimestamp}
+        )
+        """)
+    void saveQuote(
 
-    // Upgrades the prices table for the current market-data schema and creates its lookup index.
-    // The PostgreSQL block is idempotent, so startup can safely run it more than once.
+            @Param("ticker")
+            String ticker,
+
+            @Param("askPrice")
+            BigDecimal askPrice,
+
+            @Param("askSize")
+            BigDecimal askSize,
+
+            @Param("askExchange")
+            String askExchange,
+
+            @Param("bidPrice")
+            BigDecimal bidPrice,
+
+            @Param("bidSize")
+            BigDecimal bidSize,
+
+            @Param("bidExchange")
+            String bidExchange,
+
+            @Param("tape")
+            String tape,
+
+            @Param("quoteTimestamp")
+            OffsetDateTime quoteTimestamp);
+
+    @Select("""
+        <script>
+        SELECT
+            ticker,
+            ask_price,
+            ask_size,
+            ask_exchange,
+            bid_price,
+            bid_size,
+            bid_exchange,
+            tape,
+            quote_timestamp,
+            recorded_at
+        FROM (
+            SELECT
+                p.*,
+                ROW_NUMBER() OVER (
+                    PARTITION BY p.ticker
+                    ORDER BY p.recorded_at DESC
+                ) AS rn
+            FROM prices p
+            WHERE p.ticker IN
+            <foreach
+                collection="tickers"
+                item="ticker"
+                open="("
+                separator=","
+                close=")">
+                #{ticker}
+            </foreach>
+        ) latest
+        WHERE rn = 1
+        ORDER BY ticker
+        </script>
+        """)
+    List<Map<String, Object>> findLatestPrices(
+            @Param("tickers")
+            List<String> tickers);
+
+    @Select("""
+        SELECT
+            p.ticker,
+            p.ask_price,
+            p.ask_size,
+            p.ask_exchange,
+            p.bid_price,
+            p.bid_size,
+            p.bid_exchange,
+            p.tape,
+            p.quote_timestamp,
+            p.recorded_at,
+            i.asset_type
+        FROM prices p
+        JOIN instruments i
+            ON i.ticker = p.ticker
+        WHERE p.recorded_at = (
+            SELECT MAX(p2.recorded_at)
+            FROM prices p2
+            WHERE p2.ticker = p.ticker
+        )
+        ORDER BY p.ticker
+        """)
+    List<Map<String, Object>> findAllLatestPrices();
+
+    @Select("""
+        SELECT
+            p.ticker,
+            p.ask_price,
+            p.ask_size,
+            p.ask_exchange,
+            p.bid_price,
+            p.bid_size,
+            p.bid_exchange,
+            p.tape,
+            p.quote_timestamp,
+            p.recorded_at,
+            i.asset_type
+        FROM prices p
+        JOIN instruments i
+            ON i.ticker = p.ticker
+        WHERE p.ticker = #{ticker}
+        ORDER BY p.recorded_at DESC
+        LIMIT 1
+        """)
+    List<Map<String, Object>> findLatestPrice(
+            @Param("ticker")
+            String ticker);
+
+    @Select("""
+        SELECT
+            ticker,
+            ask_price,
+            ask_size,
+            ask_exchange,
+            bid_price,
+            bid_size,
+            bid_exchange,
+            tape,
+            quote_timestamp,
+            recorded_at
+        FROM prices
+        WHERE ticker = #{ticker}
+          AND recorded_at >= #{from}
+          AND recorded_at <= #{to}
+        ORDER BY recorded_at
+        """)
+    List<Map<String, Object>> findPriceHistory(
+
+            @Param("ticker")
+            String ticker,
+
+            @Param("from")
+            OffsetDateTime from,
+
+            @Param("to")
+            OffsetDateTime to);
+
     @Update("""
-            DO $$
-            BEGIN
-                IF EXISTS (
-                    SELECT 1 FROM information_schema.columns
-                    WHERE table_name = 'prices' AND column_name = 'timestamp'
-                ) AND NOT EXISTS (
-                    SELECT 1 FROM information_schema.columns
-                    WHERE table_name = 'prices' AND column_name = 'recorded_at'
-                ) THEN
-                    ALTER TABLE prices RENAME COLUMN "timestamp" TO recorded_at;
-                END IF;
+        DO $$
+        BEGIN
 
-                ALTER TABLE prices ADD COLUMN IF NOT EXISTS recorded_at TIMESTAMPTZ NOT NULL DEFAULT now();
-                ALTER TABLE prices ADD COLUMN IF NOT EXISTS change_amount NUMERIC(18,4);
-                ALTER TABLE prices ADD COLUMN IF NOT EXISTS percent_change NUMERIC(18,4);
-                ALTER TABLE prices ADD COLUMN IF NOT EXISTS previous_close NUMERIC(18,2);
-                ALTER TABLE prices ADD COLUMN IF NOT EXISTS open NUMERIC(18,2);
-                ALTER TABLE prices ADD COLUMN IF NOT EXISTS high NUMERIC(18,2);
-                ALTER TABLE prices ADD COLUMN IF NOT EXISTS low NUMERIC(18,2);
-                ALTER TABLE prices ADD COLUMN IF NOT EXISTS quote_timestamp TIMESTAMPTZ;
-                CREATE INDEX IF NOT EXISTS idx_prices_ticker_recorded_at
-                    ON prices (ticker, recorded_at DESC);
-            END $$;
-            """)
+            ALTER TABLE prices
+                ADD COLUMN IF NOT EXISTS recorded_at
+                TIMESTAMPTZ NOT NULL
+                DEFAULT now();
+
+            ALTER TABLE prices
+                ADD COLUMN IF NOT EXISTS ask_price
+                NUMERIC(18,4);
+
+            ALTER TABLE prices
+                ADD COLUMN IF NOT EXISTS ask_size
+                NUMERIC(18,4);
+
+            ALTER TABLE prices
+                ADD COLUMN IF NOT EXISTS ask_exchange
+                VARCHAR(10);
+
+            ALTER TABLE prices
+                ADD COLUMN IF NOT EXISTS bid_price
+                NUMERIC(18,4);
+
+            ALTER TABLE prices
+                ADD COLUMN IF NOT EXISTS bid_size
+                NUMERIC(18,4);
+
+            ALTER TABLE prices
+                ADD COLUMN IF NOT EXISTS bid_exchange
+                VARCHAR(10);
+
+            ALTER TABLE prices
+                ADD COLUMN IF NOT EXISTS tape
+                VARCHAR(10);
+
+            ALTER TABLE prices
+                ADD COLUMN IF NOT EXISTS quote_timestamp
+                TIMESTAMPTZ;
+
+            CREATE INDEX IF NOT EXISTS
+                idx_prices_ticker_recorded_at
+            ON prices (
+                ticker,
+                recorded_at DESC
+            );
+
+        END $$;
+        """)
     void ensurePricesSchema();
 }

@@ -1,6 +1,9 @@
 package com.example.services;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.example.repositories.MarketDataRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
@@ -11,205 +14,788 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.example.repositories.MarketDataRepository;
 
 import java.math.BigDecimal;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.OffsetDateTime;
+import java.net.http.HttpClient;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.LocalTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-// ------------------------------------
-// marketDataService is a Spring service that handles market data operations, including retrieving orders for clients and refreshing stock prices for the DOW 30. It uses MyBatis through MarketDataRepository for database interactions and RestClient to fetch data from the Finnhub API. The service ensures that the database schema is correct and that all necessary instruments are present before performing operations. It also includes a scheduled task to refresh stock prices every 30 seconds.
-// -------------------------------------
 
 @Service
 public class MarketDataService {
 
-    private static final Logger logger = LoggerFactory.getLogger(MarketDataService.class);
-
-    // The 30 stocks from the DOW 30 that we will be refreshing.
-    // Our service will be checking this list to ensure that we are refreshing the correct stocks and that they are present in the database.
-    private static final List<String> DOW_30 = List.of(
-            "MMM", "AXP", "AMGN", "AMZN", "AAPL", "BA", "CAT", "CVX", "CSCO", "KO",
-            "DIS", "GS", "HD", "HON", "IBM", "JNJ", "JPM", "MCD", "MRK", "MSFT",
-            "NKE", "NVDA", "PG", "CRM", "SHW", "TRV", "UNH", "VZ", "V", "WMT");
+    private static final Logger logger =
+            LoggerFactory.getLogger(MarketDataService.class);
 
     private final MarketDataRepository marketDataRepository;
-    private final RestClient finnhubClient;
+
+    private final RestClient stocksClient;
+    private final RestClient cryptoClient;
+    private final RestClient forexClient;
+
     private final boolean refreshAll;
+    private final boolean refreshForex;
+
     private final String apiKey;
+    private final String apiSecret;
+
     private final Environment environment;
+
     private final int maxRetries;
     private final long retryBackoffMs;
+
     private final boolean skipOutsideMarketHours;
+
     private OffsetDateTime lastRefreshStartedAt;
     private OffsetDateTime lastRefreshCompletedAt;
     private String lastRefreshFailure;
+
     private int lastSuccessfulTickerCount;
     private int lastFailedTickerCount;
 
-    // Constructor initializes the repository facade and RestClient with the Finnhub base URL and refresh settings.
     public MarketDataService(
             MarketDataRepository marketDataRepository,
-            @Value("${finnhub.base-url:https://finnhub.io/api/v1}") String finnhubBaseUrl,
-            @Value("${finnhub.refresh-all:false}") boolean refreshAll,
-            @Value("${finnhub.api-key:}") String apiKey,
+
+            @Value("${alpaca.stocks-base-url:https://data.alpaca.markets/v2/stocks}")
+            String stocksBaseUrl,
+
+            @Value("${alpaca.crypto-base-url:https://data.alpaca.markets/v1beta3/crypto/us}")
+            String cryptoBaseUrl,
+
+            @Value("${alpaca.forex-base-url:https://data.alpaca.markets/v1beta3/forex}")
+            String forexBaseUrl,
+
+            @Value("${alpaca.refresh-all:true}")
+            boolean refreshAll,
+
+            @Value("${alpaca.refresh-forex:false}")
+            boolean refreshForex,
+
+            @Value("${alpaca.api-key:}")
+            String apiKey,
+
+            @Value("${alpaca.api-secret:}")
+            String apiSecret,
+
             Environment environment,
-                @Value("${finnhub.request-timeout-ms:5000}") long requestTimeoutMs,
-                @Value("${finnhub.max-retries:2}") int maxRetries,
-                @Value("${finnhub.retry-backoff-ms:250}") long retryBackoffMs,
-                @Value("${finnhub.skip-outside-market-hours:false}") boolean skipOutsideMarketHours) {
+
+            @Value("${alpaca.request-timeout-ms:5000}")
+            long requestTimeoutMs,
+
+            @Value("${alpaca.max-retries:2}")
+            int maxRetries,
+
+            @Value("${alpaca.retry-backoff-ms:2500}")
+            long retryBackoffMs,
+
+            @Value("${alpaca.skip-outside-market-hours:false}")
+            boolean skipOutsideMarketHours) {
+
         this.marketDataRepository = marketDataRepository;
-            JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(
-                java.net.http.HttpClient.newBuilder()
-                    .connectTimeout(Duration.ofMillis(requestTimeoutMs))
-                    .build());
-            requestFactory.setReadTimeout(Duration.ofMillis(requestTimeoutMs));
-            this.finnhubClient = RestClient.builder().baseUrl(finnhubBaseUrl)
-                .requestFactory(requestFactory).build();
+
+        JdkClientHttpRequestFactory requestFactory =
+                new JdkClientHttpRequestFactory(
+                        HttpClient.newBuilder()
+                                .connectTimeout(
+                                        Duration.ofMillis(requestTimeoutMs))
+                                .build());
+
+        requestFactory.setReadTimeout(
+                Duration.ofMillis(requestTimeoutMs));
+
+        this.stocksClient = RestClient.builder()
+                .baseUrl(stocksBaseUrl)
+                .requestFactory(requestFactory)
+                .build();
+
+        this.cryptoClient = RestClient.builder()
+                .baseUrl(cryptoBaseUrl)
+                .requestFactory(requestFactory)
+                .build();
+
+        this.forexClient = RestClient.builder()
+                .baseUrl(forexBaseUrl)
+                .requestFactory(requestFactory)
+                .build();
+
         this.refreshAll = refreshAll;
+        this.refreshForex = refreshForex;
+
         this.apiKey = apiKey;
+        this.apiSecret = apiSecret;
+
         this.environment = environment;
-            this.maxRetries = Math.max(0, maxRetries);
-            this.retryBackoffMs = Math.max(0, retryBackoffMs);
-            this.skipOutsideMarketHours = skipOutsideMarketHours;
+
+        this.maxRetries = Math.max(0, maxRetries);
+        this.retryBackoffMs = Math.max(0, retryBackoffMs);
+
+        this.skipOutsideMarketHours =
+                skipOutsideMarketHours;
     }
 
-    // Refresh every 30 seconds to ensure rate limits
-    // This is the entry point for the scheduled task that refreshes the prices of the DOW 30 stocks every 30 seconds. It calls the refreshDowPrices method with the configured API key.
-    // Before we call the refreshDowPrices method, we check if the application is running in a test profile, if the API key is configured, and if we should skip refreshing outside of U.S. market hours.
-    // If any of these conditions are not met, we log a message and skip the refresh.
-    @Scheduled(fixedDelayString = "${finnhub.refresh-delay-ms:30000}")
-    public void scheduledRefreshDowPrices() {
-        if (environment.acceptsProfiles(Profiles.of("test"))) {
+    @Scheduled(
+            fixedDelayString =
+                    "${alpaca.refresh-delay-ms:500}")
+    public void scheduledRefreshMarketData() {
+
+        logger.info(
+                "Starting scheduled market-data refresh. " +
+                "Alpaca credentials configured: key={}, secret={}",
+                apiKey != null && !apiKey.isBlank(),
+                apiSecret != null && !apiSecret.isBlank());
+
+        if (environment.acceptsProfiles(
+                Profiles.of("test"))) {
             return;
         }
 
         if (apiKey == null || apiKey.isBlank()) {
-            logger.warn("Skipping scheduled market-data refresh because FINNHUB_API_KEY is not configured");
+
+            logger.warn(
+                    "ALPACA_API_KEY is not configured");
+
             return;
         }
 
-        if (skipOutsideMarketHours && !isUsMarketHours()) {
-            logger.info("Skipping scheduled market-data refresh outside U.S. market hours");
-            lastRefreshCompletedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        if (apiSecret == null || apiSecret.isBlank()) {
+
+            logger.warn(
+                    "ALPACA_API_SECRET is not configured");
+
             return;
         }
 
-        refreshDowPrices();
+        try {
+
+            refreshMarketData();
+
+        } catch (Exception exception) {
+
+            lastRefreshFailure =
+                    exception.getMessage();
+
+            logger.error(
+                    "Market-data refresh failed",
+                    exception);
+        }
     }
 
     @EventListener(ApplicationReadyEvent.class)
     public void initializeMarketDataStorage() {
-        if (environment.acceptsProfiles(Profiles.of("test"))) {
+
+        if (environment.acceptsProfiles(
+                Profiles.of("test"))) {
             return;
         }
 
-        // Call the ensure database methods
-        ensurePricesSchema();
-        ensureDowInstruments();
+        try {
+
+            ensurePricesSchema();
+
+            logger.info(
+                    "Prices schema initialized");
+
+        } catch (Exception exception) {
+
+            logger.error(
+                    "Unable to initialize prices schema",
+                    exception);
+        }
     }
 
-    // Refresh the prices of the DOW 30 stocks. A stock recorded within the last 30 seconds is skipped.
-    public synchronized void refreshDowPrices() {
-        lastRefreshStartedAt = OffsetDateTime.now(ZoneOffset.UTC);
+    public synchronized void refreshMarketData() {
+
+        lastRefreshStartedAt =
+                OffsetDateTime.now(
+                        ZoneOffset.UTC);
+
         lastRefreshFailure = null;
+
         lastSuccessfulTickerCount = 0;
         lastFailedTickerCount = 0;
 
-        // Simple API key validation
-        if (apiKey == null || apiKey.isBlank()) {
-            lastRefreshFailure = "FINNHUB_API_KEY is not configured";
-            throw new IllegalStateException("FINNHUB_API_KEY is not configured");
+        validateCredentials();
+
+        List<Instrument> instruments =
+                marketDataRepository.findInstruments();
+
+        logger.info(
+                "Found {} instruments",
+                instruments == null
+                        ? 0
+                        : instruments.size());
+
+        logger.info(
+                "Instruments: {}",
+                instruments);
+
+        if (instruments == null
+                || instruments.isEmpty()) {
+
+            logger.info(
+                    "No instruments are configured");
+
+            lastRefreshCompletedAt =
+                    OffsetDateTime.now(
+                            ZoneOffset.UTC);
+
+            return;
         }
 
-        // Checking the last updated timestamp for each stock and only refreshing those that haven't been updated in the last 30 seconds.
-        List<String> tickersToRefresh = refreshAll ? DOW_30 : List.of(DOW_30.get(0));
-        OffsetDateTime cutoff = OffsetDateTime.now(ZoneOffset.UTC).minus(Duration.ofSeconds(30));
+        if (!refreshAll) {
 
-        // Beginning of main loop to refresh prices
-        for (String ticker : tickersToRefresh) {
-            OffsetDateTime lastRecorded = marketDataRepository.findLastRecordedAt(ticker);
-            // Skip refreshing if the last recorded timestamp is within the last 30 seconds.
-            if (lastRecorded != null && lastRecorded.isAfter(cutoff)) {
-                lastSuccessfulTickerCount++;
+            instruments =
+                    List.of(instruments.get(0));
+        }
+
+        List<Instrument> instrumentsToRefresh =
+                new ArrayList<>(instruments);
+
+        List<String> stockSymbols =
+                instrumentsToRefresh.stream()
+                        .filter(this::isStock)
+                        .map(Instrument::getTicker)
+                        .toList();
+
+        List<String> cryptoSymbols =
+                instrumentsToRefresh.stream()
+                        .filter(this::isCrypto)
+                        .map(Instrument::getTicker)
+                        .toList();
+
+        List<String> forexSymbols =
+                instrumentsToRefresh.stream()
+                        .filter(this::isForex)
+                        .map(Instrument::getTicker)
+                        .toList();
+
+        logger.info(
+                "Stock symbols: {}",
+                stockSymbols);
+
+        logger.info(
+                "Crypto symbols: {}",
+                cryptoSymbols);
+
+        logger.info(
+                "Forex symbols: {}",
+                forexSymbols);
+
+        /*
+         * STOCK
+         *
+         * Stock refresh can optionally be restricted
+         * to U.S. market hours.
+         */
+        if (!stockSymbols.isEmpty()) {
+
+            if (skipOutsideMarketHours
+                    && !isUsMarketHours()) {
+
+                logger.info(
+                        "Skipping stock refresh because " +
+                        "U.S. market is closed");
+
+            } else {
+
+                refreshStocks(stockSymbols);
+            }
+        }
+
+        /*
+         * CRYPTO
+         *
+         * Crypto trades continuously and is therefore
+         * not restricted by U.S. stock-market hours.
+         */
+        if (!cryptoSymbols.isEmpty()) {
+
+            refreshCrypto(cryptoSymbols);
+        }
+
+        /*
+         * FOREX
+         *
+         * Forex refresh can be enabled/disabled through:
+         *
+         * alpaca.refresh-forex=true
+         * alpaca.refresh-forex=false
+         *
+         * It is currently disabled by default.
+         */
+        if (refreshForex && !forexSymbols.isEmpty()) {
+
+            refreshForex(forexSymbols);
+
+        } else if (!refreshForex
+                && !forexSymbols.isEmpty()) {
+
+            logger.info(
+                    "Forex refresh is disabled by configuration");
+        }
+
+        lastRefreshCompletedAt =
+                OffsetDateTime.now(
+                        ZoneOffset.UTC);
+
+        logger.info(
+                "Market-data refresh complete. " +
+                "Successful: {}, Failed: {}",
+                lastSuccessfulTickerCount,
+                lastFailedTickerCount);
+    }
+
+    private void refreshStocks(
+            List<String> symbols) {
+
+        try {
+
+            String symbolParameter =
+                    String.join(",", symbols);
+
+            logger.info(
+                    "Requesting stock quotes for {} symbols: {}",
+                    symbols.size(),
+                    symbols);
+
+            AlpacaQuotesResponse response =
+                    executeQuoteRequest(
+                            stocksClient,
+                            "/quotes/latest",
+                            symbolParameter);
+
+            processQuotes(
+                    symbols,
+                    response);
+
+        } catch (RestClientException
+                | IllegalArgumentException
+                | IllegalStateException exception) {
+
+            lastRefreshFailure =
+                    exception.getMessage();
+
+            lastFailedTickerCount +=
+                    symbols.size();
+
+            logger.error(
+                    "Unable to refresh stock quotes",
+                    exception);
+        }
+    }
+
+    private void refreshCrypto(
+            List<String> symbols) {
+
+        try {
+
+            /*
+             * Database format:
+             *
+             * BTC-USD
+             *
+             * Alpaca format:
+             *
+             * BTC/USD
+             */
+            String symbolParameter =
+                    symbols.stream()
+                            .map(this::toAlpacaCryptoSymbol)
+                            .reduce(
+                                    (a, b) -> a + "," + b)
+                            .orElse("");
+
+            logger.info(
+                    "Requesting crypto quotes for {} symbols: {}",
+                    symbols.size(),
+                    symbolParameter);
+
+            AlpacaQuotesResponse response =
+                    executeQuoteRequest(
+                            cryptoClient,
+                            "/latest/quotes",
+                            symbolParameter);
+
+            processQuotes(
+                    symbols,
+                    response);
+
+        } catch (RestClientException
+                | IllegalArgumentException
+                | IllegalStateException exception) {
+
+            lastRefreshFailure =
+                    exception.getMessage();
+
+            lastFailedTickerCount +=
+                    symbols.size();
+
+            logger.error(
+                    "Unable to refresh crypto quotes",
+                    exception);
+        }
+    }
+
+    private void refreshForex(
+            List<String> symbols) {
+
+        try {
+
+            /*
+             * Database format:
+             *
+             * EURUSD
+             *
+             * Alpaca format:
+             *
+             * EUR/USD
+             */
+            String symbolParameter =
+                    symbols.stream()
+                            .map(this::toAlpacaForexSymbol)
+                            .reduce(
+                                    (a, b) -> a + "," + b)
+                            .orElse("");
+
+            logger.info(
+                    "Requesting forex quotes for {} symbols: {}",
+                    symbols.size(),
+                    symbolParameter);
+
+            AlpacaQuotesResponse response =
+                    executeQuoteRequest(
+                            forexClient,
+                            "/latest/quotes",
+                            symbolParameter);
+
+            processQuotes(
+                    symbols,
+                    response);
+
+        } catch (RestClientException
+                | IllegalArgumentException
+                | IllegalStateException exception) {
+
+            lastRefreshFailure =
+                    exception.getMessage();
+
+            lastFailedTickerCount +=
+                    symbols.size();
+
+            logger.error(
+                    "Unable to refresh forex quotes",
+                    exception);
+        }
+    }
+
+    private void processQuotes(
+            List<String> requestedSymbols,
+            AlpacaQuotesResponse response) {
+
+        if (response == null
+                || response.quotes() == null) {
+
+            throw new IllegalStateException(
+                    "Alpaca returned an empty quotes response");
+        }
+
+        logger.info(
+                "Alpaca returned {} quotes",
+                response.quotes().size());
+
+        for (String ticker : requestedSymbols) {
+
+            AlpacaQuote quote =
+                    findQuote(
+                            ticker,
+                            response);
+
+            if (quote == null) {
+
+                lastFailedTickerCount++;
+
+                logger.warn(
+                        "Alpaca returned no quote for {}",
+                        ticker);
+
                 continue;
             }
 
-            try {
-                // Call Finnhub API to get the latest quote for the stock. If the quote is null or has a non-positive current price, it skips storing that quote.
-                FinnhubQuote quote = fetchQuoteWithRetry(ticker);
+            if (quote.askPrice() == null
+                    || quote.askPrice().signum() <= 0) {
 
-                if (quote == null || quote.current() == null || quote.current().signum() <= 0) {
-                    continue;
-                }
-
-                // Insert the quotes into the postgres db
-                marketDataRepository.saveQuote(
-                        ticker, quote.current(), quote.changeAmount(), quote.percentChange(),
-                        quote.previousClose(), quote.open(), quote.high(), quote.low(),
-                        quote.quoteTimestamp() == null ? null
-                                : Instant.ofEpochSecond(quote.quoteTimestamp()).atOffset(ZoneOffset.UTC));
-                lastSuccessfulTickerCount++;
-            } catch (RestClientException | IllegalArgumentException exception) {
                 lastFailedTickerCount++;
-                lastRefreshFailure = exception.getMessage();
-                logger.warn("Unable to refresh quote for {}", ticker, exception);
+
+                logger.warn(
+                        "Invalid ask price for {}",
+                        ticker);
+
+                continue;
+            }
+
+            OffsetDateTime quoteTimestamp =
+                    quote.quoteTimestamp() != null
+                            ? quote.quoteTimestamp()
+                            : OffsetDateTime.now(
+                                    ZoneOffset.UTC);
+
+            marketDataRepository.saveQuote(
+                    ticker,
+                    quote.askPrice(),
+                    quote.askSize(),
+                    quote.askExchange(),
+                    quote.bidPrice(),
+                    quote.bidSize(),
+                    quote.bidExchange(),
+                    quote.tape(),
+                    quoteTimestamp);
+
+            lastSuccessfulTickerCount++;
+
+            logger.info(
+                    "Saved quote for {}: ask={}, bid={}, quoteTimestamp={}",
+                    ticker,
+                    quote.askPrice(),
+                    quote.bidPrice(),
+                    quoteTimestamp);
+        }
+    }
+
+    private AlpacaQuote findQuote(
+            String ticker,
+            AlpacaQuotesResponse response) {
+
+        AlpacaQuote quote =
+                response.quotes().get(ticker);
+
+        if (quote != null) {
+            return quote;
+        }
+
+        /*
+         * Crypto:
+         *
+         * BTC-USD <-> BTC/USD
+         */
+        if (isCryptoTicker(ticker)) {
+
+            quote =
+                    response.quotes().get(
+                            toAlpacaCryptoSymbol(ticker));
+
+            if (quote != null) {
+                return quote;
             }
         }
 
-        // Set the last refresh time to now, indicating that the refresh operation has completed.
-        lastRefreshCompletedAt = OffsetDateTime.now(ZoneOffset.UTC);
+        /*
+         * Forex:
+         *
+         * EURUSD <-> EUR/USD
+         */
+        if (isForexTicker(ticker)) {
+
+            quote =
+                    response.quotes().get(
+                            toAlpacaForexSymbol(ticker));
+
+            if (quote != null) {
+                return quote;
+            }
+        }
+
+        return null;
     }
 
-    // A loop to continue trying a fetch on the finnhub api if it failed, up to the maxRetries value. If it fails after maxRetries, it throws an exception.
-    private FinnhubQuote fetchQuoteWithRetry(String ticker) {
-        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+    private AlpacaQuotesResponse executeQuoteRequest(
+            RestClient client,
+            String path,
+            String symbols) {
+
+        for (int attempt = 0;
+             attempt <= maxRetries;
+             attempt++) {
+
             try {
-                return finnhubClient.get()
-                        .uri(uriBuilder -> uriBuilder.path("/quote")
-                                .queryParam("symbol", ticker)
-                                .queryParam("token", apiKey)
-                                .build())
+
+                return client.get()
+                        .uri(uriBuilder ->
+                                uriBuilder
+                                        .path(path)
+                                        .queryParam(
+                                                "symbols",
+                                                symbols)
+                                        .build())
+                        .header(
+                                "APCA-API-KEY-ID",
+                                apiKey)
+                        .header(
+                                "APCA-API-SECRET-KEY",
+                                apiSecret)
                         .retrieve()
-                        .body(FinnhubQuote.class);
+                        .body(
+                                AlpacaQuotesResponse.class);
+
             } catch (RestClientException exception) {
+
                 if (attempt == maxRetries) {
+
                     throw exception;
                 }
+
+                logger.warn(
+                        "Alpaca request failed. " +
+                        "Retrying {}/{}. Error: {}",
+                        attempt + 1,
+                        maxRetries,
+                        exception.getMessage());
+
                 try {
-                    Thread.sleep(retryBackoffMs);
+
+                    Thread.sleep(
+                            retryBackoffMs);
+
                 } catch (InterruptedException interruptedException) {
+
                     Thread.currentThread().interrupt();
-                    throw new IllegalStateException("Quote retry was interrupted", interruptedException);
+
+                    throw new IllegalStateException(
+                            "Quote retry was interrupted",
+                            interruptedException);
                 }
             }
         }
-        // Throw execpetion if we hit the max amount of tries and STILL dont get any information
-        throw new IllegalStateException("Quote request did not produce a result");
+
+        throw new IllegalStateException(
+                "Quote request did not produce a result");
     }
 
-    // Checks to see if market is open, if not we dont ping the Finnhub API to avoid unnecessary calls. This method checks if the current time in the Eastern Time Zone is within U.S. market hours (Monday to Friday, 9:30 AM to 4:00 PM).
+    private void validateCredentials() {
+
+        if (apiKey == null
+                || apiKey.isBlank()) {
+
+            lastRefreshFailure =
+                    "ALPACA_API_KEY is not configured";
+
+            throw new IllegalStateException(
+                    "ALPACA_API_KEY is not configured");
+        }
+
+        if (apiSecret == null
+                || apiSecret.isBlank()) {
+
+            lastRefreshFailure =
+                    "ALPACA_API_SECRET is not configured";
+
+            throw new IllegalStateException(
+                    "ALPACA_API_SECRET is not configured");
+        }
+    }
+
+    private boolean isStock(
+            Instrument instrument) {
+
+        return instrument != null
+                && instrument.getAssetType() != null
+                && "STOCK".equalsIgnoreCase(
+                        instrument.getAssetType());
+    }
+
+    private boolean isCrypto(
+            Instrument instrument) {
+
+        return instrument != null
+                && instrument.getAssetType() != null
+                && "CRYPTO".equalsIgnoreCase(
+                        instrument.getAssetType());
+    }
+
+    private boolean isForex(
+            Instrument instrument) {
+
+        return instrument != null
+                && instrument.getAssetType() != null
+                && "FOREX".equalsIgnoreCase(
+                        instrument.getAssetType());
+    }
+
+    private boolean isCryptoTicker(
+            String ticker) {
+
+        return ticker != null
+                && ticker.contains("-");
+    }
+
+    private boolean isForexTicker(
+            String ticker) {
+
+        return ticker != null
+                && ticker.length() == 6
+                && !ticker.contains("-");
+    }
+
+    private String toAlpacaCryptoSymbol(
+            String ticker) {
+
+        if (ticker == null) {
+            return null;
+        }
+
+        return ticker.replace("-", "/");
+    }
+
+    private String toAlpacaForexSymbol(
+            String ticker) {
+
+        if (ticker == null) {
+            return null;
+        }
+
+        if (ticker.contains("/")) {
+            return ticker;
+        }
+
+        if (ticker.length() != 6) {
+
+            throw new IllegalArgumentException(
+                    "Invalid forex ticker: " + ticker);
+        }
+
+        return ticker.substring(0, 3)
+                + "/"
+                + ticker.substring(3);
+    }
+
     private boolean isUsMarketHours() {
-        OffsetDateTime easternNow = OffsetDateTime.now(ZoneId.of("America/New_York"));
-        DayOfWeek day = easternNow.getDayOfWeek();
-        LocalTime time = easternNow.toLocalTime();
-        return day != DayOfWeek.SATURDAY && day != DayOfWeek.SUNDAY
-                && !time.isBefore(LocalTime.of(9, 30))
-                && time.isBefore(LocalTime.of(16, 0));
+
+        OffsetDateTime easternNow =
+                OffsetDateTime.now(
+                        ZoneId.of(
+                                "America/New_York"));
+
+        DayOfWeek day =
+                easternNow.getDayOfWeek();
+
+        LocalTime time =
+                easternNow.toLocalTime();
+
+        return day != DayOfWeek.SATURDAY
+                && day != DayOfWeek.SUNDAY
+                && !time.isBefore(
+                        LocalTime.of(9, 30))
+                && time.isBefore(
+                        LocalTime.of(16, 0));
     }
 
-    // Returns the status of the latest refresh operation, useful for success or fail monitoring
-    // More gets below that will be used to get the latest prices, price history, and tickers from the database.
     public synchronized RefreshStatus getRefreshStatus() {
+
         return new RefreshStatus(
                 lastRefreshStartedAt,
                 lastRefreshCompletedAt,
@@ -219,61 +805,116 @@ public class MarketDataService {
     }
 
     public List<Map<String, Object>> getLatestPrices() {
-        List<String> tickersToRead = refreshAll ? DOW_30 : List.of(DOW_30.get(0));
-        return marketDataRepository.findLatestPrices(tickersToRead);
+
+        return marketDataRepository.findLatestPrices();
     }
 
-    public List<Map<String, Object>> getLatestPrice(String ticker) {
-        return marketDataRepository.findLatestPrice(ticker.toUpperCase());
+    public List<Map<String, Object>> getLatestPrice(
+            String ticker) {
+
+        return marketDataRepository.findLatestPrice(
+                ticker.toUpperCase());
     }
 
     public List<Map<String, Object>> getPriceHistory(
             String ticker,
             OffsetDateTime from,
             OffsetDateTime to) {
-        return marketDataRepository.findPriceHistory(ticker, from, to);
+
+        return marketDataRepository.findPriceHistory(
+                ticker,
+                from,
+                to);
     }
 
     public List<String> getTickers() {
+
         return marketDataRepository.findTickers();
     }
 
-    /**Ensurement
-     * Below will be the main ensurement methods that will ensure the database, (instruments and prices),
-     * are in the correct format to recieve data from the Finnhub API, if its now we will do some changes
-     * to ensure that the database is in the correct format to recieve data
-     */
-
-        // Ensure the instruments table has all the DOW 30 tickers.
-    private void ensureDowInstruments() {
-        marketDataRepository.ensureDowInstruments(DOW_30);
-    }
-
-
-    // Ensure the prices table has the correct schema. If the "timestamp" column exists, it renames it to "recorded_at". It also adds any missing columns with appropriate data types and default values.
     private void ensurePricesSchema() {
+
         marketDataRepository.ensurePricesSchema();
     }
 
-    //Finnhubquote that we are grabbing via the API
-    private record FinnhubQuote(
-            @JsonProperty("c") BigDecimal current,
-            @JsonProperty("d") BigDecimal changeAmount,
-            @JsonProperty("dp") BigDecimal percentChange,
-            @JsonProperty("h") BigDecimal high,
-            @JsonProperty("l") BigDecimal low,
-            @JsonProperty("o") BigDecimal open,
-            @JsonProperty("pc") BigDecimal previousClose,
-            @JsonProperty("t") Long quoteTimestamp) {
+    public static class Instrument {
+
+        private String ticker;
+        private String assetType;
+
+        public Instrument() {
+        }
+
+        public String getTicker() {
+            return ticker;
+        }
+
+        public void setTicker(
+                String ticker) {
+
+            this.ticker = ticker;
+        }
+
+        public String getAssetType() {
+            return assetType;
+        }
+
+        public void setAssetType(
+                String assetType) {
+
+            this.assetType = assetType;
+        }
+
+        @Override
+        public String toString() {
+
+            return "Instrument{" +
+                    "ticker='" + ticker + '\'' +
+                    ", assetType='" + assetType + '\'' +
+                    '}';
+        }
     }
 
-            // Refresh status variables
-            public record RefreshStatus(
-                OffsetDateTime lastStartedAt,
-                OffsetDateTime lastCompletedAt,
-                String lastFailure,
-                int successfulTickerCount,
-                int failedTickerCount) {
-            }
+    private record AlpacaQuotesResponse(
+            @JsonProperty("quotes")
+            Map<String, AlpacaQuote> quotes) {
+    }
 
+    private record AlpacaQuote(
+
+            @JsonProperty("ap")
+            BigDecimal askPrice,
+
+            @JsonProperty("as")
+            BigDecimal askSize,
+
+            @JsonProperty("ax")
+            String askExchange,
+
+            @JsonProperty("bp")
+            BigDecimal bidPrice,
+
+            @JsonProperty("bs")
+            BigDecimal bidSize,
+
+            @JsonProperty("bx")
+            String bidExchange,
+
+            @JsonProperty("c")
+            List<String> conditions,
+
+            @JsonProperty("t")
+            OffsetDateTime quoteTimestamp,
+
+            @JsonProperty("z")
+            String tape) {
+    }
+
+    public record RefreshStatus(
+            OffsetDateTime lastStartedAt,
+            OffsetDateTime lastCompletedAt,
+            String lastFailure,
+            int successfulTickerCount,
+            int failedTickerCount) {
+    }
 }
