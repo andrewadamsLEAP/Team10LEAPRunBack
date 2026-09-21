@@ -30,12 +30,12 @@ CREATE TABLE clients (
     cash_amount NUMERIC(15,2) NOT NULL DEFAULT 0.00
 );
 
-CREATE TABLE transactions (
-    transaction_id BIGSERIAL PRIMARY KEY,
-    client_id BIGINT NOT NULL REFERENCES clients(client_id),
-    withdrawal NUMERIC(15,2) NOT NULL DEFAULT 0.00 CHECK (withdrawal >= 0),
-    deposit NUMERIC(15,2) NOT NULL DEFAULT 0.00 CHECK (deposit >= 0),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+CREATE TABLE transactions(
+transaction_id BIGSERIAL PRIMARY KEY,
+client_id BIGINT NOT NULL REFERENCES clients(client_id),
+ttype VARCHAR(10) CONSTRAINT checker CHECK(ttype IN ('withdrawal' , 'deposit')),
+amount NUMERIC(15,2) CONSTRAINT notzero CHECK(amount > 0),
+created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE orders (
