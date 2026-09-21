@@ -14,6 +14,17 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
+//===================================
+// Here the is general format for a mapper
+// A SQL Query
+// The name of the method that query is pointing to with its data type
+// The parameters and or results
+//===================================
+
+// TO DOS
+// Add comments on each method to go further in detail about each SQL query
+
+
 @Mapper
 public interface MarketDataMapper {
 

@@ -11,6 +11,8 @@ import java.util.Map;
 @Repository
 public class MarketDataRepository {
 
+        // Creating the new mapper object to talk to the MarketDataMapper
+
     private final MarketDataMapper marketDataMapper;
 
     public MarketDataRepository(
@@ -19,6 +21,10 @@ public class MarketDataRepository {
         this.marketDataMapper =
                 marketDataMapper;
     }
+
+    // ================================
+    // Lots of MarketDataMapper methods
+    // ================================
 
     public List<Instrument> findInstruments() {
 

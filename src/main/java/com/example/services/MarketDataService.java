@@ -1,5 +1,10 @@
 package com.example.services;
 
+/**
+ * Springboot Framework Imports
+ */
+
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.example.repositories.MarketDataRepository;
 import org.slf4j.Logger;
@@ -30,6 +35,10 @@ import java.util.Map;
 @Service
 public class MarketDataService {
 
+    // =========================================================
+    // Initial Variable Setup
+    // =========================================================
+
     private static final Logger logger =
             LoggerFactory.getLogger(MarketDataService.class);
 
@@ -59,6 +68,11 @@ public class MarketDataService {
     private int lastSuccessfulTickerCount;
     private int lastFailedTickerCount;
 
+
+    // ==========================================
+    // MarketDataService Class 
+    // ==========================================
+    
     public MarketDataService(
             MarketDataRepository marketDataRepository,
 
@@ -99,6 +113,7 @@ public class MarketDataService {
 
         this.marketDataRepository = marketDataRepository;
 
+        // Building the Http Request Factory
         JdkClientHttpRequestFactory requestFactory =
                 new JdkClientHttpRequestFactory(
                         HttpClient.newBuilder()
@@ -109,16 +124,19 @@ public class MarketDataService {
         requestFactory.setReadTimeout(
                 Duration.ofMillis(requestTimeoutMs));
 
+        // Stock Rest Client
         this.stocksClient = RestClient.builder()
                 .baseUrl(stocksBaseUrl)
                 .requestFactory(requestFactory)
                 .build();
 
+        // Crypto Rest Client
         this.cryptoClient = RestClient.builder()
                 .baseUrl(cryptoBaseUrl)
                 .requestFactory(requestFactory)
                 .build();
 
+        // Forex Rest Client
         this.forexClient = RestClient.builder()
                 .baseUrl(forexBaseUrl)
                 .requestFactory(requestFactory)
@@ -139,9 +157,15 @@ public class MarketDataService {
                 skipOutsideMarketHours;
     }
 
+    // Refresh period for calling the API again.
+    // 2000 ms is the sweet spot, any time below this doesnt make any changes to api calling time,
+    // as Alpaca is limiting us.
     @Scheduled(
             fixedDelayString =
-                    "${alpaca.refresh-delay-ms:500}")
+                    "${alpaca.refresh-delay-ms:2000}")
+
+    // ScheduledRefreshMarketData Class
+
     public void scheduledRefreshMarketData() {
 
         logger.info(
@@ -189,6 +213,7 @@ public class MarketDataService {
     @EventListener(ApplicationReadyEvent.class)
     public void initializeMarketDataStorage() {
 
+        // If we are in the test enviornment, stop this method here and dont ensure the schema
         if (environment.acceptsProfiles(
                 Profiles.of("test"))) {
             return;
@@ -248,6 +273,7 @@ public class MarketDataService {
             return;
         }
 
+        // If resfresh all in the application properties is set to false, just refresh the first stock in the index
         if (!refreshAll) {
 
             instruments =
@@ -494,6 +520,11 @@ public class MarketDataService {
         }
     }
 
+    // =====================================
+    // Main class that, after grabbing all the symbols above, calls the api for all of them.
+    // Takes the string of all the symbols we are requesting, and the alpacaquotesresponse.
+    // =====================================
+
     private void processQuotes(
             List<String> requestedSymbols,
             AlpacaQuotesResponse response) {
@@ -539,6 +570,7 @@ public class MarketDataService {
                 continue;
             }
 
+            // If everything goes through fine, save the quote and timestamp
             OffsetDateTime quoteTimestamp =
                     quote.quoteTimestamp() != null
                             ? quote.quoteTimestamp()
@@ -699,6 +731,9 @@ public class MarketDataService {
         }
     }
 
+
+    // Is ticker type X checks below
+    // Ensures tickers are not missing and are equal to their appropriate types
     private boolean isStock(
             Instrument instrument) {
 
@@ -741,6 +776,7 @@ public class MarketDataService {
                 && !ticker.contains("-");
     }
 
+    // Main method to change the - to an / for uploading crypto tickers into the db
     private String toAlpacaCryptoSymbol(
             String ticker) {
 
@@ -773,6 +809,8 @@ public class MarketDataService {
                 + ticker.substring(3);
     }
 
+
+    // Checking the day and time to ensure the market is open
     private boolean isUsMarketHours() {
 
         OffsetDateTime easternNow =
@@ -794,6 +832,8 @@ public class MarketDataService {
                         LocalTime.of(16, 0));
     }
 
+
+    // Returns information on the RefreshStatus
     public synchronized RefreshStatus getRefreshStatus() {
 
         return new RefreshStatus(
@@ -804,6 +844,11 @@ public class MarketDataService {
                 lastFailedTickerCount);
     }
 
+
+
+    // ====================================
+    // Repository Section Link
+    // ====================================
     public List<Map<String, Object>> getLatestPrices() {
 
         return marketDataRepository.findLatestPrices();
@@ -837,6 +882,10 @@ public class MarketDataService {
         marketDataRepository.ensurePricesSchema();
     }
 
+
+    // =============================
+    // Instrument and Alpaca Format
+    // =============================
     public static class Instrument {
 
         private String ticker;
