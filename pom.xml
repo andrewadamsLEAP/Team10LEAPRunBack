@@ -41,6 +41,13 @@
 			<artifactId>spring-boot-starter-jdbc</artifactId>
 		</dependency>
 
+		<!-- MyBatis persistence support -->
+		<dependency>
+			<groupId>org.mybatis.spring.boot</groupId>
+			<artifactId>mybatis-spring-boot-starter</artifactId>
+			<version>4.0.0</version>
+		</dependency>
+
 		<!-- PostgreSQL Database Driver -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
