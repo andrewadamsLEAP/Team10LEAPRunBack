@@ -48,9 +48,6 @@ CREATE TABLE orders (
     CONSTRAINT chk_order_status
         CHECK (
             order_status IN (
-                'pending',
-                'fullfilled',
-                'canceled',
                 'CANCELED',
                 'PENDING',
                 'FULFILLED'
