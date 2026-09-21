@@ -1,4 +1,4 @@
-package com.example.repositories;
+package com.example.mappers;
 
 import com.example.services.MarketDataService.Instrument;
 import org.apache.ibatis.annotations.Insert;

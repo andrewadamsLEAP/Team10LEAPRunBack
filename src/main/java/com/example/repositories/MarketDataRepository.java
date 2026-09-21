@@ -1,5 +1,6 @@
 package com.example.repositories;
 
+import com.example.mappers.MarketDataMapper;
 import com.example.services.MarketDataService.Instrument;
 import org.springframework.stereotype.Repository;
 
