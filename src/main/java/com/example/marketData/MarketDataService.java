@@ -1,6 +1,5 @@
-package com.example.services;
+package com.example.marketData;
 
-import com.example.repositories.MarketDataRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +9,11 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+
+import com.example.generalServices.AlpacaClient;
+import com.example.generalServices.MarketHoursService;
+import com.example.generalServices.AlpacaClient.AlpacaForexResponse;
+import com.example.generalServices.AlpacaClient.AlpacaQuotesResponse;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -21,7 +25,8 @@ import java.util.Map;
 public class MarketDataService {
 
     private static final Logger logger =
-            LoggerFactory.getLogger(MarketDataService.class);
+            LoggerFactory.getLogger(
+                    MarketDataService.class);
 
     private final MarketDataRepository marketDataRepository;
     private final AlpacaClient alpacaClient;
@@ -58,16 +63,32 @@ public class MarketDataService {
             @Value("${alpaca.skip-outside-market-hours:false}")
             boolean skipOutsideMarketHours) {
 
-        this.marketDataRepository = marketDataRepository;
-        this.alpacaClient = alpacaClient;
-        this.marketDataProcessor = marketDataProcessor;
-        this.marketSymbolMapper = marketSymbolMapper;
-        this.marketHoursService = marketHoursService;
-        this.environment = environment;
+        this.marketDataRepository =
+                marketDataRepository;
 
-        this.refreshAll = refreshAll;
-        this.refreshForex = refreshForex;
-        this.skipOutsideMarketHours = skipOutsideMarketHours;
+        this.alpacaClient =
+                alpacaClient;
+
+        this.marketDataProcessor =
+                marketDataProcessor;
+
+        this.marketSymbolMapper =
+                marketSymbolMapper;
+
+        this.marketHoursService =
+                marketHoursService;
+
+        this.environment =
+                environment;
+
+        this.refreshAll =
+                refreshAll;
+
+        this.refreshForex =
+                refreshForex;
+
+        this.skipOutsideMarketHours =
+                skipOutsideMarketHours;
     }
 
     // =========================================================
@@ -90,6 +111,7 @@ public class MarketDataService {
          */
         if (environment.acceptsProfiles(
                 Profiles.of("test"))) {
+
             return;
         }
 
@@ -136,6 +158,7 @@ public class MarketDataService {
          */
         if (environment.acceptsProfiles(
                 Profiles.of("test"))) {
+
             return;
         }
 
@@ -161,11 +184,13 @@ public class MarketDataService {
     public synchronized void refreshMarketData() {
 
         lastRefreshStartedAt =
-                OffsetDateTime.now(ZoneOffset.UTC);
+                OffsetDateTime.now(
+                        ZoneOffset.UTC);
 
         lastRefreshFailure = null;
 
         lastSuccessfulTickerCount = 0;
+
         lastFailedTickerCount = 0;
 
         alpacaClient.validateCredentials();
@@ -190,7 +215,8 @@ public class MarketDataService {
                     "No instruments are configured");
 
             lastRefreshCompletedAt =
-                    OffsetDateTime.now(ZoneOffset.UTC);
+                    OffsetDateTime.now(
+                            ZoneOffset.UTC);
 
             return;
         }
@@ -202,11 +228,17 @@ public class MarketDataService {
         if (!refreshAll) {
 
             instruments =
-                    List.of(instruments.get(0));
+                    List.of(
+                            instruments.get(0));
         }
 
         List<Instrument> instrumentsToRefresh =
-                new ArrayList<>(instruments);
+                new ArrayList<>(
+                        instruments);
+
+        // =====================================================
+        // Separate Instruments By Asset Type
+        // =====================================================
 
         List<String> stockSymbols =
                 instrumentsToRefresh.stream()
@@ -245,7 +277,8 @@ public class MarketDataService {
         if (!stockSymbols.isEmpty()) {
 
             if (skipOutsideMarketHours
-                    && !marketHoursService.isUsMarketHours()) {
+                    && !marketHoursService
+                            .isUsMarketHours()) {
 
                 logger.info(
                         "Skipping stock refresh because " +
@@ -253,7 +286,8 @@ public class MarketDataService {
 
             } else {
 
-                refreshStocks(stockSymbols);
+                refreshStocks(
+                        stockSymbols);
             }
         }
 
@@ -263,7 +297,8 @@ public class MarketDataService {
 
         if (!cryptoSymbols.isEmpty()) {
 
-            refreshCrypto(cryptoSymbols);
+            refreshCrypto(
+                    cryptoSymbols);
         }
 
         // =====================================================
@@ -273,7 +308,8 @@ public class MarketDataService {
         if (refreshForex
                 && !forexSymbols.isEmpty()) {
 
-            refreshForex(forexSymbols);
+            refreshForex(
+                    forexSymbols);
 
         } else if (!refreshForex
                 && !forexSymbols.isEmpty()) {
@@ -282,8 +318,13 @@ public class MarketDataService {
                     "Forex refresh is disabled by configuration");
         }
 
+        // =====================================================
+        // Complete
+        // =====================================================
+
         lastRefreshCompletedAt =
-                OffsetDateTime.now(ZoneOffset.UTC);
+                OffsetDateTime.now(
+                        ZoneOffset.UTC);
 
         logger.info(
                 "Market-data refresh complete. " +
@@ -307,7 +348,8 @@ public class MarketDataService {
                     symbols);
 
             AlpacaClient.AlpacaQuotesResponse response =
-                    alpacaClient.getStockQuotes(symbols);
+                    alpacaClient.getStockQuotes(
+                            symbols);
 
             MarketDataProcessor.ProcessResult result =
                     marketDataProcessor.processQuotes(
@@ -343,9 +385,19 @@ public class MarketDataService {
 
         try {
 
+            /*
+             * Convert database symbols such as:
+             *
+             * BTC-USD
+             *
+             * into Alpaca symbols such as:
+             *
+             * BTC/USD
+             */
             String symbolParameter =
-                    marketSymbolMapper.toAlpacaCryptoSymbols(
-                            symbols);
+                    marketSymbolMapper
+                            .toAlpacaCryptoSymbols(
+                                    symbols);
 
             logger.info(
                     "Requesting crypto quotes for {} symbols: {}",
@@ -390,21 +442,42 @@ public class MarketDataService {
 
         try {
 
-            String symbolParameter =
-                    marketSymbolMapper.toAlpacaForexSymbols(
-                            symbols);
+            /*
+             * Forex is different from stocks and crypto.
+             *
+             * Alpaca expects:
+             *
+             * currency_pairs=EUR/USD,USD/JPY
+             *
+             * rather than:
+             *
+             * symbols=EUR/USD,USD/JPY
+             */
+            String currencyPairs =
+                    marketSymbolMapper
+                            .toAlpacaForexSymbols(
+                                    symbols);
 
             logger.info(
-                    "Requesting forex quotes for {} symbols: {}",
+                    "Requesting forex rates for {} symbols: {}",
                     symbols.size(),
-                    symbolParameter);
+                    currencyPairs);
 
-            AlpacaClient.AlpacaQuotesResponse response =
-                    alpacaClient.getForexQuotes(
-                            symbolParameter);
+            /*
+             * Forex returns AlpacaForexResponse,
+             * NOT AlpacaQuotesResponse.
+             */
+            AlpacaClient.AlpacaForexResponse response =
+                    alpacaClient.getForexRates(
+                            currencyPairs);
 
+            /*
+             * Forex also has its own processor because
+             * AlpacaForexRate has a different structure
+             * from AlpacaQuote.
+             */
             MarketDataProcessor.ProcessResult result =
-                    marketDataProcessor.processQuotes(
+                    marketDataProcessor.processForexRates(
                             symbols,
                             response);
 
@@ -423,7 +496,7 @@ public class MarketDataService {
                     symbols.size();
 
             logger.error(
-                    "Unable to refresh forex quotes",
+                    "Unable to refresh forex rates",
                     exception);
         }
     }
@@ -479,14 +552,16 @@ public class MarketDataService {
 
     public List<Map<String, Object>> getLatestPrices() {
 
-        return marketDataRepository.findLatestPrices();
+        return marketDataRepository
+                .findLatestPrices();
     }
 
     public List<Map<String, Object>> getLatestPrice(
             String ticker) {
 
-        return marketDataRepository.findLatestPrice(
-                ticker.toUpperCase());
+        return marketDataRepository
+                .findLatestPrice(
+                        ticker.toUpperCase());
     }
 
     public List<Map<String, Object>> getPriceHistory(
@@ -494,24 +569,31 @@ public class MarketDataService {
             OffsetDateTime from,
             OffsetDateTime to) {
 
-        return marketDataRepository.findPriceHistory(
-                ticker,
-                from,
-                to);
+        return marketDataRepository
+                .findPriceHistory(
+                        ticker,
+                        from,
+                        to);
     }
 
     public List<String> getTickers() {
 
-        return marketDataRepository.findTickers();
-    }
-
-    private void ensurePricesSchema() {
-
-        marketDataRepository.ensurePricesSchema();
+        return marketDataRepository
+                .findTickers();
     }
 
     // =========================================================
-    // Models
+    // Database Schema
+    // =========================================================
+
+    private void ensurePricesSchema() {
+
+        marketDataRepository
+                .ensurePricesSchema();
+    }
+
+    // =========================================================
+    // Instrument Model
     // =========================================================
 
     public static class Instrument {
@@ -523,6 +605,7 @@ public class MarketDataService {
         }
 
         public String getTicker() {
+
             return ticker;
         }
 
@@ -533,6 +616,7 @@ public class MarketDataService {
         }
 
         public String getAssetType() {
+
             return assetType;
         }
 
@@ -546,11 +630,19 @@ public class MarketDataService {
         public String toString() {
 
             return "Instrument{" +
-                    "ticker='" + ticker + '\'' +
-                    ", assetType='" + assetType + '\'' +
+                    "ticker='" +
+                    ticker +
+                    '\'' +
+                    ", assetType='" +
+                    assetType +
+                    '\'' +
                     '}';
         }
     }
+
+    // =========================================================
+    // Refresh Status Model
+    // =========================================================
 
     public record RefreshStatus(
             OffsetDateTime lastStartedAt,
@@ -560,3 +652,4 @@ public class MarketDataService {
             int failedTickerCount) {
     }
 }
+

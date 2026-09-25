@@ -1,7 +1,7 @@
-package com.example.repositories;
+package com.example.marketData;
 
-import com.example.mappers.MarketDataMapper;
-import com.example.services.MarketDataService.Instrument;
+import com.example.marketData.MarketDataService.Instrument;
+
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;

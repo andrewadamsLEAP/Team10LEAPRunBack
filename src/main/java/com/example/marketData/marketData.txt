@@ -1,0 +1,9 @@
+We will not be using entities for market data related files.
+Sadly, we implemented this section of the backend without entities, which we shouldve, however I decided against it.
+The reason we will not be using entities or, (hey Andrew, why dont we just make entities and update the code?)
+Is because:
+1. We simplydont have the time
+2. I am lazy
+3. Its good practice
+
+Anywho that is all, so if you see List<String>(Name,Name) or whatever isntead of MarketData object thats why.

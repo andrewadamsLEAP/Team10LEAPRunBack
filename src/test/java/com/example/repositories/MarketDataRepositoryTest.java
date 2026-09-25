@@ -2,7 +2,8 @@ package com.example.repositories;
 
 import org.junit.jupiter.api.Test;
 
-import com.example.mappers.MarketDataMapper;
+import com.example.marketData.MarketDataMapper;
+import com.example.marketData.MarketDataRepository;
 
 import java.time.OffsetDateTime;
 import java.util.List;
