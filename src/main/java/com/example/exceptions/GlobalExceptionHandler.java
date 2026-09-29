@@ -19,6 +19,16 @@ public class GlobalExceptionHandler {
         return buildProblem(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidEmailException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidEmail(InvalidEmailException ex) {
+        return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidProfileUpdateException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidProfileUpdate(InvalidProfileUpdateException ex) {
+        return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(InvalidPasswordChangeException.class)
     public ResponseEntity<ProblemDetail> handleInvalidPasswordChange(InvalidPasswordChangeException ex) {
         return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -29,8 +39,13 @@ public class GlobalExceptionHandler {
         return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    @ExceptionHandler(PasswordUpdateFailedException.class)
-    public ResponseEntity<ProblemDetail> handlePasswordUpdateFailed(PasswordUpdateFailedException ex) {
+    @ExceptionHandler(InvalidUsernameChangeException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidUsernameChange(InvalidUsernameChangeException ex) {
+        return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(UpdateFailedException.class)
+    public ResponseEntity<ProblemDetail> handleUpdateFailed(UpdateFailedException ex) {
         return buildProblem(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 

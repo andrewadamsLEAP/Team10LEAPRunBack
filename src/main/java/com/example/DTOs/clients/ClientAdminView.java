@@ -2,9 +2,12 @@ package com.example.DTOs.clients;
 
 import java.math.BigDecimal;
 
+import jakarta.validation.constraints.Email;
+
 public class ClientAdminView {
     private Long clientId;
     private String username;
+    @Email 
     private String email;
     private String firstName;
     private String lastName;

@@ -12,51 +12,88 @@ import java.util.List;
 @Mapper
 public interface ClientsMapper {
     @Select("""
-            SELECT client_id, email, username, first_name, last_name, cash_amount
+         SELECT client_id AS clientId,
+             email,
+             username,
+             first_name AS firstName,
+             last_name AS lastName,
+             cash_amount AS cashAmount
             FROM clients
             WHERE client_id = #{clientId}
             """)
     Client findById(@Param("clientId") Long clientId);
 
     @Select("""
-        SELECT client_id, username, email, first_name, last_name, cash_amount
+     SELECT client_id AS clientId,
+         username,
+         email,
+         first_name AS firstName,
+         last_name AS lastName,
+         cash_amount AS cashAmount
         FROM clients
         WHERE client_id = #{clientId}
         """)
     ClientAdminView findByIdAdmin(@Param("clientId") Long clientId);
 
     @Select("""
-        SELECT client_id, username, email
+     SELECT client_id AS clientId,
+         username,
+         email
         FROM clients
         WHERE client_id = #{clientId}
         """)
     ClientReporterView findByIdReporter(@Param("clientId") Long clientId);
 
     @Select("""
-            SELECT client_id, username, email, first_name, last_name, cash_amount
+         SELECT client_id AS clientId,
+             username,
+             email,
+             first_name AS firstName,
+             last_name AS lastName,
+             cash_amount AS cashAmount
             FROM clients
             """)
     List<ClientAdminView> findAllClientsAdmin();
 
     @Select("""
-            SELECT client_id, username, email
+         SELECT client_id AS clientId,
+             username,
+             email
             FROM clients
             """)
     List<ClientReporterView> findAllClientsReporter();
     
     @Select("""
-            SELECT client_id, email, username, password, first_name, last_name, cash_amount
+            SELECT client_id
+            FROM clients
+            WHERE email = #{email}
+            """)
+    Long findClientIdByEmail(@Param("email") String email);
+
+    @Select("""
+            SELECT client_id
             FROM clients
             WHERE username = #{username}
             """)
-    Client findByUsername(@Param("username") String username);
+    Long findClientIdByUsername(@Param("username") String username);
 
     @Select("""
-            SELECT client_id, username, password
+            SELECT client_id AS clientId,
+               username,
+               password
             FROM clients
             WHERE username = #{username}
             """)
     ClientLoginView findLoginClientByUsername(@Param("username") String username);
+
+    @Select("""
+            SELECT client_id AS clientId,
+               username,
+               password
+            FROM clients
+            WHERE client_id = #{clientId}
+            """)
+    ClientLoginView findLoginClientById(@Param("clientId") Long clientId);
 
     @Insert("""
         INSERT INTO clients (

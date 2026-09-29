@@ -9,7 +9,7 @@ public class LoginRequest {
     private String username;
 
     @NotBlank
-    @Size(min = 8, max = 255)
+    @Size(min = 8, max = 30)
     private String password;
 
     public LoginRequest() {

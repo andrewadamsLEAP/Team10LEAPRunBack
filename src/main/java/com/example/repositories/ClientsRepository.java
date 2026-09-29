@@ -23,6 +23,14 @@ public class ClientsRepository {
         return clientsMapper.findById(id);
     }
 
+    public Long findClientIdByEmail(String email) {
+        return clientsMapper.findClientIdByEmail(email);
+    }
+
+    public Long findClientIdByUsername(String username) {
+        return clientsMapper.findClientIdByUsername(username);
+    }
+
     public ClientAdminView findClientByIdAdmin(Long clientId) {
         return clientsMapper.findByIdAdmin(clientId);
     }
@@ -33,6 +41,10 @@ public class ClientsRepository {
 
     public ClientLoginView findLoginClientByUsername(String username) {
         return clientsMapper.findLoginClientByUsername(username);
+    }
+
+    public ClientLoginView findLoginClientById(Long clientId) {
+        return clientsMapper.findLoginClientById(clientId);
     }
 
     public List<ClientAdminView> findClientsAsAdmin() {
