@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/instruments")
+@RequestMapping("/api//v1/instruments")
 public class InstrumentController {
     private final InstrumentService instrumentService;
 
