@@ -9,7 +9,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.example"})
-@MapperScan("com.example.mappers")
+@MapperScan({"com.example.mappers", "com.example.instruments"})
 public class TradingAppApplication {
 
     public static void main(String[] args) {
