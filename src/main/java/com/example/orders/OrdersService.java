@@ -1,5 +1,6 @@
 package com.example.orders;
 import com.example.generalServices.MarketHoursService;
+import com.example.holdings.HoldingsService;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,13 +14,16 @@ public class OrdersService {
 
     private final OrdersRepository ordersRepository;
     private final MarketHoursService marketHoursService;
+    private final HoldingsService holdingsService;
 
     public OrdersService(
             OrdersRepository ordersRepository,
-            MarketHoursService marketHoursService) {
+            MarketHoursService marketHoursService,
+            HoldingsService holdingsService) {
 
         this.ordersRepository = ordersRepository;
         this.marketHoursService = marketHoursService;
+        this.holdingsService = holdingsService;
     }
 
     // =========================================================
@@ -206,7 +210,12 @@ public class OrdersService {
             );
         }
 
-        return getOrderById(orderId);
+        Order fulfilledOrder = getOrderById(orderId);
+        
+        // Update holdings when order is fulfilled
+        holdingsService.updateHoldingsForOrder(fulfilledOrder);
+        
+        return fulfilledOrder;
     }
 
 
