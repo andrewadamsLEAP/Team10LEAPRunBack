@@ -1,5 +1,9 @@
-package com.example.clients;
+package com.example.mappers;
 
+import com.example.DTOs.clients.ClientAdminView;
+import com.example.DTOs.clients.ClientLoginView;
+import com.example.DTOs.clients.ClientReporterView;
+import com.example.entities.Client;
 import org.apache.ibatis.annotations.*;
 
 import java.math.BigDecimal;
@@ -8,31 +12,51 @@ import java.util.List;
 @Mapper
 public interface ClientsMapper {
     @Select("""
-            SELECT client_id, username, email, first_name, last_name, cash_amount, updated_at
+            SELECT client_id, email, username, first_name, last_name, cash_amount
             FROM clients
             WHERE client_id = #{clientId}
             """)
     Client findById(@Param("clientId") Long clientId);
 
     @Select("""
-            SELECT client_id, username, email, first_name, last_name, cash_amount, updated_at
+        SELECT client_id, username, email, first_name, last_name, cash_amount
+        FROM clients
+        WHERE client_id = #{clientId}
+        """)
+    ClientAdminView findByIdAdmin(@Param("clientId") Long clientId);
+
+    @Select("""
+        SELECT client_id, username, email
+        FROM clients
+        WHERE client_id = #{clientId}
+        """)
+    ClientReporterView findByIdReporter(@Param("clientId") Long clientId);
+
+    @Select("""
+            SELECT client_id, username, email, first_name, last_name, cash_amount
             FROM clients
             """)
-    List<Client> findAllClients();
+    List<ClientAdminView> findAllClientsAdmin();
+
+    @Select("""
+            SELECT client_id, username, email
+            FROM clients
+            """)
+    List<ClientReporterView> findAllClientsReporter();
     
     @Select("""
-            SELECT client_id, username, email, first_name, last_name, cash_amount, updated_at
+            SELECT client_id, email, username, password, first_name, last_name, cash_amount
             FROM clients
             WHERE username = #{username}
             """)
     Client findByUsername(@Param("username") String username);
 
     @Select("""
-            SELECT client_id, username, email, first_name, last_name, cash_amount, updated_at
+            SELECT client_id, username, password
             FROM clients
-            WHERE username = #{username} AND password = #{password}
+            WHERE username = #{username}
             """)
-    Client findByUsernameAndPassword(@Param("username") String username, @Param("password") String password);
+    ClientLoginView findLoginClientByUsername(@Param("username") String username);
 
     @Insert("""
         INSERT INTO clients (
@@ -50,7 +74,6 @@ public interface ClientsMapper {
             #{lastName}
         )
         """)
-    @Options(useGeneratedKeys = true, keyProperty = "clientId")
     int insert(
         @Param("email") String email,
         @Param("username") String username,
@@ -63,9 +86,9 @@ public interface ClientsMapper {
         <script>
         UPDATE clients
         <set>
-                <if test="username != null">username = #{username},</if>
-                <if test="firstName != null">first_name = #{firstName},</if>
-                <if test="lastName != null">last_name = #{lastName},</if>
+            <if test="username != null and username.trim() != ''">username = #{username},</if>
+            <if test="firstName != null and firstName.trim() != ''">first_name = #{firstName},</if>
+            <if test="lastName != null and lastName.trim() != ''">last_name = #{lastName},</if>
         </set>
         WHERE client_id = #{clientId}
         </script>

@@ -1,18 +1,19 @@
-package com.example.clients.DTO;
+package com.example.DTOs.clients;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
-
-public class LoginRequest {
-    @NotBlank
-    @Size(max = 100)
+public class ClientLoginView {
+    private Long clientId;
     private String username;
-
-    @NotBlank
-    @Size(min = 8, max = 255)
     private String password;
 
-    public LoginRequest() {
+    public ClientLoginView() {
+    }
+
+    public Long getClientId() {
+        return clientId;
+    }
+
+    public void setClientId(Long clientId) {
+        this.clientId = clientId;
     }
 
     public String getUsername() {

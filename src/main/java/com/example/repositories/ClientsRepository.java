@@ -1,8 +1,12 @@
-package com.example.clients;
+package com.example.repositories;
 
+import com.example.DTOs.clients.ClientAdminView;
+import com.example.DTOs.clients.ClientLoginView;
+import com.example.mappers.ClientsMapper;
+import com.example.DTOs.clients.ClientProfileUpdateRequest;
+import com.example.DTOs.clients.ClientReporterView;
+import com.example.entities.Client;
 import org.springframework.stereotype.Repository;
-
-import com.example.clients.DTO.ClientProfileUpdateRequest;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -19,16 +23,24 @@ public class ClientsRepository {
         return clientsMapper.findById(id);
     }
 
-    public boolean validateLogin(String username, String password) {
-        if (clientsMapper.findByUsernameAndPassword(username, password) == null) {
-            return false;
-        }
-
-        return true;
+    public ClientAdminView findClientByIdAdmin(Long clientId) {
+        return clientsMapper.findByIdAdmin(clientId);
     }
 
-    public List<Client> findClients() {
-        return clientsMapper.findAllClients();
+    public ClientReporterView findClientByIdReporter(Long clientId) {
+        return clientsMapper.findByIdReporter(clientId);
+    }
+
+    public ClientLoginView findLoginClientByUsername(String username) {
+        return clientsMapper.findLoginClientByUsername(username);
+    }
+
+    public List<ClientAdminView> findClientsAsAdmin() {
+        return clientsMapper.findAllClientsAdmin();
+    }
+
+    public List<ClientReporterView> findClientsAsReporter() {
+        return clientsMapper.findAllClientsReporter();
     }
 
     public int createClient(Client client) {

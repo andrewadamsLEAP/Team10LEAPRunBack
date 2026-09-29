@@ -1,4 +1,4 @@
-package com.example.clients;
+package com.example.entities;
 
 import java.math.BigDecimal;
 

@@ -1,4 +1,4 @@
-package com.example.clients.DTO;
+package com.example.DTOs.clients;
 
 import jakarta.validation.constraints.Size;
 
@@ -16,7 +16,11 @@ public class ClientProfileUpdateRequest {
     }
 
     public boolean hasUpdates() {
-        return username != null || firstName != null || lastName != null;
+        return hasText(username) || hasText(firstName) || hasText(lastName);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 
     public String getUsername() {
