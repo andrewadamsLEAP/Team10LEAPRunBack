@@ -32,7 +32,7 @@ public class HoldingsController {
     }
 
 
-    //Get specific holding for a client and ticker
+    //Get specific holding (entire holding) for a client and ticker
     // Example: GET /api/holdings/1/AAPL
     @GetMapping("/{clientId}/{ticker}")
     public Holding getHolding(
@@ -41,16 +41,8 @@ public class HoldingsController {
         return holdingsService.getHolding(clientId, ticker);
     }
 
-   
-    // Get all holdings for a specific client
-    // Example: GET /api/holdings/client/1
-    @GetMapping("/client/{clientId}")
-    public Holding getClientHoldings(
-            @PathVariable Long clientId) {
-        return holdingsService.getClientHoldings(clientId);
-    }
 
-    // Get quantity of a specific ticker for a client
+    // Get only quantity of a specific ticker for a client
     // Example: GET /api/holdings/quantity?clientId=1&ticker=AAPL
     @GetMapping("/quantity")
     public Integer getQuantity(
@@ -58,4 +50,15 @@ public class HoldingsController {
             @RequestParam String ticker) {
         return holdingsService.getQuantity(clientId, ticker);
     }
+
+   
+    // Get all holdings for a specific client
+    // Example: GET /api/holdings/client/1
+    @GetMapping("/client/{clientId}")
+    public java.util.List<Holding> getClientHoldings(
+            @PathVariable Long clientId) {
+        return holdingsService.getClientHoldings(clientId);
+    }
+
+    
 }

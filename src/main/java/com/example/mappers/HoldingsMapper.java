@@ -31,7 +31,7 @@ public interface HoldingsMapper {
         FROM holdings
         WHERE client_id = #{client_id}
         """)
-    Holding getHoldingsByClient(@Param("client_id") Long client_id);
+    java.util.List<Holding> getHoldingsByClient(@Param("client_id") Long client_id);
 
 
 

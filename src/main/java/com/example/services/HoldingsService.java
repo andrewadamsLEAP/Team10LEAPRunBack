@@ -32,7 +32,7 @@ public class HoldingsService {
     /**
      * Get all holdings for a specific client
      */
-    public Holding getClientHoldings(Long clientId) {
+    public java.util.List<Holding> getClientHoldings(Long clientId) {
         return holdingsRepository.getHoldingsByClient(clientId);
     }
 

@@ -22,7 +22,7 @@ public class HoldingsRepository {
         return holdingsMapper.getQuantityByClientAndTicker(clientId, ticker);
     }
 
-    public Holding getHoldingsByClient(Long clientId) {
+    public java.util.List<Holding> getHoldingsByClient(Long clientId) {
         return holdingsMapper.getHoldingsByClient(clientId);
     }
 
