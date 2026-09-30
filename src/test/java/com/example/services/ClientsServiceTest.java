@@ -10,12 +10,7 @@ import com.example.DTOs.clients.LoginRequest;
 import com.example.DTOs.clients.LoginResponse;
 import com.example.entities.Client;
 import com.example.exceptions.ClientNotFoundException;
-import com.example.exceptions.InvalidCredentialsException;
-import com.example.exceptions.InvalidEmailException;
-import com.example.exceptions.InvalidPasswordChangeException;
-import com.example.exceptions.InvalidProfileUpdateException;
-import com.example.exceptions.InvalidTransactionException;
-import com.example.exceptions.InvalidUsernameChangeException;
+import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
 import com.example.repositories.ClientsRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,9 +59,9 @@ class ClientsServiceTest {
         Client request = client(null, "signup@example.com", "signupuser", "password1", "Sign", "Up", BigDecimal.ZERO);
         when(clientsRepository.findClientIdByEmail("signup@example.com")).thenReturn(1L);
 
-        InvalidEmailException exception = assertThrows(InvalidEmailException.class, () -> clientsService.signup(request));
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.signup(request));
 
-        assertEquals("Email is already in use", exception.getMessage());
+        assertEquals("Invalid Email", exception.getMessage());
         verify(clientsRepository).findClientIdByEmail("signup@example.com");
         verifyNoMoreInteractions(clientsRepository);
     }
@@ -77,9 +72,9 @@ class ClientsServiceTest {
         when(clientsRepository.findClientIdByEmail("signup@example.com")).thenReturn(null);
         when(clientsRepository.findClientIdByUsername("signupuser")).thenReturn(2L);
 
-        InvalidUsernameChangeException exception = assertThrows(InvalidUsernameChangeException.class, () -> clientsService.signup(request));
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.signup(request));
 
-        assertEquals("Username is not unique", exception.getMessage());
+        assertEquals("Invalid Username", exception.getMessage());
     }
 
     @Test
@@ -125,9 +120,9 @@ class ClientsServiceTest {
         LoginRequest request = loginRequest("missing", "password1");
         when(clientsRepository.findLoginClientByUsername("missing")).thenReturn(null);
 
-        InvalidCredentialsException exception = assertThrows(InvalidCredentialsException.class, () -> clientsService.login(request));
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.login(request));
 
-        assertEquals("Invalid username or password", exception.getMessage());
+        assertEquals("Invalid Credentials", exception.getMessage());
     }
 
     @Test
@@ -136,9 +131,9 @@ class ClientsServiceTest {
         when(clientsRepository.findLoginClientByUsername("loginuser"))
                 .thenReturn(loginClientView(3L, "loginuser", "password1"));
 
-        InvalidCredentialsException exception = assertThrows(InvalidCredentialsException.class, () -> clientsService.login(request));
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.login(request));
 
-        assertEquals("Invalid username or password", exception.getMessage());
+        assertEquals("Invalid Credentials", exception.getMessage());
     }
 
     @Test
@@ -169,7 +164,7 @@ class ClientsServiceTest {
         when(clientsRepository.findLoginClientById(4L))
                 .thenReturn(loginClientView(4L, "passworduser", "password1"));
 
-        InvalidPasswordChangeException exception = assertThrows(InvalidPasswordChangeException.class, () -> clientsService.changePassword(4L, request));
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.changePassword(4L, request));
 
         assertEquals("Current password is incorrect", exception.getMessage());
     }
@@ -180,7 +175,7 @@ class ClientsServiceTest {
         when(clientsRepository.findLoginClientById(4L))
                 .thenReturn(loginClientView(4L, "passworduser", "password1"));
 
-        InvalidPasswordChangeException exception = assertThrows(InvalidPasswordChangeException.class, () -> clientsService.changePassword(4L, request));
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.changePassword(4L, request));
 
         assertEquals("New password must be different from current password", exception.getMessage());
     }
@@ -320,7 +315,7 @@ class ClientsServiceTest {
         when(clientsRepository.findClientById(11L))
                 .thenReturn(client(11L, "cash@example.com", "cashuser", "password1", "Cash", "User", new BigDecimal("100.00")));
 
-        InvalidTransactionException exception = assertThrows(InvalidTransactionException.class,
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
                 () -> clientsService.updateCashAmount(11L, new BigDecimal("-150.00")));
 
         assertEquals("Invalid transaction", exception.getMessage());
@@ -380,7 +375,7 @@ class ClientsServiceTest {
         when(clientsRepository.findClientById(12L))
                 .thenReturn(client(12L, "profile@example.com", "currentuser", "password1", "Current", "User", BigDecimal.ZERO));
 
-        InvalidProfileUpdateException exception = assertThrows(InvalidProfileUpdateException.class,
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
                 () -> clientsService.updateProfile(12L, request));
 
         assertEquals("No profile changes were provided", exception.getMessage());
@@ -393,7 +388,7 @@ class ClientsServiceTest {
                 .thenReturn(client(12L, "profile@example.com", "currentuser", "password1", "Current", "User", BigDecimal.ZERO));
         when(clientsRepository.findClientIdByUsername("takenuser")).thenReturn(20L);
 
-        InvalidUsernameChangeException exception = assertThrows(InvalidUsernameChangeException.class,
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
                 () -> clientsService.updateProfile(12L, request));
 
         assertEquals("Username is not unique", exception.getMessage());

@@ -14,36 +14,12 @@ public class GlobalExceptionHandler {
         return buildProblem(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ProblemDetail> handleInvalidCredentials(InvalidCredentialsException ex) {
+    @ExceptionHandler(InvalidArgumentsException.class)
+    public ResponseEntity<ProblemDetail> handleInvalidArguments(InvalidArgumentsException ex) {
         return buildProblem(HttpStatus.UNAUTHORIZED, ex.getMessage());
     }
 
-    @ExceptionHandler(InvalidEmailException.class)
-    public ResponseEntity<ProblemDetail> handleInvalidEmail(InvalidEmailException ex) {
-        return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(InvalidProfileUpdateException.class)
-    public ResponseEntity<ProblemDetail> handleInvalidProfileUpdate(InvalidProfileUpdateException ex) {
-        return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(InvalidPasswordChangeException.class)
-    public ResponseEntity<ProblemDetail> handleInvalidPasswordChange(InvalidPasswordChangeException ex) {
-        return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(InvalidTransactionException.class)
-    public ResponseEntity<ProblemDetail> handleInvalidTransaction(InvalidTransactionException ex) {
-        return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
-    @ExceptionHandler(InvalidUsernameChangeException.class)
-    public ResponseEntity<ProblemDetail> handleInvalidUsernameChange(InvalidUsernameChangeException ex) {
-        return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
-    }
-
+    
     @ExceptionHandler(UpdateFailedException.class)
     public ResponseEntity<ProblemDetail> handleUpdateFailed(UpdateFailedException ex) {
         return buildProblem(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());

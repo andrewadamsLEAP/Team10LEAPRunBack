@@ -5,6 +5,9 @@ import com.example.entities.Holding;
 import org.springframework.stereotype.Service;
 import com.example.repositories.HoldingsRepository; 
 
+import com.example.exceptions.Validate;
+import com.example.exceptions.InvalidArgumentsException;
+
 @Service
 public class HoldingsService {
     
@@ -24,6 +27,8 @@ public class HoldingsService {
      * Get holding for a specific client and ticker
      */
     public Holding getHolding(Long clientId, String ticker) {
+        Validate.validateClientId(clientId);
+        Validate.validateTicker(ticker);
         return holdingsRepository.getHoldingsByClientAndTicker(clientId, ticker);
     }
 
@@ -33,6 +38,7 @@ public class HoldingsService {
      * Get all holdings for a specific client
      */
     public java.util.List<Holding> getClientHoldings(Long clientId) {
+        Validate.validateClientId(clientId);
         return holdingsRepository.getHoldingsByClient(clientId);
     }
 
@@ -42,6 +48,8 @@ public class HoldingsService {
      * Get quantity of a specific ticker for a client
      */
     public Integer getQuantity(Long clientId, String ticker) {
+        Validate.validateClientId(clientId);
+        Validate.validateTicker(ticker);
         return holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
     }
 
@@ -52,6 +60,9 @@ public class HoldingsService {
      * If client doesn't own this ticker yet, create new holding
      */
     public void buyStock(Long clientId, String ticker, Integer quantity) {
+        Validate.validateClientId(clientId);
+        Validate.validateTicker(ticker);
+        Validate.validateQuantity(quantity);
         Integer currentQty = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
         
         if (currentQty == null || currentQty == 0) {
@@ -74,14 +85,16 @@ public class HoldingsService {
      * Validates client has sufficient shares
      */
     public void sellStock(Long clientId, String ticker, Integer quantity) {
+        Validate.validateClientId(clientId);
+        Validate.validateTicker(ticker);
+        Validate.validateQuantity(quantity);
         Integer currentQty = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
         
         if (currentQty == null || currentQty < quantity) {
-            throw new IllegalArgumentException(
-                    "Insufficient shares to sell. Current: " + 
-                    (currentQty == null ? 0 : currentQty) + 
-                    ", Trying to sell: " + quantity
-            );
+            String msg = "Insufficient shares to sell. Current: " + 
+                         (currentQty == null ? 0 : currentQty) + 
+                         ", Trying to sell: " + quantity;
+            throw new InvalidArgumentsException("Invalid Sell Operation", msg);
         }
         
         holdingsRepository.updateSellHolding(quantity, clientId, ticker);
