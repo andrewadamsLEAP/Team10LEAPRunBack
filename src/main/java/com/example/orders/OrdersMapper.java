@@ -12,7 +12,15 @@ import java.util.List;
 public interface OrdersMapper {
 
     @Select("""
-        SELECT *
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
         FROM orders
         WHERE order_id = #{orderId}
         """)
@@ -20,7 +28,15 @@ public interface OrdersMapper {
 
 
     @Select("""
-        SELECT *
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
         FROM orders
         WHERE order_status = 'FULFILLED'
           AND client_id = #{clientId}
@@ -31,7 +47,15 @@ public interface OrdersMapper {
 
 
     @Select("""
-        SELECT *
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
         FROM orders
         WHERE order_status = 'CANCELLED'
         """)
@@ -39,7 +63,15 @@ public interface OrdersMapper {
 
 
     @Select("""
-        SELECT *
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
         FROM orders
         WHERE order_status = 'PENDING'
           AND ticker = #{ticker}
@@ -51,7 +83,15 @@ public interface OrdersMapper {
 
 
     @Select("""
-        SELECT *
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
         FROM orders
         WHERE order_status = 'PENDING'
           AND ticker = #{ticker}

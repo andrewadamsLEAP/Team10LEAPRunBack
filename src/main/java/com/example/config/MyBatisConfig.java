@@ -8,7 +8,9 @@ import org.springframework.context.annotation.Configuration;
     "com.example.repositories",
     "com.example.holdings",
     "com.example.orders",
-    "com.example.marketData"
+    "com.example.marketData",
+    "com.example.transactions",
+    "com.example.instruments",
 })
 public class MyBatisConfig {
     // This configuration explicitly scans for MyBatis mappers
