@@ -16,7 +16,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidArgumentsException.class)
     public ResponseEntity<ProblemDetail> handleInvalidArguments(InvalidArgumentsException ex) {
-        return buildProblem(HttpStatus.UNAUTHORIZED, ex.getMessage());
+        // Return 401 for authentication failures, 400 for validation errors
+        HttpStatus status = ex.getMessage().contains("Credentials") ? HttpStatus.UNAUTHORIZED : HttpStatus.BAD_REQUEST;
+        return buildProblem(status, ex.getMessage());
     }
 
     

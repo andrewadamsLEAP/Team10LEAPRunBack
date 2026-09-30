@@ -71,7 +71,7 @@ class ClientsControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(signupJson(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Email is already in use"));
+                .andExpect(jsonPath("$.detail").value("Invalid Email: Email is already in use"));
     }
 
     @Test
@@ -111,7 +111,7 @@ class ClientsControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginJson(request)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.detail").value("Invalid username or password"));
+                .andExpect(jsonPath("$.detail").value("Invalid Credentials: Invalid username or password"));
 
         assertEquals(
                 clientId,
@@ -162,7 +162,7 @@ class ClientsControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(changePasswordJson(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Current password is incorrect"));
+                .andExpect(jsonPath("$.detail").value("Invalid Password Change: Current password is incorrect"));
 
         assertEquals(
                 "password1",
@@ -223,7 +223,7 @@ class ClientsControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("No profile changes were provided"));
+                .andExpect(jsonPath("$.detail").value("Invalid Profile Update: No profile changes were provided"));
     }
 
     @Test
