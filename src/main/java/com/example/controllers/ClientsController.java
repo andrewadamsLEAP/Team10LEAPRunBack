@@ -1,10 +1,10 @@
 package com.example.controllers;
 
-import com.example.DTOs.clients.ChangePasswordRequest;
-import com.example.DTOs.clients.ClientProfileUpdateRequest;
-import com.example.DTOs.clients.ClientProfileView;
-import com.example.DTOs.clients.LoginRequest;
-import com.example.DTOs.clients.LoginResponse;
+import com.example.dtos.clients.ChangePasswordRequest;
+import com.example.dtos.clients.ClientProfileUpdateRequest;
+import com.example.dtos.clients.ClientProfileView;
+import com.example.dtos.clients.LoginRequest;
+import com.example.dtos.clients.LoginResponse;
 import com.example.entities.Client;
 import jakarta.validation.Valid;
 
