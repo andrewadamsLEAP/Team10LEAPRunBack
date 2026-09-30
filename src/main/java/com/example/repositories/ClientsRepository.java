@@ -68,9 +68,9 @@ public class ClientsRepository {
      public int updateProfile(Long clientId, ClientProfileUpdateRequest request) {
         return clientsMapper.updateProfile(
             clientId,
-            request.getUsername(),
-            request.getFirstName(),
-            request.getLastName()
+            request.username(),
+            request.firstName(),
+            request.lastName()
         );
     }
 

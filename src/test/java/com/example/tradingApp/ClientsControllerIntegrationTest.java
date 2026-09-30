@@ -294,25 +294,15 @@ class ClientsControllerIntegrationTest {
     }
 
     private LoginRequest loginRequest(String username, String password) {
-        LoginRequest request = new LoginRequest();
-        request.setUsername(username);
-        request.setPassword(password);
-        return request;
+        return new LoginRequest(username, password);
     }
 
     private ChangePasswordRequest changePasswordRequest(String currentPassword, String newPassword) {
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setCurrentPassword(currentPassword);
-        request.setNewPassword(newPassword);
-        return request;
+        return new ChangePasswordRequest(currentPassword, newPassword);
     }
 
     private ClientProfileUpdateRequest profileUpdateRequest(String username, String firstName, String lastName) {
-        ClientProfileUpdateRequest request = new ClientProfileUpdateRequest();
-        request.setUsername(username);
-        request.setFirstName(firstName);
-        request.setLastName(lastName);
-        return request;
+        return new ClientProfileUpdateRequest(username, firstName, lastName);
     }
 
     private String signupJson(Client client) {
@@ -327,23 +317,23 @@ class ClientsControllerIntegrationTest {
 
     private String loginJson(LoginRequest request) {
         return "{" +
-                quotedField("username", request.getUsername()) + "," +
-                quotedField("password", request.getPassword()) +
+                quotedField("username", request.username()) + "," +
+                quotedField("password", request.password()) +
                 "}";
     }
 
     private String changePasswordJson(ChangePasswordRequest request) {
         return "{" +
-                quotedField("currentPassword", request.getCurrentPassword()) + "," +
-                quotedField("newPassword", request.getNewPassword()) +
+                quotedField("currentPassword", request.currentPassword()) + "," +
+                quotedField("newPassword", request.newPassword()) +
                 "}";
     }
 
     private String profileUpdateJson(ClientProfileUpdateRequest request) {
         return "{" +
-                quotedField("username", request.getUsername()) + "," +
-                quotedField("firstName", request.getFirstName()) + "," +
-                quotedField("lastName", request.getLastName()) +
+                quotedField("username", request.username()) + "," +
+                quotedField("firstName", request.firstName()) + "," +
+                quotedField("lastName", request.lastName()) +
                 "}";
     }
 

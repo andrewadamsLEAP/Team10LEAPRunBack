@@ -2,14 +2,19 @@ package com.example.controllers;
 
 import com.example.entities.Order;
 import com.example.services.OrdersService;
+import com.example.dtos.orders.PlaceOrderRequest;
+import com.example.dtos.orders.OrderResponse;
+import com.example.dtos.orders.OrderHistoryView;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.validation.Valid;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -28,10 +33,10 @@ public OrdersController(OrdersService ordersService) {
 // =========================================================
 
 @GetMapping("/{orderId}")
-public Order getOrderById(
+public OrderResponse getOrderById(
         @PathVariable Long orderId) {
-
-    return ordersService.getOrderById(orderId);
+    Order order = ordersService.getOrderById(orderId);
+    return convertToOrderResponse(order);
 }
 
 
@@ -88,19 +93,16 @@ public List<Order> getPendingBuyOrdersForTicker(
 // Place a buy order
 // =========================================================
 
-@PostMapping("/buy/{clientId}/{ticker}/{quantity}/{price}")
-public Order placeBuyOrder(
-        @PathVariable Long clientId,
-        @PathVariable String ticker,
-        @PathVariable int quantity,
-        @PathVariable BigDecimal price) {
-
-    return ordersService.placeBuyOrder(
-            clientId,
-            ticker,
-            quantity,
-            price
+@PostMapping("/buy")
+public OrderResponse placeBuyOrder(
+        @Valid @RequestBody PlaceOrderRequest request) {
+    Order order = ordersService.placeBuyOrder(
+            request.clientId(),
+            request.ticker(),
+            request.quantity(),
+            request.price()
     );
+    return convertToOrderResponse(order);
 }
 
 
@@ -108,19 +110,16 @@ public Order placeBuyOrder(
 // Place a sell order
 // =========================================================
 
-@PostMapping("/sell/{clientId}/{ticker}/{quantity}/{price}")
-public Order placeSellOrder(
-        @PathVariable Long clientId,
-        @PathVariable String ticker,
-        @PathVariable int quantity,
-        @PathVariable BigDecimal price) {
-
-    return ordersService.placeSellOrder(
-            clientId,
-            ticker,
-            quantity,
-            price
+@PostMapping("/sell")
+public OrderResponse placeSellOrder(
+        @Valid @RequestBody PlaceOrderRequest request) {
+    Order order = ordersService.placeSellOrder(
+            request.clientId(),
+            request.ticker(),
+            request.quantity(),
+            request.price()
     );
+    return convertToOrderResponse(order);
 }
 
 
@@ -129,10 +128,24 @@ public Order placeSellOrder(
 // =========================================================
 
 @PostMapping("/cancel/{orderId}")
-public Order cancelOrder(
+public OrderResponse cancelOrder(
         @PathVariable Long orderId) {
+    Order order = ordersService.cancelOrder(orderId);
+    return convertToOrderResponse(order);
+}
 
-    return ordersService.cancelOrder(orderId);
+// =========================================================
+// Helper: Convert Order entity to OrderResponse DTO
+// =========================================================
+private OrderResponse convertToOrderResponse(Order order) {
+    return new OrderResponse(
+            order.getOrderId(),
+            order.getTicker(),
+            order.getQuantity(),
+            order.getPrice(),
+            order.getOrderStatus().name(),
+            order.getOrderDate().toLocalDateTime()
+    );
 }
 
 }

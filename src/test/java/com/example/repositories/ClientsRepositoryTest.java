@@ -59,7 +59,7 @@ class ClientsRepositoryTest {
     @Test
     void findClientByIdAdminDelegatesToMapper() {
         ClientsMapper mapper = mock(ClientsMapper.class);
-        ClientAdminView expected = new ClientAdminView();
+        ClientAdminView expected = new ClientAdminView(3L, "admin", "admin@example.com", "Admin", "User", BigDecimal.ZERO);
         when(mapper.findByIdAdmin(3L)).thenReturn(expected);
         ClientsRepository repository = new ClientsRepository(mapper);
 
@@ -72,7 +72,7 @@ class ClientsRepositoryTest {
     @Test
     void findClientByIdReporterDelegatesToMapper() {
         ClientsMapper mapper = mock(ClientsMapper.class);
-        ClientReporterView expected = new ClientReporterView();
+        ClientReporterView expected = new ClientReporterView(4L, "reporter", "reporter@example.com");
         when(mapper.findByIdReporter(4L)).thenReturn(expected);
         ClientsRepository repository = new ClientsRepository(mapper);
 
@@ -85,7 +85,7 @@ class ClientsRepositoryTest {
     @Test
     void findLoginClientByUsernameDelegatesToMapper() {
         ClientsMapper mapper = mock(ClientsMapper.class);
-        ClientLoginView expected = new ClientLoginView();
+        ClientLoginView expected = new ClientLoginView(5L, "clientuser", "password1");
         when(mapper.findLoginClientByUsername("clientuser")).thenReturn(expected);
         ClientsRepository repository = new ClientsRepository(mapper);
 
@@ -98,7 +98,7 @@ class ClientsRepositoryTest {
     @Test
     void findLoginClientByIdDelegatesToMapper() {
         ClientsMapper mapper = mock(ClientsMapper.class);
-        ClientLoginView expected = new ClientLoginView();
+        ClientLoginView expected = new ClientLoginView(5L, "loginuser", "password1");
         when(mapper.findLoginClientById(5L)).thenReturn(expected);
         ClientsRepository repository = new ClientsRepository(mapper);
 
@@ -111,7 +111,7 @@ class ClientsRepositoryTest {
     @Test
     void findClientsAsAdminDelegatesToMapper() {
         ClientsMapper mapper = mock(ClientsMapper.class);
-        List<ClientAdminView> expected = List.of(new ClientAdminView());
+        List<ClientAdminView> expected = List.of(new ClientAdminView(1L, "admin", "admin@example.com", "Admin", "User", BigDecimal.ZERO));
         when(mapper.findAllClientsAdmin()).thenReturn(expected);
         ClientsRepository repository = new ClientsRepository(mapper);
 
@@ -124,7 +124,7 @@ class ClientsRepositoryTest {
     @Test
     void findClientsAsReporterDelegatesToMapper() {
         ClientsMapper mapper = mock(ClientsMapper.class);
-        List<ClientReporterView> expected = List.of(new ClientReporterView());
+        List<ClientReporterView> expected = List.of(new ClientReporterView(2L, "reporter", "reporter@example.com"));
         when(mapper.findAllClientsReporter()).thenReturn(expected);
         ClientsRepository repository = new ClientsRepository(mapper);
 
@@ -150,10 +150,7 @@ class ClientsRepositoryTest {
     @Test
     void updateProfilePassesRequestFieldsToMapper() {
         ClientsMapper mapper = mock(ClientsMapper.class);
-        ClientProfileUpdateRequest request = new ClientProfileUpdateRequest();
-        request.setUsername("updateduser");
-        request.setFirstName("Updated");
-        request.setLastName("Name");
+        ClientProfileUpdateRequest request = new ClientProfileUpdateRequest("updateduser", "Updated", "Name");
         when(mapper.updateProfile(7L, "updateduser", "Updated", "Name")).thenReturn(1);
         ClientsRepository repository = new ClientsRepository(mapper);
 

@@ -159,12 +159,12 @@ public class OrdersService {
 
         Order order = getOrderById(orderId);
 
-        if (order.orderStatus() != Order.OrderStatus.PENDING) {
+        if (order.getOrderStatus() != Order.OrderStatus.PENDING) {
 
             throw new IllegalStateException(
                     "Order " + orderId +
                     " cannot be cancelled because it is " +
-                    order.orderStatus()
+                    order.getOrderStatus()
             );
         }
 
@@ -193,7 +193,7 @@ public class OrdersService {
 
         Order order = getOrderById(orderId);
 
-        if (order.orderStatus() != Order.OrderStatus.PENDING) {
+        if (order.getOrderStatus() != Order.OrderStatus.PENDING) {
 
             throw new IllegalStateException(
                     "Only pending orders can be executed."

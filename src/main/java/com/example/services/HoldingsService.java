@@ -97,10 +97,10 @@ public class HoldingsService {
      * If SELL: decreases quantity
      */
     public void updateHoldingsForOrder(Order order) {
-        if (order.orderType() == Order.OrderType.BUY) {
-            buyStock(order.clientId(), order.ticker(), order.quantity());
-        } else if (order.orderType() == Order.OrderType.SELL) {
-            sellStock(order.clientId(), order.ticker(), order.quantity());
+        if (order.getOrderType() == Order.OrderType.BUY) {
+            buyStock(order.getClientId(), order.getTicker(), order.getQuantity());
+        } else if (order.getOrderType() == Order.OrderType.SELL) {
+            sellStock(order.getClientId(), order.getTicker(), order.getQuantity());
         }
     }
 }

@@ -11,6 +11,7 @@ public class Transaction {
     private BigDecimal amount;
     private OffsetDateTime timestamp;
 
+    //Constructor
     public Transaction() {
     }
 
@@ -28,6 +29,8 @@ public class Transaction {
         this.timestamp = timestamp;
     }
 
+
+    //Getters and Setters
     public Long getTransactionId() {
         return transactionId;
     }
