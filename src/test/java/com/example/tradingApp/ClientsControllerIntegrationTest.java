@@ -1,8 +1,8 @@
 package com.example.tradingApp;
 
-import com.example.dtos.clients.ChangePasswordRequest;
-import com.example.dtos.clients.ClientProfileUpdateRequest;
-import com.example.dtos.clients.LoginRequest;
+import com.example.DTOs.clients.ChangePasswordRequest;
+import com.example.DTOs.clients.ClientProfileUpdateRequest;
+import com.example.DTOs.clients.LoginRequest;
 import com.example.entities.Client;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

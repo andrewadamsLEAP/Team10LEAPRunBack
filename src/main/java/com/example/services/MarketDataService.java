@@ -347,9 +347,35 @@ public class MarketDataService {
                     alpacaClient.getStockQuotes(
                             symbols);
 
-            logger.info(
-                    "Stock quotes received: {}",
-                    response);
+            if (response != null && response.quotes() != null) {
+                logger.info("Stock quotes received:");
+                response.quotes().forEach((ticker, quote) -> {
+                    logger.info(
+                            "  {} - Ask: {} (size: {}), Bid: {} (size: {}) @ {}",
+                            ticker,
+                            quote.askPrice(),
+                            quote.askSize(),
+                            quote.bidPrice(),
+                            quote.bidSize(),
+                            quote.quoteTimestamp());
+                    try {
+                        marketDataRepository.saveQuote(
+                                ticker,
+                                quote.askPrice(),
+                                quote.askSize(),
+                                quote.askExchange(),
+                                quote.bidPrice(),
+                                quote.bidSize(),
+                                quote.bidExchange(),
+                                quote.tape(),
+                                quote.quoteTimestamp());
+                        lastSuccessfulTickerCount++;
+                    } catch (Exception ex) {
+                        lastFailedTickerCount++;
+                        logger.error("Failed to save quote for ticker: {}", ticker, ex);
+                    }
+                });
+            }
 
         } catch (Exception exception) {
 
@@ -397,9 +423,36 @@ public class MarketDataService {
                     alpacaClient.getCryptoQuotes(
                             symbolParameter);
 
-            logger.info(
-                    "Crypto quotes received: {}",
-                    response);
+            if (response != null && response.quotes() != null) {
+                logger.info("Crypto quotes received:");
+                response.quotes().forEach((ticker, quote) -> {
+                    logger.info(
+                            "  {} - Ask: {} (size: {}), Bid: {} (size: {}) @ {}",
+                            ticker,
+                            quote.askPrice(),
+                            quote.askSize(),
+                            quote.bidPrice(),
+                            quote.bidSize(),
+                            quote.quoteTimestamp());
+                    try {
+                        String databaseTicker = marketSymbolMapper.toDatabaseCryptoSymbol(ticker);
+                        marketDataRepository.saveQuote(
+                                databaseTicker,
+                                quote.askPrice(),
+                                quote.askSize(),
+                                quote.askExchange(),
+                                quote.bidPrice(),
+                                quote.bidSize(),
+                                quote.bidExchange(),
+                                quote.tape(),
+                                quote.quoteTimestamp());
+                        lastSuccessfulTickerCount++;
+                    } catch (Exception ex) {
+                        lastFailedTickerCount++;
+                        logger.error("Failed to save quote for ticker: {}", ticker, ex);
+                    }
+                });
+            }
 
         } catch (Exception exception) {
 
@@ -453,9 +506,34 @@ public class MarketDataService {
                     alpacaClient.getForexRates(
                             currencyPairs);
 
-            logger.info(
-                    "Forex rates received: {}",
-                    response);
+            if (response != null && response.rates() != null) {
+                logger.info("Forex rates received:");
+                response.rates().forEach((ticker, rate) -> {
+                    logger.info(
+                            "  {} - Ask: {}, Bid: {} @ {}",
+                            ticker,
+                            rate.askPrice(),
+                            rate.bidPrice(),
+                            rate.quoteTimestamp());
+                    try {
+                        String databaseTicker = marketSymbolMapper.toDatabaseForexSymbol(ticker);
+                        marketDataRepository.saveQuote(
+                                databaseTicker,
+                                rate.askPrice(),
+                                null,
+                                rate.askExchange(),
+                                rate.bidPrice(),
+                                null,
+                                rate.bidExchange(),
+                                null,
+                                rate.quoteTimestamp());
+                        lastSuccessfulTickerCount++;
+                    } catch (Exception ex) {
+                        lastFailedTickerCount++;
+                        logger.error("Failed to save quote for ticker: {}", ticker, ex);
+                    }
+                });
+            }
 
         } catch (Exception exception) {
 

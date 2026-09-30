@@ -3,6 +3,8 @@ import com.example.entities.Order;
 import com.example.repositories.OrdersRepository;
 import com.example.services.MarketHoursService;
 import com.example.services.HoldingsService;
+import com.example.DTOs.orders.OrderResponse;
+import com.example.DTOs.orders.OrderHistoryView;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,15 +19,18 @@ public class OrdersService {
     private final OrdersRepository ordersRepository;
     private final MarketHoursService marketHoursService;
     private final HoldingsService holdingsService;
+    private final OrderDtoConverter orderDtoConverter;
 
     public OrdersService(
             OrdersRepository ordersRepository,
             MarketHoursService marketHoursService,
-            HoldingsService holdingsService) {
+            HoldingsService holdingsService,
+            OrderDtoConverter orderDtoConverter) {
 
         this.ordersRepository = ordersRepository;
         this.marketHoursService = marketHoursService;
         this.holdingsService = holdingsService;
+        this.orderDtoConverter = orderDtoConverter;
     }
 
     // =========================================================
@@ -289,5 +294,82 @@ public class OrdersService {
                     " must be greater than zero."
             );
         }
+    }
+
+    // =========================================================
+    //                  DTO CONVERSION METHODS
+    //              (For API responses - controller use)
+    // =========================================================
+
+    /**
+     * Get order by ID and return as DTO
+     */
+    public OrderResponse getOrderByIdAsDto(Long orderId) {
+        Order order = getOrderById(orderId);
+        return orderDtoConverter.toOrderResponse(order);
+    }
+
+    /**
+     * Get fulfilled orders and return as DTOs
+     */
+    public List<OrderHistoryView> getFulfilledOrdersAsDto(Long clientId) {
+        List<Order> orders = getFulfilledOrders(clientId);
+        return orderDtoConverter.toOrderHistoryViews(orders);
+    }
+
+    /**
+     * Get cancelled orders and return as DTOs
+     */
+    public List<OrderHistoryView> getCancelledOrdersAsDto() {
+        List<Order> orders = getCancelledOrders();
+        return orderDtoConverter.toOrderHistoryViews(orders);
+    }
+
+    /**
+     * Get pending sell orders for ticker and return as DTOs
+     */
+    public List<OrderHistoryView> getPendingSellOrdersForTickerAsDto(String ticker) {
+        List<Order> orders = getPendingSellOrdersForTicker(ticker);
+        return orderDtoConverter.toOrderHistoryViews(orders);
+    }
+
+    /**
+     * Get pending buy orders for ticker and return as DTOs
+     */
+    public List<OrderHistoryView> getPendingBuyOrdersForTickerAsDto(String ticker) {
+        List<Order> orders = getPendingBuyOrdersForTicker(ticker);
+        return orderDtoConverter.toOrderHistoryViews(orders);
+    }
+
+    /**
+     * Place buy order and return as DTO
+     */
+    public OrderResponse placeBuyOrderAsDto(
+            Long clientId,
+            String ticker,
+            int quantity,
+            BigDecimal price) {
+        Order order = placeBuyOrder(clientId, ticker, quantity, price);
+        return orderDtoConverter.toOrderResponse(order);
+    }
+
+    /**
+     * Place sell order and return as DTO
+     */
+    public OrderResponse placeSellOrderAsDto(
+            Long clientId,
+            String ticker,
+            int quantity,
+            BigDecimal price) {
+        Order order = placeSellOrder(clientId, ticker, quantity, price);
+        return orderDtoConverter.toOrderResponse(order);
+    }
+
+    /**
+     * Cancel order and return as DTO
+     */
+    public OrderResponse cancelOrderAsDto(Long orderId) {
+        Order order = cancelOrder(orderId);
+        return orderDtoConverter.toOrderResponse(order);
     }
 }

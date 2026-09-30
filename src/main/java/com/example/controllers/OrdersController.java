@@ -1,10 +1,9 @@
 package com.example.controllers;
 
-import com.example.entities.Order;
 import com.example.services.OrdersService;
-import com.example.dtos.orders.PlaceOrderRequest;
-import com.example.dtos.orders.OrderResponse;
-import com.example.dtos.orders.OrderHistoryView;
+import com.example.DTOs.orders.PlaceOrderRequest;
+import com.example.DTOs.orders.OrderResponse;
+import com.example.DTOs.orders.OrderHistoryView;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import jakarta.validation.Valid;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -35,8 +33,7 @@ public OrdersController(OrdersService ordersService) {
 @GetMapping("/{orderId}")
 public OrderResponse getOrderById(
         @PathVariable Long orderId) {
-    Order order = ordersService.getOrderById(orderId);
-    return convertToOrderResponse(order);
+    return ordersService.getOrderByIdAsDto(orderId);
 }
 
 
@@ -45,10 +42,10 @@ public OrderResponse getOrderById(
 // =========================================================
 
 @GetMapping("/client/{clientId}/fulfilled")
-public List<Order> getFulfilledOrders(
+public List<OrderHistoryView> getFulfilledOrders(
         @PathVariable Long clientId) {
 
-    return ordersService.getFulfilledOrders(clientId);
+    return ordersService.getFulfilledOrdersAsDto(clientId);
 }
 
 
@@ -57,9 +54,9 @@ public List<Order> getFulfilledOrders(
 // =========================================================
 
 @GetMapping("/cancelled")
-public List<Order> getCancelledOrders() {
+public List<OrderHistoryView> getCancelledOrders() {
 
-    return ordersService.getCancelledOrders();
+    return ordersService.getCancelledOrdersAsDto();
 }
 
 
@@ -68,11 +65,11 @@ public List<Order> getCancelledOrders() {
 // =========================================================
 
 @GetMapping("/sell/{ticker}")
-public List<Order> getPendingSellOrdersForTicker(
+public List<OrderHistoryView> getPendingSellOrdersForTicker(
         @PathVariable String ticker) {
 
     return ordersService
-            .getPendingSellOrdersForTicker(ticker);
+            .getPendingSellOrdersForTickerAsDto(ticker);
 }
 
 
@@ -81,11 +78,11 @@ public List<Order> getPendingSellOrdersForTicker(
 // =========================================================
 
 @GetMapping("/buy/{ticker}")
-public List<Order> getPendingBuyOrdersForTicker(
+public List<OrderHistoryView> getPendingBuyOrdersForTicker(
         @PathVariable String ticker) {
 
     return ordersService
-            .getPendingBuyOrdersForTicker(ticker);
+            .getPendingBuyOrdersForTickerAsDto(ticker);
 }
 
 
@@ -96,13 +93,12 @@ public List<Order> getPendingBuyOrdersForTicker(
 @PostMapping("/buy")
 public OrderResponse placeBuyOrder(
         @Valid @RequestBody PlaceOrderRequest request) {
-    Order order = ordersService.placeBuyOrder(
+    return ordersService.placeBuyOrderAsDto(
             request.clientId(),
             request.ticker(),
             request.quantity(),
             request.price()
     );
-    return convertToOrderResponse(order);
 }
 
 
@@ -113,13 +109,12 @@ public OrderResponse placeBuyOrder(
 @PostMapping("/sell")
 public OrderResponse placeSellOrder(
         @Valid @RequestBody PlaceOrderRequest request) {
-    Order order = ordersService.placeSellOrder(
+    return ordersService.placeSellOrderAsDto(
             request.clientId(),
             request.ticker(),
             request.quantity(),
             request.price()
     );
-    return convertToOrderResponse(order);
 }
 
 
@@ -130,22 +125,7 @@ public OrderResponse placeSellOrder(
 @PostMapping("/cancel/{orderId}")
 public OrderResponse cancelOrder(
         @PathVariable Long orderId) {
-    Order order = ordersService.cancelOrder(orderId);
-    return convertToOrderResponse(order);
-}
-
-// =========================================================
-// Helper: Convert Order entity to OrderResponse DTO
-// =========================================================
-private OrderResponse convertToOrderResponse(Order order) {
-    return new OrderResponse(
-            order.getOrderId(),
-            order.getTicker(),
-            order.getQuantity(),
-            order.getPrice(),
-            order.getOrderStatus().name(),
-            order.getOrderDate().toLocalDateTime()
-    );
+    return ordersService.cancelOrderAsDto(orderId);
 }
 
 }

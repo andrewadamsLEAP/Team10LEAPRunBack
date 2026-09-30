@@ -1,4 +1,4 @@
-package com.example.dtos.clients;
+package com.example.DTOs.clients;
 
 public record ClientLoginView(
         Long clientId,

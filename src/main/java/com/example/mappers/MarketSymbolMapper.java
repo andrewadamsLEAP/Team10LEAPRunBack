@@ -37,6 +37,16 @@ public class MarketSymbolMapper {
                 .collect(Collectors.joining(","));
     }
 
+    public String toDatabaseCryptoSymbol(
+            String ticker) {
+
+        if (ticker == null) {
+            return null;
+        }
+
+        return ticker.replace("/", "-");
+    }
+
     // =========================================================
     // Forex
     // =========================================================
@@ -77,5 +87,15 @@ public class MarketSymbolMapper {
         return symbols.stream()
                 .map(this::toAlpacaForexSymbol)
                 .collect(Collectors.joining(","));
+    }
+
+    public String toDatabaseForexSymbol(
+            String ticker) {
+
+        if (ticker == null) {
+            return null;
+        }
+
+        return ticker.replace("/", "");
     }
 }
