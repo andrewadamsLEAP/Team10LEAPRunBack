@@ -1,6 +1,8 @@
-package com.example.instruments;
+package com.example.services;
 
 import org.springframework.stereotype.Service;
+import com.example.repositories.InstrumentRepository;
+import com.example.entities.Instrument;
 
 import java.util.List;
 

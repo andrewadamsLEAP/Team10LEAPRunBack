@@ -1,6 +1,6 @@
 package com.example.services;
+import com.example.entities.Order;
 import com.example.repositories.OrdersRepository;
-import com.example.objects.Order;
 import com.example.services.MarketHoursService;
 import com.example.services.HoldingsService;
 

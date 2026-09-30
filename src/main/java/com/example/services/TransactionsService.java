@@ -1,7 +1,8 @@
 package com.example.services;
 
+import com.example.entities.Transaction;
 import com.example.repositories.TransactionsRepository;
-import com.example.objects.Transaction;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -1,7 +1,8 @@
 package com.example.controllers;
 
+import com.example.entities.Transaction;
 import com.example.services.TransactionsService;
-import com.example.objects.Transaction;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;

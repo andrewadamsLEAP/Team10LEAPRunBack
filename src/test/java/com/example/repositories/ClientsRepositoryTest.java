@@ -1,9 +1,9 @@
 package com.example.repositories;
 
-import com.example.DTOs.clients.ClientAdminView;
-import com.example.DTOs.clients.ClientLoginView;
-import com.example.DTOs.clients.ClientProfileUpdateRequest;
-import com.example.DTOs.clients.ClientReporterView;
+import com.example.dtos.clients.ClientAdminView;
+import com.example.dtos.clients.ClientLoginView;
+import com.example.dtos.clients.ClientProfileUpdateRequest;
+import com.example.dtos.clients.ClientReporterView;
 import com.example.entities.Client;
 import com.example.mappers.ClientsMapper;
 import org.junit.jupiter.api.Test;

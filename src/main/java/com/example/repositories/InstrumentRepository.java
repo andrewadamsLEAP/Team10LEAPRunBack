@@ -1,6 +1,8 @@
-package com.example.instruments;
+package com.example.repositories;
 
 import org.springframework.stereotype.Repository;
+import com.example.mappers.InstrumentMapper;
+import com.example.entities.Instrument;
 import java.util.List;
 
 @Repository 

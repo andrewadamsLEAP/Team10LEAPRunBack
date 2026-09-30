@@ -1,11 +1,12 @@
 package com.example.mappers;
 
-import com.example.objects.Order;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
+
+import com.example.entities.Order;
 
 import java.util.List;
 

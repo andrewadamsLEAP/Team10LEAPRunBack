@@ -1,7 +1,8 @@
 package com.example.repositories;
 
+import com.example.entities.Transaction;
 import com.example.mappers.TransactionsMapper;
-import com.example.objects.Transaction;
+
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;

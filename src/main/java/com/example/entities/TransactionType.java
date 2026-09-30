@@ -1,4 +1,4 @@
-package com.example.objects;
+package com.example.entities;
 
 public enum TransactionType {
     DEPOSIT,

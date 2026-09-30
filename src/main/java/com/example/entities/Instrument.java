@@ -1,4 +1,4 @@
-package com.example.instruments;
+package com.example.entities;
 
 public class Instrument {
     private String ticker;
