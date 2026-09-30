@@ -1,0 +1,63 @@
+package com.example.controllers;
+
+import com.example.DTOs.clients.ChangePasswordRequest;
+import com.example.DTOs.clients.ClientProfileUpdateRequest;
+import com.example.DTOs.clients.ClientProfileView;
+import com.example.DTOs.clients.LoginRequest;
+import com.example.DTOs.clients.LoginResponse;
+import com.example.entities.Client;
+import jakarta.validation.Valid;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import com.example.services.ClientsService;
+
+@RestController
+@RequestMapping("/api/v1/clients")
+public class ClientsController {
+    private final ClientsService clientsService;
+
+    public ClientsController(ClientsService clientsService) {
+        this.clientsService = clientsService;
+    }
+
+    @PostMapping("/sign-up")
+    public ResponseEntity<LoginResponse> signup(
+            @RequestBody @Valid Client request) {
+        return ResponseEntity.ok(clientsService.signup(request));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(
+            @RequestBody @Valid LoginRequest request) {
+        return ResponseEntity.ok(clientsService.login(request));
+    }
+
+    @PatchMapping("/password/{clientId}")
+    public ResponseEntity<Void> changePassword( 
+            @PathVariable Long clientId,
+            @RequestBody @Valid ChangePasswordRequest request) {
+        clientsService.changePassword(clientId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/profile/{clientId}")
+    public ResponseEntity<Void> updateProfile( 
+            @PathVariable Long clientId,
+            @RequestBody @Valid ClientProfileUpdateRequest request) {
+        clientsService.updateProfile(clientId, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/profile/{clientId}")
+    public ResponseEntity<ClientProfileView> viewProfile(@PathVariable Long clientId) {
+        return ResponseEntity.ok(clientsService.getClientProfile(clientId));
+    }
+    
+
+    
+
+
+    
+}
