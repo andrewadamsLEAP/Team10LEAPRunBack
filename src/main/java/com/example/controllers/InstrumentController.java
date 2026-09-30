@@ -1,14 +1,17 @@
-package com.example.instruments;
+package com.example.controllers;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.entities.Instrument;
+import com.example.services.InstrumentService;
+
 import java.util.List;
 
 @RestController
-@RequestMapping("/api//v1/instruments")
+@RequestMapping("/api/v1/instruments")
 public class InstrumentController {
     private final InstrumentService instrumentService;
 

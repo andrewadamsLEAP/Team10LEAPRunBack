@@ -1,10 +1,14 @@
-package com.example.instruments;
+package com.example.controllers;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.example.controllers.InstrumentController;
+import com.example.entities.Instrument;
+import com.example.services.InstrumentService;
 
 import java.util.Arrays;
 import java.util.List;
