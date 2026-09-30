@@ -3,6 +3,7 @@ package com.example.exceptions;
 import com.example.DTOs.clients.ClientLoginView;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.example.DTOs.clients.ClientAdminView;
 import com.example.DTOs.clients.ClientReporterView;
@@ -10,9 +11,12 @@ import com.example.entities.Client;
 
 public class Validate {
 
-    public static void validateClientId(Long clientId) {
+    public static void validateClientId(Long clientId, Supplier<Boolean> clientExists) {
         if (clientId == null || clientId <= 0) {
             throw new InvalidArgumentsException("Invalid Client ID","Client ID cannot be null or less than or equal to zero: " + clientId);
+        }
+        if (!clientExists.get()) {
+            throw new ClientNotFoundException(clientId);
         }
     }
 

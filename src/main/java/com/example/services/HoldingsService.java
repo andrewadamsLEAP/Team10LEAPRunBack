@@ -3,7 +3,8 @@ package com.example.services;
 import com.example.entities.Order;
 import com.example.entities.Holding;
 import org.springframework.stereotype.Service;
-import com.example.repositories.HoldingsRepository; 
+import com.example.repositories.HoldingsRepository;
+import com.example.repositories.ClientsRepository;
 
 import com.example.exceptions.Validate;
 import com.example.exceptions.InvalidArgumentsException;
@@ -12,9 +13,11 @@ import com.example.exceptions.InvalidArgumentsException;
 public class HoldingsService {
     
     private final HoldingsRepository holdingsRepository;
+    private final ClientsRepository clientsRepository;
 
-    public HoldingsService(HoldingsRepository holdingsRepository) {
+    public HoldingsService(HoldingsRepository holdingsRepository, ClientsRepository clientsRepository) {
         this.holdingsRepository = holdingsRepository;
+        this.clientsRepository = clientsRepository;
     }
 
 
@@ -27,7 +30,7 @@ public class HoldingsService {
      * Get holding for a specific client and ticker
      */
     public Holding getHolding(Long clientId, String ticker) {
-        Validate.validateClientId(clientId);
+        Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
         return holdingsRepository.getHoldingsByClientAndTicker(clientId, ticker);
     }
@@ -38,7 +41,7 @@ public class HoldingsService {
      * Get all holdings for a specific client
      */
     public java.util.List<Holding> getClientHoldings(Long clientId) {
-        Validate.validateClientId(clientId);
+        Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         return holdingsRepository.getHoldingsByClient(clientId);
     }
 
@@ -48,7 +51,7 @@ public class HoldingsService {
      * Get quantity of a specific ticker for a client
      */
     public Integer getQuantity(Long clientId, String ticker) {
-        Validate.validateClientId(clientId);
+        Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
         return holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
     }
@@ -60,7 +63,7 @@ public class HoldingsService {
      * If client doesn't own this ticker yet, create new holding
      */
     public void buyStock(Long clientId, String ticker, Integer quantity) {
-        Validate.validateClientId(clientId);
+        Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
         Validate.validateQuantity(quantity);
         Integer currentQty = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
@@ -85,7 +88,7 @@ public class HoldingsService {
      * Validates client has sufficient shares
      */
     public void sellStock(Long clientId, String ticker, Integer quantity) {
-        Validate.validateClientId(clientId);
+        Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
         Validate.validateQuantity(quantity);
         Integer currentQty = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
