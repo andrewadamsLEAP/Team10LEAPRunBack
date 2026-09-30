@@ -1,6 +1,8 @@
-package com.example.marketData;
+package com.example.repositories;
 
-import com.example.marketData.MarketDataService.Instrument;
+import com.example.services.MarketDataService;
+import com.example.services.MarketDataService.Instrument;
+import com.example.mappers.MarketDataMapper;
 
 import org.springframework.stereotype.Repository;
 

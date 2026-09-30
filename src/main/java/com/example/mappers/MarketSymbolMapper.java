@@ -1,4 +1,4 @@
-package com.example.marketData;
+package com.example.mappers;
 
 import org.springframework.stereotype.Service;
 

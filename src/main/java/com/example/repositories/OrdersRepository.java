@@ -1,5 +1,7 @@
-package com.example.orders;
+package com.example.repositories;
 
+import com.example.mappers.OrdersMapper;
+import com.example.objects.Order;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;

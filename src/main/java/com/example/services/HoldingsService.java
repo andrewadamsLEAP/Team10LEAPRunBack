@@ -1,6 +1,8 @@
-package com.example.holdings;
+package com.example.services;
 
-import com.example.orders.Order;
+import com.example.repositories.HoldingsRepository;
+import com.example.objects.Holding;
+import com.example.objects.Order;
 import org.springframework.stereotype.Service;
 
 @Service

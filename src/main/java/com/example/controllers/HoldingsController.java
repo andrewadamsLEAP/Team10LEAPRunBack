@@ -1,5 +1,7 @@
-package com.example.holdings;
+package com.example.controllers;
 
+import com.example.services.HoldingsService;
+import com.example.objects.Holding;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;

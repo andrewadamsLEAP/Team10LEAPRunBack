@@ -1,5 +1,6 @@
-package com.example.orders;
+package com.example.mappers;
 
+import com.example.objects.Order;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

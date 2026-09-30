@@ -1,5 +1,7 @@
-package com.example.holdings;
+package com.example.repositories;
 
+import com.example.mappers.HoldingsMapper;
+import com.example.objects.Holding;
 import org.springframework.stereotype.Repository;
 
 @Repository

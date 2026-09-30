@@ -1,4 +1,4 @@
-package com.example.holdings;
+package com.example.objects;
 
 public class Holding {
     private Long client_Id;

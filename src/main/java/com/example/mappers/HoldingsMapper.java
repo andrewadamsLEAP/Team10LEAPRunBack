@@ -1,5 +1,6 @@
-package com.example.holdings;
+package com.example.mappers;
 
+import com.example.objects.Holding;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;

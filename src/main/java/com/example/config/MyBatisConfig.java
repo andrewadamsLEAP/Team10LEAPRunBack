@@ -5,10 +5,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @MapperScan(basePackages = {
-    "com.example.repositories",
-    "com.example.holdings",
-    "com.example.orders",
-    "com.example.marketData",
+    "com.example.mappers",
     "com.example.transactions",
     "com.example.instruments",
 })

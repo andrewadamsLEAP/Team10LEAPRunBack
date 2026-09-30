@@ -1,4 +1,4 @@
-package com.example.orders;
+package com.example.objects;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;

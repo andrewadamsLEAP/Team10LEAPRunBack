@@ -1,5 +1,7 @@
-package com.example.orders;
+package com.example.controllers;
 
+import com.example.services.OrdersService;
+import com.example.objects.Order;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;

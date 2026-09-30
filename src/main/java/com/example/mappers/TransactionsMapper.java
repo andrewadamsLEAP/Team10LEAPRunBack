@@ -1,5 +1,6 @@
-package com.example.transactions;
+package com.example.mappers;
 
+import com.example.objects.Transaction;
 import org.apache.ibatis.annotations.*;
 
 import java.math.BigDecimal;

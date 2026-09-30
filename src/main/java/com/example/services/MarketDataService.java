@@ -1,4 +1,4 @@
-package com.example.marketData;
+package com.example.services;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,8 +10,9 @@ import org.springframework.core.env.Profiles;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.example.repositories.MarketDataRepository;
 import com.example.generalServices.AlpacaClient;
-import com.example.generalServices.MarketHoursService;
+import com.example.mappers.MarketSymbolMapper;
 import com.example.generalServices.AlpacaClient.AlpacaForexResponse;
 import com.example.generalServices.AlpacaClient.AlpacaQuotesResponse;
 
@@ -30,7 +31,6 @@ public class MarketDataService {
 
     private final MarketDataRepository marketDataRepository;
     private final AlpacaClient alpacaClient;
-    private final MarketDataProcessor marketDataProcessor;
     private final MarketSymbolMapper marketSymbolMapper;
     private final MarketHoursService marketHoursService;
     private final Environment environment;
@@ -49,7 +49,6 @@ public class MarketDataService {
     public MarketDataService(
             MarketDataRepository marketDataRepository,
             AlpacaClient alpacaClient,
-            MarketDataProcessor marketDataProcessor,
             MarketSymbolMapper marketSymbolMapper,
             MarketHoursService marketHoursService,
             Environment environment,
@@ -68,9 +67,6 @@ public class MarketDataService {
 
         this.alpacaClient =
                 alpacaClient;
-
-        this.marketDataProcessor =
-                marketDataProcessor;
 
         this.marketSymbolMapper =
                 marketSymbolMapper;
@@ -351,16 +347,9 @@ public class MarketDataService {
                     alpacaClient.getStockQuotes(
                             symbols);
 
-            MarketDataProcessor.ProcessResult result =
-                    marketDataProcessor.processQuotes(
-                            symbols,
-                            response);
-
-            lastSuccessfulTickerCount +=
-                    result.successfulCount();
-
-            lastFailedTickerCount +=
-                    result.failedCount();
+            logger.info(
+                    "Stock quotes received: {}",
+                    response);
 
         } catch (Exception exception) {
 
@@ -408,16 +397,9 @@ public class MarketDataService {
                     alpacaClient.getCryptoQuotes(
                             symbolParameter);
 
-            MarketDataProcessor.ProcessResult result =
-                    marketDataProcessor.processQuotes(
-                            symbols,
-                            response);
-
-            lastSuccessfulTickerCount +=
-                    result.successfulCount();
-
-            lastFailedTickerCount +=
-                    result.failedCount();
+            logger.info(
+                    "Crypto quotes received: {}",
+                    response);
 
         } catch (Exception exception) {
 
@@ -471,21 +453,9 @@ public class MarketDataService {
                     alpacaClient.getForexRates(
                             currencyPairs);
 
-            /*
-             * Forex also has its own processor because
-             * AlpacaForexRate has a different structure
-             * from AlpacaQuote.
-             */
-            MarketDataProcessor.ProcessResult result =
-                    marketDataProcessor.processForexRates(
-                            symbols,
-                            response);
-
-            lastSuccessfulTickerCount +=
-                    result.successfulCount();
-
-            lastFailedTickerCount +=
-                    result.failedCount();
+            logger.info(
+                    "Forex rates received: {}",
+                    response);
 
         } catch (Exception exception) {
 
