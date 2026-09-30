@@ -9,16 +9,12 @@ import com.example.dtos.clients.ClientReporterView;
 import com.example.dtos.clients.LoginRequest;
 import com.example.dtos.clients.LoginResponse;
 import com.example.entities.Client;
-import com.example.exceptions.ClientNotFoundException;
-import com.example.exceptions.InvalidCredentialsException;
-import com.example.exceptions.InvalidEmailException;
-import com.example.exceptions.InvalidPasswordChangeException;
-import com.example.exceptions.InvalidProfileUpdateException;
-import com.example.exceptions.InvalidTransactionException;
-import com.example.exceptions.InvalidUsernameChangeException;
+import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
 import com.example.repositories.ClientsRepository;
 import org.springframework.stereotype.Service;
+
+import com.example.exceptions.Validate;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -36,13 +32,13 @@ public class ClientsService {
         Long existingEmailClientId = clientsRepository.findClientIdByEmail(request.getEmail());
 
         if (existingEmailClientId != null) {
-            throw new InvalidEmailException("Email is already in use");
+            throw new InvalidArgumentsException("Invalid Email", "Email is already in use");
         }
 
         Long existingClientId = clientsRepository.findClientIdByUsername(request.getUsername());
 
         if (existingClientId != null) {
-            throw new InvalidUsernameChangeException("Username is not unique");
+            throw new InvalidArgumentsException("Invalid Username", "Username is not unique");
         }
 
         int createdRows = clientsRepository.createClient(request);
@@ -65,7 +61,7 @@ public class ClientsService {
         ClientLoginView loginClient = clientsRepository.findLoginClientByUsername(request.getUsername());
 
         if (loginClient == null || !loginClient.getPassword().equals(request.getPassword())) {
-            throw new InvalidCredentialsException("Invalid username or password");
+            throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
 
         return new LoginResponse(loginClient.getClientId(), loginClient.getUsername(), null, "Login successful");
@@ -75,16 +71,14 @@ public class ClientsService {
     public void changePassword(Long clientId, ChangePasswordRequest request) {
         ClientLoginView client = clientsRepository.findLoginClientById(clientId);
 
-        if (client == null) {
-            throw new ClientNotFoundException("Client not found");
-        }
+        Validate.validateClient(client);
 
         if (!client.getPassword().equals(request.getCurrentPassword())) {
-            throw new InvalidPasswordChangeException("Current password is incorrect");
+            throw new InvalidArgumentsException("Invalid Password Change", "Current password is incorrect");
         }
 
         if (request.getCurrentPassword().equals(request.getNewPassword())) {
-            throw new InvalidPasswordChangeException("New password must be different from current password");
+            throw new InvalidArgumentsException("Invalid Password Change", "New password must be different from current password");
         }
 
         int updatedRows = clientsRepository.updatePassword(clientId, request.getNewPassword());
@@ -97,9 +91,7 @@ public class ClientsService {
     public ClientProfileView getClientProfile(Long clientId) {
         Client client = clientsRepository.findClientById(clientId);
 
-        if (client == null) {
-            throw new ClientNotFoundException("Client not found");
-        }
+        Validate.validateClient(client);
 
         return new ClientProfileView(
                 client.getClientId(),
@@ -113,9 +105,7 @@ public class ClientsService {
     public ClientAdminView getClientDataAdmin(Long clientId) {
         ClientAdminView client = clientsRepository.findClientByIdAdmin(clientId);
 
-        if (client == null) {
-            throw new ClientNotFoundException("Client not found");
-        }
+        Validate.validateClient(client);
 
         return client;
     }
@@ -123,9 +113,7 @@ public class ClientsService {
     public ClientReporterView getClientDataReporter(Long clientId) {
         ClientReporterView client = clientsRepository.findClientByIdReporter(clientId);
 
-        if (client == null) {
-            throw new ClientNotFoundException("Client not found");
-        }
+        Validate.validateClient(client);
 
         return client;
     }
@@ -133,9 +121,7 @@ public class ClientsService {
     public List<ClientAdminView> getAllClientDataAdmin() {
         List<ClientAdminView> clients = clientsRepository.findClientsAsAdmin();
 
-        if (clients.isEmpty()) {
-            throw new ClientNotFoundException("No clients found");
-        }
+        Validate.validateClientListForAdmin(clients);
 
         return clients;
     }
@@ -143,9 +129,7 @@ public class ClientsService {
     public List<ClientReporterView> getAllClientDataReporter() {
         List<ClientReporterView> clients = clientsRepository.findClientsAsReporter();
 
-        if (clients.isEmpty()) {
-            throw new ClientNotFoundException("No clients found");
-        }
+        Validate.validateClientListForReporter(clients);
 
         return clients;
     }
@@ -153,16 +137,14 @@ public class ClientsService {
     public BigDecimal updateCashAmount(Long clientId, BigDecimal change) {
         Client client = clientsRepository.findClientById(clientId);
 
-        if (client == null) {
-            throw new ClientNotFoundException("Client not found");
-        }
+        Validate.validateClient(client);
 
         BigDecimal currentBalance = client.getCashAmount();
 
         BigDecimal net = currentBalance.add(change);
 
         if (net.compareTo(BigDecimal.ZERO) < 0) {
-            throw new InvalidTransactionException("Invalid transaction");
+            throw new InvalidArgumentsException("Invalid Transaction", "Invalid transaction");
         }
 
         int updatedRows = clientsRepository.updateCashAmount(clientId, net);
@@ -177,19 +159,17 @@ public class ClientsService {
     public void updateProfile(Long clientId, ClientProfileUpdateRequest request) {
         Client client = clientsRepository.findClientById(clientId);
 
-        if (client == null) {
-            throw new ClientNotFoundException("Client not found");
-        }
+        Validate.validateClient(client);
 
         if (!request.hasUpdates()) {
-            throw new InvalidProfileUpdateException("No profile changes were provided");
+            throw new InvalidArgumentsException("Invalid Profile Update", "No profile changes were provided");
         }
 
         if (request.getUsername() != null) {
             Long existingClientId = clientsRepository.findClientIdByUsername(request.getUsername());
 
             if (existingClientId != null && !existingClientId.equals(clientId)) {
-                throw new InvalidUsernameChangeException("Username is not unique");
+                throw new InvalidArgumentsException("Invalid Username Change", "Username is not unique");
             }
         }
         
