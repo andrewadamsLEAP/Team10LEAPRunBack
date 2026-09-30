@@ -61,7 +61,7 @@ class ClientsServiceTest {
 
         InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.signup(request));
 
-        assertEquals("Invalid Email", exception.getMessage());
+        assertEquals("Invalid Email: Email is already in use", exception.getMessage());
         verify(clientsRepository).findClientIdByEmail("signup@example.com");
         verifyNoMoreInteractions(clientsRepository);
     }
@@ -74,7 +74,7 @@ class ClientsServiceTest {
 
         InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.signup(request));
 
-        assertEquals("Invalid Username", exception.getMessage());
+        assertEquals("Invalid Username: Username is not unique", exception.getMessage());
     }
 
     @Test
@@ -122,7 +122,7 @@ class ClientsServiceTest {
 
         InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.login(request));
 
-        assertEquals("Invalid Credentials", exception.getMessage());
+        assertEquals("Invalid Credentials: Invalid username or password", exception.getMessage());
     }
 
     @Test
@@ -133,7 +133,7 @@ class ClientsServiceTest {
 
         InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.login(request));
 
-        assertEquals("Invalid Credentials", exception.getMessage());
+        assertEquals("Invalid Credentials: Invalid username or password", exception.getMessage());
     }
 
     @Test
@@ -166,7 +166,7 @@ class ClientsServiceTest {
 
         InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.changePassword(4L, request));
 
-        assertEquals("Current password is incorrect", exception.getMessage());
+        assertEquals("Invalid Password Change: Current password is incorrect", exception.getMessage());
     }
 
     @Test
@@ -177,7 +177,7 @@ class ClientsServiceTest {
 
         InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.changePassword(4L, request));
 
-        assertEquals("New password must be different from current password", exception.getMessage());
+        assertEquals("Invalid Password Change: New password must be different from current password", exception.getMessage());
     }
 
     @Test
@@ -318,7 +318,7 @@ class ClientsServiceTest {
         InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
                 () -> clientsService.updateCashAmount(11L, new BigDecimal("-150.00")));
 
-        assertEquals("Invalid transaction", exception.getMessage());
+        assertEquals("Invalid Transaction: Invalid transaction", exception.getMessage());
     }
 
     @Test
@@ -378,7 +378,7 @@ class ClientsServiceTest {
         InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
                 () -> clientsService.updateProfile(12L, request));
 
-        assertEquals("No profile changes were provided", exception.getMessage());
+        assertEquals("Invalid Profile Update: No profile changes were provided", exception.getMessage());
     }
 
     @Test
@@ -391,7 +391,7 @@ class ClientsServiceTest {
         InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
                 () -> clientsService.updateProfile(12L, request));
 
-        assertEquals("Username is not unique", exception.getMessage());
+        assertEquals("Invalid Username Change: Username is not unique", exception.getMessage());
     }
 
     @Test
