@@ -5,6 +5,7 @@ import com.example.services.MarketHoursService;
 import com.example.services.HoldingsService;
 import com.example.DTOs.orders.OrderResponse;
 import com.example.DTOs.orders.OrderHistoryView;
+import com.example.exceptions.InvalidArgumentsException;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,7 +51,8 @@ public class OrdersService {
         Order order = ordersRepository.getOrderById(orderId);
 
         if (order == null) {
-            throw new IllegalArgumentException(
+            throw new InvalidArgumentsException(
+                    "Order Not Found",
                     "Order not found: " + orderId
             );
         }
