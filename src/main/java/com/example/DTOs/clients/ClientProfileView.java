@@ -1,4 +1,4 @@
-package com.example.dtos.clients;
+package com.example.DTOs.clients;
 
 import java.math.BigDecimal;
 
