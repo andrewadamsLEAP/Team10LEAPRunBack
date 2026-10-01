@@ -63,6 +63,23 @@ public interface OrdersMapper {
         """)
     List<Order> getCancelledOrders();
 
+    @Select("""
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
+        FROM orders
+        WHERE order_status = 'CANCELLED'
+          AND client_id = #{clientId}
+        """)
+    List<Order> getCancelledOrdersForClient(
+            @Param("clientId") Long clientId
+    );
 
     @Select("""
         SELECT

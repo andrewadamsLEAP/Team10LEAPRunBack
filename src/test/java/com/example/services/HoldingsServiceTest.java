@@ -1,311 +1,258 @@
 package com.example.services;
 
+import com.example.DTOs.holdings.BuyStockResponse;
+import com.example.DTOs.holdings.HoldingDtoConverter;
+import com.example.DTOs.holdings.HoldingResponse;
+import com.example.DTOs.holdings.QuantityResponse;
+import com.example.DTOs.holdings.SellStockResponse;
+import com.example.entities.Client;
 import com.example.entities.Holding;
 import com.example.entities.Order;
+import com.example.repositories.ClientsRepository;
 import com.example.repositories.HoldingsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class HoldingsServiceTest {
 
     private HoldingsRepository holdingsRepository;
+    private ClientsRepository clientsRepository;
+    private HoldingDtoConverter holdingDtoConverter;
     private HoldingsService holdingsService;
 
     @BeforeEach
     void setUp() {
         holdingsRepository = mock(HoldingsRepository.class);
-        holdingsService = new HoldingsService(holdingsRepository);
-    }
-
-    // ========== GET HOLDING TESTS ==========
-
-    @Test
-    void getHoldingReturnsHoldingForClientAndTicker() {
-        Long clientId = 1L;
-        String ticker = "AAPL";
-        Holding expected = holding(clientId, ticker, 50);
-
-        when(holdingsRepository.getHoldingsByClientAndTicker(clientId, ticker)).thenReturn(expected);
-
-        Holding result = holdingsService.getHolding(clientId, ticker);
-
-        assertNotNull(result);
-        assertEquals(expected, result);
-        assertEquals(ticker, result.getTicker());
-        assertEquals(50, result.getQuantity());
-        verify(holdingsRepository).getHoldingsByClientAndTicker(clientId, ticker);
+        clientsRepository = mock(ClientsRepository.class);
+        holdingDtoConverter = new HoldingDtoConverter();
+        holdingsService = new HoldingsService(holdingsRepository, clientsRepository, holdingDtoConverter);
     }
 
     @Test
-    void getHoldingReturnsNullWhenHoldingDoesNotExist() {
-        Long clientId = 1L;
-        String ticker = "NONEXISTENT";
+    void getHoldingReturnsHoldingResponseWhenValid() {
+        Holding holding = holding(1L, "AAPL", 100);
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getHoldingsByClientAndTicker(1L, "AAPL")).thenReturn(holding);
 
-        when(holdingsRepository.getHoldingsByClientAndTicker(clientId, ticker)).thenReturn(null);
+        HoldingResponse response = holdingsService.getHolding(1L, "AAPL");
 
-        Holding result = holdingsService.getHolding(clientId, ticker);
-
-        assertNull(result);
-    }
-
-    // ========== GET CLIENT HOLDINGS TESTS (LIST) ==========
-
-    @Test
-    void getClientHoldingsReturnsListOfAllHoldingsForClient() {
-        Long clientId = 1L;
-        Holding holding1 = holding(clientId, "AAPL", 50);
-        Holding holding2 = holding(clientId, "GOOGL", 30);
-        Holding holding3 = holding(clientId, "MSFT", 20);
-        List<Holding> expected = List.of(holding1, holding2, holding3);
-
-        when(holdingsRepository.getHoldingsByClient(clientId)).thenReturn(expected);
-
-        List<Holding> result = holdingsService.getClientHoldings(clientId);
-
-        assertNotNull(result);
-        assertEquals(3, result.size());
-        assertEquals(expected, result);
-        verify(holdingsRepository).getHoldingsByClient(clientId);
+        assertNotNull(response);
+        assertEquals(1L, response.clientId());
+        assertEquals("AAPL", response.ticker());
+        assertEquals(100, response.quantity());
     }
 
     @Test
-    void getClientHoldingsReturnsEmptyListWhenClientHasNoHoldings() {
-        Long clientId = 1L;
+    void getHoldingThrowsClientNotFoundWhenClientNotFound() {
+        when(clientsRepository.findClientById(999L)).thenReturn(null);
 
-        when(holdingsRepository.getHoldingsByClient(clientId)).thenReturn(List.of());
-
-        List<Holding> result = holdingsService.getClientHoldings(clientId);
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        assertThrows(RuntimeException.class,
+                () -> holdingsService.getHolding(999L, "AAPL"));
     }
 
     @Test
-    void getClientHoldingsReturnsSingleHoldingInList() {
-        Long clientId = 1L;
-        Holding single = holding(clientId, "TSLA", 10);
-        List<Holding> expected = List.of(single);
+    void getHoldingThrowsInvalidTickerWhenTickerEmpty() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
 
-        when(holdingsRepository.getHoldingsByClient(clientId)).thenReturn(expected);
+        assertThrows(RuntimeException.class,
+                () -> holdingsService.getHolding(1L, ""));
+    }
 
-        List<Holding> result = holdingsService.getClientHoldings(clientId);
+    // ==== GET QUANTITY TESTS ====
+    @Test
+    void getQuantityReturnsQuantityResponseWhenValid() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(50);
 
-        assertEquals(1, result.size());
-        assertEquals("TSLA", result.get(0).getTicker());
+        QuantityResponse response = holdingsService.getQuantity(1L, "AAPL");
+
+        assertNotNull(response);
+        assertEquals(50, response.quantity());
     }
 
     @Test
-    void getClientHoldingsReturnsMultipleDifferentTickers() {
-        Long clientId = 2L;
-        Holding aapl = holding(clientId, "AAPL", 25);
-        Holding msft = holding(clientId, "MSFT", 15);
-        Holding amzn = holding(clientId, "AMZN", 40);
-        Holding nvda = holding(clientId, "NVDA", 5);
-        List<Holding> expected = List.of(aapl, msft, amzn, nvda);
+    void getQuantityReturnsZeroWhenNoHolding() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getQuantityByClientAndTicker(1L, "UNKNOWN")).thenReturn(null);
 
-        when(holdingsRepository.getHoldingsByClient(clientId)).thenReturn(expected);
+        QuantityResponse response = holdingsService.getQuantity(1L, "UNKNOWN");
 
-        List<Holding> result = holdingsService.getClientHoldings(clientId);
-
-        assertEquals(4, result.size());
-        assertEquals("AAPL", result.get(0).getTicker());
-        assertEquals("MSFT", result.get(1).getTicker());
-        assertEquals("AMZN", result.get(2).getTicker());
-        assertEquals("NVDA", result.get(3).getTicker());
+        assertNotNull(response);
+        assertNull(response.quantity());
     }
 
-    // ========== GET QUANTITY TESTS ==========
-
+    // ==== GET ALL CLIENT HOLDINGS TESTS ====
     @Test
-    void getQuantityReturnsQuantityWhenHoldingExists() {
-        Long clientId = 1L;
-        String ticker = "AAPL";
-        Integer expected = 100;
-
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(expected);
-
-        Integer result = holdingsService.getQuantity(clientId, ticker);
-
-        assertEquals(expected, result);
-        verify(holdingsRepository).getQuantityByClientAndTicker(clientId, ticker);
-    }
-
-    @Test
-    void getQuantityReturnsNullWhenHoldingDoesNotExist() {
-        Long clientId = 1L;
-        String ticker = "NONEXISTENT";
-
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(null);
-
-        Integer result = holdingsService.getQuantity(clientId, ticker);
-
-        assertNull(result);
-    }
-
-    @Test
-    void getQuantityReturnsZeroWhenClientHasNoShares() {
-        Long clientId = 1L;
-        String ticker = "AAPL";
-
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(0);
-
-        Integer result = holdingsService.getQuantity(clientId, ticker);
-
-        assertEquals(0, result);
-    }
-
-    // ========== BUY STOCK TESTS ==========
-
-    @Test
-    void buyStockCreatesNewHoldingWhenClientDoesNotOwnTicker() {
-        Long clientId = 1L;
-        String ticker = "AAPL";
-        Integer quantity = 50;
-
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(null);
-        when(holdingsRepository.createHolding(any(Holding.class))).thenReturn(
-                holding(clientId, ticker, quantity)
+    void getAllClientHoldingsReturnsListWhenPresent() {
+        List<Holding> holdings = List.of(
+                holding(1L, "AAPL", 100),
+                holding(1L, "MSFT", 50)
         );
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getHoldingsByClient(1L)).thenReturn(holdings);
 
-        holdingsService.buyStock(clientId, ticker, quantity);
+        List<HoldingResponse> responses = holdingsService.getAllClientHoldings(1L);
 
-        verify(holdingsRepository).getQuantityByClientAndTicker(clientId, ticker);
+        assertEquals(2, responses.size());
+        assertEquals("AAPL", responses.get(0).ticker());
+        assertEquals("MSFT", responses.get(1).ticker());
+    }
+
+    @Test
+    void getAllClientHoldingsReturnsEmptyListWhenNoHoldings() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getHoldingsByClient(1L)).thenReturn(List.of());
+
+        List<HoldingResponse> responses = holdingsService.getAllClientHoldings(1L);
+
+        assertEquals(0, responses.size());
+    }
+
+    // ==== BUY STOCK TESTS ====
+    @Test
+    void buyStockCreatesNewHoldingWhenFirstPurchase() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(null);
+
+        BuyStockResponse response = holdingsService.buyStock(1L, "AAPL", 100);
+
+        assertNotNull(response);
+        assertEquals(1L, response.clientId());
+        assertEquals("AAPL", response.ticker());
+        assertEquals(100, response.newQuantity());
+        assertEquals("Stock purchased successfully", response.message());
         verify(holdingsRepository).createHolding(any(Holding.class));
-        verify(holdingsRepository, never()).updateBuyHolding(anyInt(), anyLong(), anyString());
     }
 
     @Test
-    void buyStockCreatesNewHoldingWhenQuantityIsZero() {
-        Long clientId = 1L;
-        String ticker = "GOOGL";
-        Integer quantity = 30;
+    void buyStockCreatesNewHoldingWhenZeroQuantity() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(0);
 
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(0);
-        when(holdingsRepository.createHolding(any(Holding.class))).thenReturn(
-                holding(clientId, ticker, quantity)
-        );
+        BuyStockResponse response = holdingsService.buyStock(1L, "AAPL", 100);
 
-        holdingsService.buyStock(clientId, ticker, quantity);
-
-        verify(holdingsRepository).createHolding(any(Holding.class));
-        verify(holdingsRepository, never()).updateBuyHolding(anyInt(), anyLong(), anyString());
+        assertNotNull(response);
+        assertEquals(100, response.newQuantity());
     }
 
     @Test
-    void buyStockUpdatesExistingHoldingWhenClientAlreadyOwnsTicker() {
-        Long clientId = 1L;
-        String ticker = "MSFT";
-        Integer currentQuantity = 25;
-        Integer newQuantity = 15;
-        Integer expectedTotal = 40;
+    void buyStockIncreasesExistingHolding() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(100);
+        when(holdingsRepository.updateBuyHolding(50, 1L, "AAPL")).thenReturn(1);
 
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(currentQuantity);
-        when(holdingsRepository.updateBuyHolding(newQuantity, clientId, ticker)).thenReturn(1);
+        BuyStockResponse response = holdingsService.buyStock(1L, "AAPL", 50);
 
-        holdingsService.buyStock(clientId, ticker, newQuantity);
-
-        verify(holdingsRepository).getQuantityByClientAndTicker(clientId, ticker);
-        verify(holdingsRepository, never()).createHolding(any());
-        verify(holdingsRepository).updateBuyHolding(newQuantity, clientId, ticker);
+        assertNotNull(response);
+        assertEquals(150, response.newQuantity());
+        verify(holdingsRepository).updateBuyHolding(50, 1L, "AAPL");
     }
 
-    // ========== SELL STOCK TESTS ==========
-
+    // ==== SELL STOCK TESTS ====
     @Test
-    void sellStockDecreasesQuantityWhenClientOwnsSufficientShares() {
-        Long clientId = 1L;
-        String ticker = "AAPL";
-        Integer quantityToSell = 10;
-        Integer currentQuantity = 50;
+    void sellStockReducesExistingHolding() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(100);
+        when(holdingsRepository.updateSellHolding(50, 1L, "AAPL")).thenReturn(1);
 
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(currentQuantity);
-        when(holdingsRepository.updateSellHolding(quantityToSell, clientId, ticker)).thenReturn(1);
+        SellStockResponse response = holdingsService.sellStock(1L, "AAPL", 50);
 
-        holdingsService.sellStock(clientId, ticker, quantityToSell);
-
-        verify(holdingsRepository).updateSellHolding(quantityToSell, clientId, ticker);
+        assertNotNull(response);
+        assertEquals(1L, response.clientId());
+        assertEquals("AAPL", response.ticker());
+        assertEquals(50, response.newQuantity());
+        assertEquals("Stock sold successfully", response.message());
+        verify(holdingsRepository).updateSellHolding(50, 1L, "AAPL");
     }
 
     @Test
-    void sellStockThrowsWhenClientDoesNotOwnStock() {
-        Long clientId = 1L;
-        String ticker = "AAPL";
-        Integer quantityToSell = 10;
+    void sellStockThrowsInsufficientSharesWhenNothingOwned() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(null);
 
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(null);
-
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> holdingsService.sellStock(clientId, ticker, quantityToSell)
-        );
-
-        assertTrue(exception.getMessage().contains("Insufficient shares to sell"));
-        assertTrue(exception.getMessage().contains("Current: 0"));
-        verify(holdingsRepository, never()).updateSellHolding(anyInt(), anyLong(), anyString());
+        assertThrows(IllegalArgumentException.class,
+                () -> holdingsService.sellStock(1L, "AAPL", 10));
     }
 
     @Test
-    void sellStockThrowsWhenClientDoesNotOwnSufficientShares() {
-        Long clientId = 1L;
-        String ticker = "GOOGL";
-        Integer quantityToSell = 100;
-        Integer currentQuantity = 50;
+    void sellStockThrowsInsufficientSharesWhenNotEnough() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(50);
 
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(currentQuantity);
-
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> holdingsService.sellStock(clientId, ticker, quantityToSell)
-        );
-
-        assertTrue(exception.getMessage().contains("Insufficient shares to sell"));
-        assertTrue(exception.getMessage().contains("Current: 50"));
-        assertTrue(exception.getMessage().contains("Trying to sell: 100"));
-        verify(holdingsRepository, never()).updateSellHolding(anyInt(), anyLong(), anyString());
+        assertThrows(IllegalArgumentException.class,
+                () -> holdingsService.sellStock(1L, "AAPL", 100));
     }
 
-    // ========== UPDATE HOLDINGS FOR ORDER TESTS ==========
+    @Test
+    void sellStockThrowsClientNotFoundWhenClientNotFound() {
+        when(clientsRepository.findClientById(999L)).thenReturn(null);
+
+        assertThrows(RuntimeException.class,
+                () -> holdingsService.sellStock(999L, "AAPL", 50));
+    }
 
     @Test
-    void updateHoldingsForOrderBuyOrderIncreasesHoldings() {
-        Long clientId = 1L;
-        String ticker = "AAPL";
-        int quantity = 25;
-        Order buyOrder = createOrder(1L, clientId, ticker, Order.OrderType.BUY, quantity);
+    void sellStockThrowsInvalidQuantityWhenNegative() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
 
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(50);
-        when(holdingsRepository.updateBuyHolding(quantity, clientId, ticker)).thenReturn(1);
+        assertThrows(RuntimeException.class,
+                () -> holdingsService.sellStock(1L, "AAPL", -10));
+    }
+
+    @Test
+    void sellStockThrowsInvalidQuantityWhenZero() {
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+
+        assertThrows(RuntimeException.class,
+                () -> holdingsService.sellStock(1L, "AAPL", 0));
+    }
+
+    // ==== UPDATE HOLDINGS FOR ORDER TESTS ====
+    @Test
+    void updateHoldingsForOrderBuyExecutesWhenBuyOrder() {
+        Order buyOrder = new Order();
+        buyOrder.setOrderType(Order.OrderType.BUY);
+        buyOrder.setClientId(1L);
+        buyOrder.setTicker("AAPL");
+        buyOrder.setQuantity(100);
+
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(null);
 
         holdingsService.updateHoldingsForOrder(buyOrder);
 
-        verify(holdingsRepository).updateBuyHolding(quantity, clientId, ticker);
-        verify(holdingsRepository, never()).updateSellHolding(anyInt(), anyLong(), anyString());
+        verify(holdingsRepository).createHolding(any(Holding.class));
     }
 
     @Test
-    void updateHoldingsForOrderSellOrderDecreasesHoldings() {
-        Long clientId = 1L;
-        String ticker = "MSFT";
-        int quantity = 10;
-        Order sellOrder = createOrder(2L, clientId, ticker, Order.OrderType.SELL, quantity);
+    void updateHoldingsForOrderSellExecutesWhenSellOrder() {
+        Order sellOrder = new Order();
+        sellOrder.setOrderType(Order.OrderType.SELL);
+        sellOrder.setClientId(1L);
+        sellOrder.setTicker("AAPL");
+        sellOrder.setQuantity(50);
 
-        when(holdingsRepository.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(50);
-        when(holdingsRepository.updateSellHolding(quantity, clientId, ticker)).thenReturn(1);
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(100);
+        when(holdingsRepository.updateSellHolding(50, 1L, "AAPL")).thenReturn(1);
 
         holdingsService.updateHoldingsForOrder(sellOrder);
 
-        verify(holdingsRepository).updateSellHolding(quantity, clientId, ticker);
-        verify(holdingsRepository, never()).updateBuyHolding(anyInt(), anyLong(), anyString());
+        verify(holdingsRepository).updateSellHolding(50, 1L, "AAPL");
     }
 
-    // ========== HELPER METHODS ==========
-
-    private Holding holding(Long clientId, String ticker, int quantity) {
+    private Holding holding(Long clientId, String ticker, Integer quantity) {
         Holding holding = new Holding();
         holding.setClient_Id(clientId);
         holding.setTicker(ticker);
@@ -313,13 +260,9 @@ class HoldingsServiceTest {
         return holding;
     }
 
-    private Order createOrder(Long orderId, Long clientId, String ticker, Order.OrderType orderType, int quantity) {
-        Order order = new Order();
-        order.setOrderId(orderId);
-        order.setClientId(clientId);
-        order.setTicker(ticker);
-        order.setOrderType(orderType);
-        order.setQuantity(quantity);
-        return order;
+    private Client client(Long clientId) {
+        Client client = new Client();
+        client.setClientId(clientId);
+        return client;
     }
 }

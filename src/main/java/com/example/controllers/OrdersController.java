@@ -59,6 +59,17 @@ public List<OrderHistoryView> getCancelledOrders() {
     return ordersService.getCancelledOrdersAsDto();
 }
 
+// =========================================================
+// Get cancelled orders for client
+// =========================================================
+
+@GetMapping("/client/{clientId}/cancelled")
+public List<OrderHistoryView> getCancelledOrdersForClient(
+        @PathVariable Long clientId) {
+
+    return ordersService.getCancelledOrdersForClientAsDto(clientId);
+}
+
 
 // =========================================================
 // Get all pending sell orders for ticker

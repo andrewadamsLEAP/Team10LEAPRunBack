@@ -1,8 +1,15 @@
-package com.example.repositories;
+﻿package com.example.repositories;
 
-import org.springframework.stereotype.Repository;  
+import org.springframework.stereotype.Repository;
+<<<<<<< HEAD
 import com.example.mappers.InstrumentMapper;
 import com.example.entities.Instrument;
+=======
+
+import com.example.entities.Instrument;
+import com.example.mappers.InstrumentMapper;
+
+>>>>>>> a66da31bf13f936088b1ce3c272094fcf2d8ab3a
 import java.util.List;
 
 @Repository 
@@ -21,3 +28,4 @@ public class InstrumentRepository {
         return instrumentMapper.findByTicker(ticker);
     }
 }
+
