@@ -1,4 +1,4 @@
-package com.example.DTOs.clients;
+package com.example.dtos.clients;
 
 // TODO:
 // eventually the token will store things like clientId and username I just dont know how that works

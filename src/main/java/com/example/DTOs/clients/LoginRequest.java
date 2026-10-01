@@ -1,4 +1,4 @@
-package com.example.DTOs.clients;
+package com.example.dtos.clients;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

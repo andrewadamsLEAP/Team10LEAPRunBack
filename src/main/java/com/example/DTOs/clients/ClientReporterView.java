@@ -1,4 +1,4 @@
-package com.example.DTOs.clients;
+package com.example.dtos.clients;
 
 public class ClientReporterView {
     private Long clientId;
