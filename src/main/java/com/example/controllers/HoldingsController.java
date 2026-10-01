@@ -21,7 +21,7 @@ public class HoldingsController {
     }
 
     //Test endpoint
-    // Example: GET /api/holdings/test
+    // Example: GET /api/v1/holdings/test
     @GetMapping("/test")
     public String test() {
         return "Test endpoint works!";

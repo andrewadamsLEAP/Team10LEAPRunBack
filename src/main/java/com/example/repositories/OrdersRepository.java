@@ -37,6 +37,10 @@ public class OrdersRepository {
         return ordersMapper.getCancelledOrders();
     }
 
+    public List<Order> getCancelledOrdersForClient(Long clientId) {
+
+        return ordersMapper.getCancelledOrdersForClient(clientId);
+    }
 
     public List<Order> getPendingSellOrdersForTicker(
             String ticker) {

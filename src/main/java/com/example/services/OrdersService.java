@@ -74,6 +74,12 @@ public class OrdersService {
         return ordersRepository.getCancelledOrders();
     }
 
+    public List<Order> getCancelledOrdersForClient(Long clientId) {
+
+        validateId(clientId, "Client ID");
+
+        return ordersRepository.getCancelledOrdersForClient(clientId);
+    }
 
     public List<Order> getPendingSellOrdersForTicker(
             String ticker) {
@@ -346,6 +352,14 @@ public class OrdersService {
      */
     public List<OrderHistoryView> getCancelledOrdersAsDto() {
         List<Order> orders = getCancelledOrders();
+        return orderDtoConverter.toOrderHistoryViews(orders);
+    }
+
+    /**
+     * Get cancelled orders for client and return as DTOs
+     */
+    public List<OrderHistoryView> getCancelledOrdersForClientAsDto(Long clientId) {
+        List<Order> orders = getCancelledOrdersForClient(clientId);
         return orderDtoConverter.toOrderHistoryViews(orders);
     }
 
