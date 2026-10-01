@@ -2,6 +2,11 @@ package com.example.services;
 
 import com.example.entities.Order;
 import com.example.entities.Holding;
+import com.example.DTOs.holdings.HoldingResponse;
+import com.example.DTOs.holdings.QuantityResponse;
+import com.example.DTOs.holdings.BuyStockResponse;
+import com.example.DTOs.holdings.SellStockResponse;
+import com.example.DTOs.holdings.HoldingDtoConverter;
 import org.springframework.stereotype.Service;
 import com.example.repositories.HoldingsRepository;
 import com.example.repositories.ClientsRepository;
@@ -14,10 +19,12 @@ public class HoldingsService {
     
     private final HoldingsRepository holdingsRepository;
     private final ClientsRepository clientsRepository;
+    private final HoldingDtoConverter holdingDtoConverter;
 
-    public HoldingsService(HoldingsRepository holdingsRepository, ClientsRepository clientsRepository) {
+    public HoldingsService(HoldingsRepository holdingsRepository, ClientsRepository clientsRepository, HoldingDtoConverter holdingDtoConverter) {
         this.holdingsRepository = holdingsRepository;
         this.clientsRepository = clientsRepository;
+        this.holdingDtoConverter = holdingDtoConverter;
     }
 
 
@@ -29,10 +36,11 @@ public class HoldingsService {
     /**
      * Get holding for a specific client and ticker
      */
-    public Holding getHolding(Long clientId, String ticker) {
+    public HoldingResponse getHolding(Long clientId, String ticker) {
         Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
-        return holdingsRepository.getHoldingsByClientAndTicker(clientId, ticker);
+        Holding holding = holdingsRepository.getHoldingsByClientAndTicker(clientId, ticker);
+        return new HoldingResponse(holding.getClient_Id(), holding.getTicker(), holding.getQuantity());
     }
 
 
@@ -40,9 +48,12 @@ public class HoldingsService {
     /**
      * Get all holdings for a specific client
      */
-    public java.util.List<Holding> getClientHoldings(Long clientId) {
+    public java.util.List<HoldingResponse> getAllClientHoldings(Long clientId) {
         Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
-        return holdingsRepository.getHoldingsByClient(clientId);
+        return holdingsRepository.getHoldingsByClient(clientId)
+            .stream()
+            .map(h -> new HoldingResponse(h.getClient_Id(), h.getTicker(), h.getQuantity()))
+            .toList();
     }
 
 
@@ -50,10 +61,11 @@ public class HoldingsService {
     /**
      * Get quantity of a specific ticker for a client
      */
-    public Integer getQuantity(Long clientId, String ticker) {
+    public QuantityResponse getQuantity(Long clientId, String ticker) {
         Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
-        return holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
+        Integer quantity = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
+        return holdingDtoConverter.toQuantityResponse(quantity);
     }
 
 
@@ -62,7 +74,7 @@ public class HoldingsService {
      * Buy stock logic - increase quantity for client/ticker
      * If client doesn't own this ticker yet, create new holding
      */
-    public void buyStock(Long clientId, String ticker, Integer quantity) {
+    public BuyStockResponse buyStock(Long clientId, String ticker, Integer quantity) {
         Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
         Validate.validateQuantity(quantity);
@@ -75,9 +87,12 @@ public class HoldingsService {
             holding.setTicker(ticker);
             holding.setQuantity(quantity);
             holdingsRepository.createHolding(holding);
+            return holdingDtoConverter.toBuyStockResponse(clientId, ticker, quantity);
         } else {
             // Already owns this ticker, add quantity
             holdingsRepository.updateBuyHolding(quantity, clientId, ticker);
+            Integer newQty = currentQty + quantity;
+            return holdingDtoConverter.toBuyStockResponse(clientId, ticker, newQty);
         }
     }
 
@@ -87,7 +102,7 @@ public class HoldingsService {
      * Sell stock logic - decrease quantity for client/ticker
      * Validates client has sufficient shares
      */
-    public void sellStock(Long clientId, String ticker, Integer quantity) {
+    public SellStockResponse sellStock(Long clientId, String ticker, Integer quantity) {
         Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
         Validate.validateQuantity(quantity);
@@ -101,6 +116,8 @@ public class HoldingsService {
         }
         
         holdingsRepository.updateSellHolding(quantity, clientId, ticker);
+        Integer newQty = currentQty - quantity;
+        return holdingDtoConverter.toSellStockResponse(clientId, ticker, newQty);
     }
 
 
