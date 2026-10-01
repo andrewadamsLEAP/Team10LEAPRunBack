@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/trading")
+@RequestMapping("/api/v1/trading")
 public class TransactionsController {
 
     private final TransactionsService transactionsService;
