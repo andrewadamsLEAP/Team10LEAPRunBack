@@ -428,25 +428,15 @@ class ClientsServiceTest {
     }
 
     private ClientLoginView loginClientView(Long clientId, String username, String password) {
-        ClientLoginView view = new ClientLoginView();
-        view.setClientId(clientId);
-        view.setUsername(username);
-        view.setPassword(password);
-        return view;
+        return new ClientLoginView(clientId, username, password);
     }
 
     private LoginRequest loginRequest(String username, String password) {
-        LoginRequest request = new LoginRequest();
-        request.setUsername(username);
-        request.setPassword(password);
-        return request;
+        return new LoginRequest(username, password);
     }
 
     private ChangePasswordRequest changePasswordRequest(String currentPassword, String newPassword) {
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setCurrentPassword(currentPassword);
-        request.setNewPassword(newPassword);
-        return request;
+        return new ChangePasswordRequest(currentPassword, newPassword);
     }
 
     private ClientAdminView adminView(
@@ -456,29 +446,14 @@ class ClientsServiceTest {
             String firstName,
             String lastName,
             BigDecimal cashAmount) {
-        ClientAdminView view = new ClientAdminView();
-        view.setClientId(clientId);
-        view.setUsername(username);
-        view.setEmail(email);
-        view.setFirstName(firstName);
-        view.setLastName(lastName);
-        view.setCashAmount(cashAmount);
-        return view;
+        return new ClientAdminView(clientId, username, email, firstName, lastName, cashAmount);
     }
 
     private ClientReporterView reporterView(Long clientId, String username, String email) {
-        ClientReporterView view = new ClientReporterView();
-        view.setClientId(clientId);
-        view.setUsername(username);
-        view.setEmail(email);
-        return view;
+        return new ClientReporterView(clientId, username, email);
     }
 
     private ClientProfileUpdateRequest profileUpdateRequest(String username, String firstName, String lastName) {
-        ClientProfileUpdateRequest request = new ClientProfileUpdateRequest();
-        request.setUsername(username);
-        request.setFirstName(firstName);
-        request.setLastName(lastName);
-        return request;
+        return new ClientProfileUpdateRequest(username, firstName, lastName);
     }
 }

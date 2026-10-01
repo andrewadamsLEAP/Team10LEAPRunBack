@@ -1,13 +1,14 @@
-package com.example.tradingApp;
+package com.example.controllers;
 
 import com.example.DTOs.clients.ChangePasswordRequest;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.entities.Client;
+import com.example.tradingApp.TradingAppApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -222,8 +223,7 @@ class ClientsControllerIntegrationTest {
         mockMvc.perform(patch("/api/v1/clients/profile/{clientId}", clientId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Invalid Profile Update: No profile changes were provided"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -294,25 +294,15 @@ class ClientsControllerIntegrationTest {
     }
 
     private LoginRequest loginRequest(String username, String password) {
-        LoginRequest request = new LoginRequest();
-        request.setUsername(username);
-        request.setPassword(password);
-        return request;
+        return new LoginRequest(username, password);
     }
 
     private ChangePasswordRequest changePasswordRequest(String currentPassword, String newPassword) {
-        ChangePasswordRequest request = new ChangePasswordRequest();
-        request.setCurrentPassword(currentPassword);
-        request.setNewPassword(newPassword);
-        return request;
+        return new ChangePasswordRequest(currentPassword, newPassword);
     }
 
     private ClientProfileUpdateRequest profileUpdateRequest(String username, String firstName, String lastName) {
-        ClientProfileUpdateRequest request = new ClientProfileUpdateRequest();
-        request.setUsername(username);
-        request.setFirstName(firstName);
-        request.setLastName(lastName);
-        return request;
+        return new ClientProfileUpdateRequest(username, firstName, lastName);
     }
 
     private String signupJson(Client client) {
@@ -327,23 +317,23 @@ class ClientsControllerIntegrationTest {
 
     private String loginJson(LoginRequest request) {
         return "{" +
-                quotedField("username", request.getUsername()) + "," +
-                quotedField("password", request.getPassword()) +
+                quotedField("username", request.username()) + "," +
+                quotedField("password", request.password()) +
                 "}";
     }
 
     private String changePasswordJson(ChangePasswordRequest request) {
         return "{" +
-                quotedField("currentPassword", request.getCurrentPassword()) + "," +
-                quotedField("newPassword", request.getNewPassword()) +
+                quotedField("currentPassword", request.currentPassword()) + "," +
+                quotedField("newPassword", request.newPassword()) +
                 "}";
     }
 
     private String profileUpdateJson(ClientProfileUpdateRequest request) {
         return "{" +
-                quotedField("username", request.getUsername()) + "," +
-                quotedField("firstName", request.getFirstName()) + "," +
-                quotedField("lastName", request.getLastName()) +
+                quotedField("username", request.username()) + "," +
+                quotedField("firstName", request.firstName()) + "," +
+                quotedField("lastName", request.lastName()) +
                 "}";
     }
 

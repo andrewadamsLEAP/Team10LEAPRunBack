@@ -53,18 +53,18 @@ public class ClientsService {
             throw new UpdateFailedException("Client signup failed");
         }
 
-        return new LoginResponse(createdClient.getClientId(), createdClient.getUsername(), null, "Signup successful");
+        return new LoginResponse(createdClient.clientId(), createdClient.username(), null, "Signup successful");
     }
 
     public LoginResponse login(LoginRequest request) {
         // TODO: Encode then compare passwords when we do the whole JwT node stuff
-        ClientLoginView loginClient = clientsRepository.findLoginClientByUsername(request.getUsername());
+        ClientLoginView loginClient = clientsRepository.findLoginClientByUsername(request.username());
 
-        if (loginClient == null || !loginClient.getPassword().equals(request.getPassword())) {
+        if (loginClient == null || !loginClient.password().equals(request.password())) {
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
 
-        return new LoginResponse(loginClient.getClientId(), loginClient.getUsername(), null, "Login successful");
+        return new LoginResponse(loginClient.clientId(), loginClient.username(), null, "Login successful");
     }
 
     // TODO: Encode passwords and verify when we work on JwT stuff (& check if user = clientId)
@@ -73,15 +73,15 @@ public class ClientsService {
 
         Validate.validateClient(client);
 
-        if (!client.getPassword().equals(request.getCurrentPassword())) {
+        if (!client.password().equals(request.currentPassword())) {
             throw new InvalidArgumentsException("Invalid Password Change", "Current password is incorrect");
         }
 
-        if (request.getCurrentPassword().equals(request.getNewPassword())) {
+        if (request.currentPassword().equals(request.newPassword())) {
             throw new InvalidArgumentsException("Invalid Password Change", "New password must be different from current password");
         }
 
-        int updatedRows = clientsRepository.updatePassword(clientId, request.getNewPassword());
+        int updatedRows = clientsRepository.updatePassword(clientId, request.newPassword());
 
         if (updatedRows != 1) {
             throw new UpdateFailedException("Password update failed");
@@ -165,8 +165,8 @@ public class ClientsService {
             throw new InvalidArgumentsException("Invalid Profile Update", "No profile changes were provided");
         }
 
-        if (request.getUsername() != null) {
-            Long existingClientId = clientsRepository.findClientIdByUsername(request.getUsername());
+        if (request.username() != null) {
+            Long existingClientId = clientsRepository.findClientIdByUsername(request.username());
 
             if (existingClientId != null && !existingClientId.equals(clientId)) {
                 throw new InvalidArgumentsException("Invalid Username Change", "Username is not unique");

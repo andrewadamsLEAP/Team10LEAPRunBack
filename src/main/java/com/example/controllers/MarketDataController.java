@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/trading")
+@RequestMapping("/api/v1/trading")
 public class MarketDataController {
 
     private final MarketDataService marketDataService;

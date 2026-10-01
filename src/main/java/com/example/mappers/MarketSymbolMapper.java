@@ -1,4 +1,4 @@
-package com.example.services;
+package com.example.mappers;
 
 import org.springframework.stereotype.Service;
 
@@ -35,6 +35,16 @@ public class MarketSymbolMapper {
         return symbols.stream()
                 .map(this::toAlpacaCryptoSymbol)
                 .collect(Collectors.joining(","));
+    }
+
+    public String toDatabaseCryptoSymbol(
+            String ticker) {
+
+        if (ticker == null) {
+            return null;
+        }
+
+        return ticker.replace("/", "-");
     }
 
     // =========================================================
@@ -77,5 +87,15 @@ public class MarketSymbolMapper {
         return symbols.stream()
                 .map(this::toAlpacaForexSymbol)
                 .collect(Collectors.joining(","));
+    }
+
+    public String toDatabaseForexSymbol(
+            String ticker) {
+
+        if (ticker == null) {
+            return null;
+        }
+
+        return ticker.replace("/", "");
     }
 }

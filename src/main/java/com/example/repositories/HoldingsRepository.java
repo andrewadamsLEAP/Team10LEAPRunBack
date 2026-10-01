@@ -1,8 +1,11 @@
 package com.example.repositories;
 
-import org.springframework.stereotype.Repository;
 import com.example.entities.Holding;
 import com.example.mappers.HoldingsMapper;
+
+import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 public class HoldingsRepository {
@@ -22,7 +25,7 @@ public class HoldingsRepository {
         return holdingsMapper.getQuantityByClientAndTicker(clientId, ticker);
     }
 
-    public java.util.List<Holding> getHoldingsByClient(Long clientId) {
+    public List<Holding> getHoldingsByClient(Long clientId) {
         return holdingsMapper.getHoldingsByClient(clientId);
     }
 

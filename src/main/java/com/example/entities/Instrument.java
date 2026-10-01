@@ -8,6 +8,7 @@ public class Instrument {
     private Double avgVolume;
     private String assetType;
 
+    // Constructor
     public Instrument(){
     }
 

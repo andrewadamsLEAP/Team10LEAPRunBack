@@ -7,12 +7,12 @@ import com.example.DTOs.holdings.QuantityResponse;
 import com.example.DTOs.holdings.BuyStockResponse;
 import com.example.DTOs.holdings.SellStockResponse;
 import com.example.DTOs.holdings.HoldingDtoConverter;
+import com.example.exceptions.Validate;
 import org.springframework.stereotype.Service;
 import com.example.repositories.HoldingsRepository;
 import com.example.repositories.ClientsRepository;
 
-import com.example.exceptions.Validate;
-import com.example.exceptions.InvalidArgumentsException;
+import java.util.List;
 
 @Service
 public class HoldingsService {
@@ -26,7 +26,6 @@ public class HoldingsService {
         this.clientsRepository = clientsRepository;
         this.holdingDtoConverter = holdingDtoConverter;
     }
-
 
     //TEST METHOD
     public String test() {
@@ -73,7 +72,7 @@ public class HoldingsService {
     /**
      * Buy stock logic - increase quantity for client/ticker
      * If client doesn't own this ticker yet, create new holding
-     */
+     */     
     public BuyStockResponse buyStock(Long clientId, String ticker, Integer quantity) {
         Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
@@ -109,10 +108,11 @@ public class HoldingsService {
         Integer currentQty = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
         
         if (currentQty == null || currentQty < quantity) {
-            String msg = "Insufficient shares to sell. Current: " + 
-                         (currentQty == null ? 0 : currentQty) + 
-                         ", Trying to sell: " + quantity;
-            throw new InvalidArgumentsException("Invalid Sell Operation", msg);
+            throw new IllegalArgumentException(
+                    "Insufficient shares to sell. Current: " + 
+                    (currentQty == null ? 0 : currentQty) + 
+                    ", Trying to sell: " + quantity
+            );
         }
         
         holdingsRepository.updateSellHolding(quantity, clientId, ticker);
@@ -129,10 +129,10 @@ public class HoldingsService {
      * If SELL: decreases quantity
      */
     public void updateHoldingsForOrder(Order order) {
-        if (order.orderType() == Order.OrderType.BUY) {
-            buyStock(order.clientId(), order.ticker(), order.quantity());
-        } else if (order.orderType() == Order.OrderType.SELL) {
-            sellStock(order.clientId(), order.ticker(), order.quantity());
+        if (order.getOrderType() == Order.OrderType.BUY) {
+            buyStock(order.getClientId(), order.getTicker(), order.getQuantity());
+        } else if (order.getOrderType() == Order.OrderType.SELL) {
+            sellStock(order.getClientId(), order.getTicker(), order.getQuantity());
         }
     }
 }

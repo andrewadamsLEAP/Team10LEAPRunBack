@@ -1,8 +1,10 @@
 package com.example.controllers;
 
 import com.example.DTOs.clients.ChangePasswordRequest;
+import com.example.DTOs.clients.ClientAdminView;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientProfileView;
+import com.example.DTOs.clients.ClientReporterView;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.DTOs.clients.LoginResponse;
 import com.example.entities.Client;
@@ -12,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.services.ClientsService;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/clients")
@@ -54,10 +58,26 @@ public class ClientsController {
     public ResponseEntity<ClientProfileView> viewProfile(@PathVariable Long clientId) {
         return ResponseEntity.ok(clientsService.getClientProfile(clientId));
     }
-    
 
-    
+    // Admin endpoints - for administrative access
+    @GetMapping("/admin/{clientId}")
+    public ResponseEntity<ClientAdminView> getClientAsAdmin(@PathVariable Long clientId) {
+        return ResponseEntity.ok(clientsService.getClientDataAdmin(clientId));
+    }
 
+    @GetMapping("/admin")
+    public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
+        return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
+    }
 
-    
+    // Reporter endpoints - for reporting/analytics access
+    @GetMapping("/reporter/{clientId}")
+    public ResponseEntity<ClientReporterView> getClientAsReporter(@PathVariable Long clientId) {
+        return ResponseEntity.ok(clientsService.getClientDataReporter(clientId));
+    }
+
+    @GetMapping("/reporter")
+    public ResponseEntity<List<ClientReporterView>> getAllClientsAsReporter() {
+        return ResponseEntity.ok(clientsService.getAllClientDataReporter());
+    }
 }

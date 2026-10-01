@@ -1,8 +1,8 @@
 package com.example.repositories;
 
+import com.example.mappers.ClientsMapper;
 import com.example.DTOs.clients.ClientAdminView;
 import com.example.DTOs.clients.ClientLoginView;
-import com.example.mappers.ClientsMapper;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientReporterView;
 import com.example.entities.Client;
@@ -68,9 +68,9 @@ public class ClientsRepository {
      public int updateProfile(Long clientId, ClientProfileUpdateRequest request) {
         return clientsMapper.updateProfile(
             clientId,
-            request.getUsername(),
-            request.getFirstName(),
-            request.getLastName()
+            request.username(),
+            request.firstName(),
+            request.lastName()
         );
     }
 

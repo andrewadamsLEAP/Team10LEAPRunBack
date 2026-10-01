@@ -1,15 +1,23 @@
 package com.example.mappers;
 
 import com.example.entities.Holding;
-
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.util.List;
+
 @Mapper
 public interface HoldingsMapper {
+    @Results({
+            @Result(property = "client_Id", column = "client_id"),
+            @Result(property = "ticker", column = "ticker"),
+            @Result(property = "quantity", column = "quantity")
+    })
     @Select("""
         SELECT *
         FROM holdings
@@ -26,12 +34,17 @@ public interface HoldingsMapper {
     Integer getQuantityByClientAndTicker(@Param("client_id") Long client_id, @Param("ticker") String ticker);
 
 
+    @Results({
+            @Result(property = "client_Id", column = "client_id"),
+            @Result(property = "ticker", column = "ticker"),
+            @Result(property = "quantity", column = "quantity")
+    })
     @Select("""
         SELECT *
         FROM holdings
         WHERE client_id = #{client_id}
         """)
-    java.util.List<Holding> getHoldingsByClient(@Param("client_id") Long client_id);
+    List<Holding> getHoldingsByClient(@Param("client_id") Long client_id);
 
 
 

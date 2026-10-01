@@ -27,6 +27,11 @@ public class GlobalExceptionHandler {
         return buildProblem(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ProblemDetail> handleIllegalArgument(IllegalArgumentException ex) {
+        return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     private ResponseEntity<ProblemDetail> buildProblem(HttpStatus status, String detail) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
         return ResponseEntity.status(status).body(problem);

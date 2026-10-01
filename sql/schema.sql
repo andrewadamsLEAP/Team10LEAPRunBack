@@ -48,7 +48,7 @@ CREATE TABLE orders (
     CONSTRAINT chk_order_status
         CHECK (
             order_status IN (
-                'CANCELED',
+                'CANCELLED',
                 'PENDING',
                 'FULFILLED'
             )
@@ -66,11 +66,11 @@ CREATE TABLE orders (
 );
 
 CREATE TABLE holdings (
-    hold_id BIGSERIAL NOT NULL PRIMARY KEY,
-    client_id BIGINT NOT NULL,
+    client_id BIGINT NOT NULL ,
     ticker VARCHAR(100) NOT NULL,
     quantity INTEGER NOT NULL,
-    upadted_at DATE NOT NULL,
+
+    PRIMARY KEY (client_id, ticker)
 
     CONSTRAINT fk_client
         FOREIGN KEY (client_id)

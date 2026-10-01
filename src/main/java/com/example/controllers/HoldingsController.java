@@ -1,4 +1,5 @@
 package com.example.controllers;
+import com.example.entities.Holding;
 import com.example.DTOs.holdings.HoldingResponse;
 import com.example.DTOs.holdings.QuantityResponse;
 import com.example.DTOs.holdings.BuyStockResponse;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/holdings")
@@ -35,7 +38,6 @@ public class HoldingsController {
         return holdingsService.test();
     }
 
-
     //Get specific holding (entire holding) for a client and ticker
     // Example: GET /api/v1/holdings/1/AAPL
     @GetMapping("/{clientId}/{ticker}")
@@ -43,16 +45,6 @@ public class HoldingsController {
             @PathVariable Long clientId,
             @PathVariable String ticker) {
         return holdingsService.getHolding(clientId, ticker);
-    }
-
-
-    // Get only quantity of a specific ticker for a client
-    // Example: GET /api/v1/holdings/quantity?clientId=1&ticker=AAPL
-    @GetMapping("/quantity")
-    public QuantityResponse getQuantity(
-            @RequestParam Long clientId,
-            @RequestParam String ticker) {
-        return holdingsService.getQuantity(clientId, ticker);
     }
 
    
@@ -64,5 +56,13 @@ public class HoldingsController {
         return holdingsService.getAllClientHoldings(clientId);
     }
 
-    
+    // Get only quantity of a specific ticker for a client
+    // Example: GET /api/v1/holdings/quantity?clientId=1&ticker=AAPL
+    @GetMapping("/quantity")
+    public QuantityResponse getQuantity(
+            @RequestParam Long clientId,
+            @RequestParam String ticker) {
+        return holdingsService.getQuantity(clientId, ticker);
+    }
+
 }

@@ -1,49 +1,37 @@
 package com.example.DTOs.clients;
 
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.NotBlank;
 
-public class ClientProfileUpdateRequest {
-    @Size(min = 3, max = 100)
-    private String username;
+/**
+ * DTO for handling client profile update requests.
+ * ClientProfileUpdateRequest
+ * @param username
+ * ^^^ Cannot be blank and has a min size of 3 and a max size of 100.
+ * @param firstName
+ * ^^^^^^^^^ Cannot be blank and has a min size of 1 and a max size of 100.
+ * @param lastName
+ * ^^^^^^^^^ Cannot be blank and has a min size of 1 and a max size of 100.
+ */
 
-    @Size(min = 1, max = 100)
-    private String firstName;
-
-    @Size(min = 1, max = 100)
-    private String lastName;
-
-    public ClientProfileUpdateRequest() {
-    }
-
+public record ClientProfileUpdateRequest(
+        @NotBlank
+        @Size(min = 3, max = 100)
+        String username,
+        
+        @NotBlank
+        @Size(min = 1, max = 100)
+        String firstName,
+        
+        @NotBlank
+        @Size(min = 1, max = 100)
+        String lastName
+) {
     public boolean hasUpdates() {
         return hasText(username) || hasText(firstName) || hasText(lastName);
     }
 
-    private boolean hasText(String value) {
+    private static boolean hasText(String value) {
         return value != null && !value.trim().isEmpty();
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
     }
 }

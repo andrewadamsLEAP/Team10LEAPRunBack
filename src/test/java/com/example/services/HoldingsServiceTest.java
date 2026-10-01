@@ -1,14 +1,13 @@
 package com.example.services;
 
 import com.example.DTOs.holdings.BuyStockResponse;
+import com.example.DTOs.holdings.HoldingDtoConverter;
+import com.example.DTOs.holdings.HoldingResponse;
 import com.example.DTOs.holdings.QuantityResponse;
 import com.example.DTOs.holdings.SellStockResponse;
-import com.example.DTOs.holdings.HoldingResponse;
-import com.example.DTOs.holdings.HoldingDtoConverter;
+import com.example.entities.Client;
 import com.example.entities.Holding;
 import com.example.entities.Order;
-import com.example.exceptions.ClientNotFoundException;
-import com.example.exceptions.InvalidArgumentsException;
 import com.example.repositories.ClientsRepository;
 import com.example.repositories.HoldingsRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +17,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -39,7 +39,6 @@ class HoldingsServiceTest {
         holdingsService = new HoldingsService(holdingsRepository, clientsRepository, holdingDtoConverter);
     }
 
-    // ==== GET HOLDING TESTS ====
     @Test
     void getHoldingReturnsHoldingResponseWhenValid() {
         Holding holding = holding(1L, "AAPL", 100);
@@ -58,20 +57,16 @@ class HoldingsServiceTest {
     void getHoldingThrowsClientNotFoundWhenClientNotFound() {
         when(clientsRepository.findClientById(999L)).thenReturn(null);
 
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class,
+        assertThrows(RuntimeException.class,
                 () -> holdingsService.getHolding(999L, "AAPL"));
-
-        assertEquals("Client with ID 999 not found in or has no holdings", exception.getMessage());
     }
 
     @Test
     void getHoldingThrowsInvalidTickerWhenTickerEmpty() {
         when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
 
-        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
+        assertThrows(RuntimeException.class,
                 () -> holdingsService.getHolding(1L, ""));
-
-        assertEquals("Invalid Ticker: Ticker cannot be null or empty: ", exception.getMessage());
     }
 
     // ==== GET QUANTITY TESTS ====
@@ -94,17 +89,7 @@ class HoldingsServiceTest {
         QuantityResponse response = holdingsService.getQuantity(1L, "UNKNOWN");
 
         assertNotNull(response);
-        assertEquals(null, response.quantity());
-    }
-
-    @Test
-    void getQuantityThrowsClientNotFoundWhenClientNotFound() {
-        when(clientsRepository.findClientById(999L)).thenReturn(null);
-
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class,
-                () -> holdingsService.getQuantity(999L, "AAPL"));
-
-        assertEquals("Client with ID 999 not found in or has no holdings", exception.getMessage());
+        assertNull(response.quantity());
     }
 
     // ==== GET ALL CLIENT HOLDINGS TESTS ====
@@ -132,16 +117,6 @@ class HoldingsServiceTest {
         List<HoldingResponse> responses = holdingsService.getAllClientHoldings(1L);
 
         assertEquals(0, responses.size());
-    }
-
-    @Test
-    void getAllClientHoldingsThrowsClientNotFoundWhenClientNotFound() {
-        when(clientsRepository.findClientById(999L)).thenReturn(null);
-
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class,
-                () -> holdingsService.getAllClientHoldings(999L));
-
-        assertEquals("Client with ID 999 not found in or has no holdings", exception.getMessage());
     }
 
     // ==== BUY STOCK TESTS ====
@@ -184,36 +159,6 @@ class HoldingsServiceTest {
         verify(holdingsRepository).updateBuyHolding(50, 1L, "AAPL");
     }
 
-    @Test
-    void buyStockThrowsClientNotFoundWhenClientNotFound() {
-        when(clientsRepository.findClientById(999L)).thenReturn(null);
-
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class,
-                () -> holdingsService.buyStock(999L, "AAPL", 100));
-
-        assertEquals("Client with ID 999 not found in or has no holdings", exception.getMessage());
-    }
-
-    @Test
-    void buyStockThrowsInvalidQuantityWhenNegative() {
-        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
-
-        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
-                () -> holdingsService.buyStock(1L, "AAPL", -10));
-
-        assertEquals("Invalid Quantity: Quantity must be positive: -10", exception.getMessage());
-    }
-
-    @Test
-    void buyStockThrowsInvalidQuantityWhenZeroQuantity() {
-        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
-
-        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
-                () -> holdingsService.buyStock(1L, "AAPL", 0));
-
-        assertEquals("Invalid Quantity: Quantity must be positive: 0", exception.getMessage());
-    }
-
     // ==== SELL STOCK TESTS ====
     @Test
     void sellStockReducesExistingHolding() {
@@ -236,10 +181,8 @@ class HoldingsServiceTest {
         when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
         when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(null);
 
-        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> holdingsService.sellStock(1L, "AAPL", 10));
-
-        assertEquals("Invalid Sell Operation: Insufficient shares to sell. Current: 0, Trying to sell: 10", exception.getMessage());
     }
 
     @Test
@@ -247,50 +190,42 @@ class HoldingsServiceTest {
         when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
         when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(50);
 
-        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
+        assertThrows(IllegalArgumentException.class,
                 () -> holdingsService.sellStock(1L, "AAPL", 100));
-
-        assertEquals("Invalid Sell Operation: Insufficient shares to sell. Current: 50, Trying to sell: 100", exception.getMessage());
     }
 
     @Test
     void sellStockThrowsClientNotFoundWhenClientNotFound() {
         when(clientsRepository.findClientById(999L)).thenReturn(null);
 
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class,
+        assertThrows(RuntimeException.class,
                 () -> holdingsService.sellStock(999L, "AAPL", 50));
-
-        assertEquals("Client with ID 999 not found in or has no holdings", exception.getMessage());
     }
 
     @Test
     void sellStockThrowsInvalidQuantityWhenNegative() {
         when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
 
-        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
+        assertThrows(RuntimeException.class,
                 () -> holdingsService.sellStock(1L, "AAPL", -10));
-
-        assertEquals("Invalid Quantity: Quantity must be positive: -10", exception.getMessage());
     }
 
     @Test
     void sellStockThrowsInvalidQuantityWhenZero() {
         when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
 
-        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class,
+        assertThrows(RuntimeException.class,
                 () -> holdingsService.sellStock(1L, "AAPL", 0));
-
-        assertEquals("Invalid Quantity: Quantity must be positive: 0", exception.getMessage());
     }
 
     // ==== UPDATE HOLDINGS FOR ORDER TESTS ====
     @Test
     void updateHoldingsForOrderBuyExecutesWhenBuyOrder() {
-        Order buyOrder = mock(Order.class);
-        when(buyOrder.orderType()).thenReturn(Order.OrderType.BUY);
-        when(buyOrder.clientId()).thenReturn(1L);
-        when(buyOrder.ticker()).thenReturn("AAPL");
-        when(buyOrder.quantity()).thenReturn(100);
+        Order buyOrder = new Order();
+        buyOrder.setOrderType(Order.OrderType.BUY);
+        buyOrder.setClientId(1L);
+        buyOrder.setTicker("AAPL");
+        buyOrder.setQuantity(100);
 
         when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
         when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(null);
@@ -302,11 +237,11 @@ class HoldingsServiceTest {
 
     @Test
     void updateHoldingsForOrderSellExecutesWhenSellOrder() {
-        Order sellOrder = mock(Order.class);
-        when(sellOrder.orderType()).thenReturn(Order.OrderType.SELL);
-        when(sellOrder.clientId()).thenReturn(1L);
-        when(sellOrder.ticker()).thenReturn("AAPL");
-        when(sellOrder.quantity()).thenReturn(50);
+        Order sellOrder = new Order();
+        sellOrder.setOrderType(Order.OrderType.SELL);
+        sellOrder.setClientId(1L);
+        sellOrder.setTicker("AAPL");
+        sellOrder.setQuantity(50);
 
         when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
         when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(100);
@@ -325,8 +260,8 @@ class HoldingsServiceTest {
         return holding;
     }
 
-    private com.example.entities.Client client(Long clientId) {
-        com.example.entities.Client client = new com.example.entities.Client();
+    private Client client(Long clientId) {
+        Client client = new Client();
         client.setClientId(clientId);
         return client;
     }

@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import com.example.repositories.InstrumentRepository;
+import com.example.services.InstrumentService;
+import com.example.entities.Instrument;
 
 import com.example.entities.Instrument;
 import com.example.repositories.InstrumentRepository;
