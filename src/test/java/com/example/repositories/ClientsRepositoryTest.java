@@ -1,7 +1,7 @@
 package com.example.repositories;
 
 import com.example.DTOs.clients.ClientAdminView;
-import com.example.DTOs.clients.ClientLoginView;
+import com.example.DTOs.clients.LoginView;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientReporterView;
 import com.example.entities.Client;
@@ -85,11 +85,11 @@ class ClientsRepositoryTest {
     @Test
     void findLoginClientByUsernameDelegatesToMapper() {
         ClientsMapper mapper = mock(ClientsMapper.class);
-        ClientLoginView expected = new ClientLoginView(5L, "clientuser", "password1");
+        LoginView expected = new LoginView(5L, "clientuser", "password1");
         when(mapper.findLoginClientByUsername("clientuser")).thenReturn(expected);
         ClientsRepository repository = new ClientsRepository(mapper);
 
-        ClientLoginView actual = repository.findLoginClientByUsername("clientuser");
+        LoginView actual = repository.findLoginClientByUsername("clientuser");
 
         assertSame(expected, actual);
         verify(mapper).findLoginClientByUsername("clientuser");
@@ -98,11 +98,11 @@ class ClientsRepositoryTest {
     @Test
     void findLoginClientByIdDelegatesToMapper() {
         ClientsMapper mapper = mock(ClientsMapper.class);
-        ClientLoginView expected = new ClientLoginView(5L, "loginuser", "password1");
+        LoginView expected = new LoginView(5L, "loginuser", "password1");
         when(mapper.findLoginClientById(5L)).thenReturn(expected);
         ClientsRepository repository = new ClientsRepository(mapper);
 
-        ClientLoginView actual = repository.findLoginClientById(5L);
+        LoginView actual = repository.findLoginClientById(5L);
 
         assertSame(expected, actual);
         verify(mapper).findLoginClientById(5L);

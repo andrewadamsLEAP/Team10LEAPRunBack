@@ -2,7 +2,7 @@ package com.example.repositories;
 
 import com.example.mappers.ClientsMapper;
 import com.example.DTOs.clients.ClientAdminView;
-import com.example.DTOs.clients.ClientLoginView;
+import com.example.DTOs.clients.LoginView;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientReporterView;
 import com.example.entities.Client;
@@ -39,11 +39,11 @@ public class ClientsRepository {
         return clientsMapper.findByIdReporter(clientId);
     }
 
-    public ClientLoginView findLoginClientByUsername(String username) {
+    public LoginView findLoginClientByUsername(String username) {
         return clientsMapper.findLoginClientByUsername(username);
     }
 
-    public ClientLoginView findLoginClientById(Long clientId) {
+    public LoginView findLoginClientById(Long clientId) {
         return clientsMapper.findLoginClientById(clientId);
     }
 

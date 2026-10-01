@@ -2,7 +2,7 @@ package com.example.services;
 
 import com.example.DTOs.clients.ChangePasswordRequest;
 import com.example.DTOs.clients.ClientAdminView;
-import com.example.DTOs.clients.ClientLoginView;
+import com.example.DTOs.clients.LoginView;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientProfileView;
 import com.example.DTOs.clients.ClientReporterView;
@@ -40,7 +40,7 @@ class ClientsServiceTest {
     @Test
     void signupReturnsLoginResponseWhenClientIsCreated() {
         Client request = client(1L, "signup@example.com", "signupuser", "password1", "Sign", "Up", BigDecimal.ZERO);
-        ClientLoginView createdClient = loginClientView(5L, "signupuser", "password1");
+        LoginView createdClient = loginClientView(5L, "signupuser", "password1");
         when(clientsRepository.findClientIdByEmail("signup@example.com")).thenReturn(null);
         when(clientsRepository.findClientIdByUsername("signupuser")).thenReturn(null);
         when(clientsRepository.createClient(request)).thenReturn(1);
@@ -427,8 +427,8 @@ class ClientsServiceTest {
         return client;
     }
 
-    private ClientLoginView loginClientView(Long clientId, String username, String password) {
-        return new ClientLoginView(clientId, username, password);
+    private LoginView loginClientView(Long clientId, String username, String password) {
+        return new LoginView(clientId, username, password);
     }
 
     private LoginRequest loginRequest(String username, String password) {
