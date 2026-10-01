@@ -53,7 +53,7 @@ public class ClientsService {
             throw new UpdateFailedException("Client signup failed");
         }
 
-        return new LoginResponse(createdClient.clientId(), createdClient.username(), null, "Signup successful");
+        return new LoginResponse(createdClient.userId(), createdClient.username(), null, "Signup successful");
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -64,7 +64,7 @@ public class ClientsService {
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
 
-        return new LoginResponse(loginClient.clientId(), loginClient.username(), null, "Login successful");
+        return new LoginResponse(loginClient.userId(), loginClient.username(), null, "Login successful");
     }
 
     // TODO: Encode passwords and verify when we work on JwT stuff (& check if user = clientId)

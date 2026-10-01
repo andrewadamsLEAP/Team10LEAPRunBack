@@ -48,7 +48,7 @@ class ClientsServiceTest {
 
         LoginResponse response = clientsService.signup(request);
 
-        assertEquals(5L, response.clientId());
+        assertEquals(5L, response.userId());
         assertEquals("signupuser", response.username());
         assertEquals("Signup successful", response.message());
         verify(clientsRepository).createClient(request);
@@ -110,7 +110,7 @@ class ClientsServiceTest {
 
         LoginResponse response = clientsService.login(request);
 
-        assertEquals(3L, response.clientId());
+        assertEquals(3L, response.userId());
         assertEquals("loginuser", response.username());
         assertEquals("Login successful", response.message());
     }
