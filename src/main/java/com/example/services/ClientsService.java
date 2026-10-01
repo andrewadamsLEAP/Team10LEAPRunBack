@@ -1,13 +1,13 @@
 package com.example.services;
 
-import com.example.dtos.clients.ChangePasswordRequest;
-import com.example.dtos.clients.ClientAdminView;
-import com.example.dtos.clients.ClientLoginView;
-import com.example.dtos.clients.ClientProfileUpdateRequest;
-import com.example.dtos.clients.ClientProfileView;
-import com.example.dtos.clients.ClientReporterView;
-import com.example.dtos.clients.LoginRequest;
-import com.example.dtos.clients.LoginResponse;
+import com.example.DTOs.clients.ChangePasswordRequest;
+import com.example.DTOs.clients.ClientAdminView;
+import com.example.DTOs.clients.ClientLoginView;
+import com.example.DTOs.clients.ClientProfileUpdateRequest;
+import com.example.DTOs.clients.ClientProfileView;
+import com.example.DTOs.clients.ClientReporterView;
+import com.example.DTOs.clients.LoginRequest;
+import com.example.DTOs.clients.LoginResponse;
 import com.example.entities.Client;
 import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
