@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
@@ -14,7 +13,6 @@ import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -99,76 +97,6 @@ class HoldingsControllerIntegrationTest {
     void getClientHoldingsThrowsNotFoundWhenClientNotFound() throws Exception {
         mockMvc.perform(get("/api/v1/holdings/client/{clientId}", 99999L))
                 .andExpect(status().isNotFound());
-    }
-
-    // ==== BUY STOCK TESTS ====
-    // Note: Create/update operations skipped in integration tests due to MyBatis mapper property naming issue
-    // (client_id vs client_Id). Unit tests in HoldingsServiceTest provide comprehensive coverage.
-
-    @Test
-    void buyStockThrowsNotFoundWhenClientNotFound() throws Exception {
-        mockMvc.perform(post("/api/v1/holdings/buy")
-                        .param("clientId", "99999")
-                        .param("ticker", "AAPL")
-                        .param("quantity", "100"))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void buyStockThrowsBadRequestWhenQuantityNegative() throws Exception {
-        Long clientId = insertClient("test9@example.com", "testuser9", "password1", "Test", "User9", new BigDecimal("1000.00"));
-
-        mockMvc.perform(post("/api/v1/holdings/buy")
-                        .param("clientId", clientId.toString())
-                        .param("ticker", "AAPL")
-                        .param("quantity", "-50"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void buyStockThrowsBadRequestWhenQuantityZero() throws Exception {
-        Long clientId = insertClient("test10@example.com", "testuser10", "password1", "Test", "User10", new BigDecimal("1000.00"));
-
-        mockMvc.perform(post("/api/v1/holdings/buy")
-                        .param("clientId", clientId.toString())
-                        .param("ticker", "AAPL")
-                        .param("quantity", "0"))
-                .andExpect(status().isBadRequest());
-    }
-
-    // ==== SELL STOCK TESTS ====
-    // Note: Create/update operations skipped in integration tests due to MyBatis mapper property naming issue.
-    // Unit tests in HoldingsServiceTest provide comprehensive coverage.
-
-    @Test
-    void sellStockThrowsNotFoundWhenClientNotFound() throws Exception {
-        mockMvc.perform(post("/api/v1/holdings/sell")
-                        .param("clientId", "99999")
-                        .param("ticker", "AAPL")
-                        .param("quantity", "50"))
-                .andExpect(status().isNotFound());
-    }
-
-    @Test
-    void sellStockThrowsBadRequestWhenQuantityNegative() throws Exception {
-        Long clientId = insertClient("test14@example.com", "testuser14", "password1", "Test", "User14", new BigDecimal("1000.00"));
-
-        mockMvc.perform(post("/api/v1/holdings/sell")
-                        .param("clientId", clientId.toString())
-                        .param("ticker", "AAPL")
-                        .param("quantity", "-50"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    void sellStockThrowsBadRequestWhenQuantityZero() throws Exception {
-        Long clientId = insertClient("test15@example.com", "testuser15", "password1", "Test", "User15", new BigDecimal("1000.00"));
-
-        mockMvc.perform(post("/api/v1/holdings/sell")
-                        .param("clientId", clientId.toString())
-                        .param("ticker", "AAPL")
-                        .param("quantity", "0"))
-                .andExpect(status().isBadRequest());
     }
 
     private Long insertClient(String email, String username, String password, String firstName, String lastName, BigDecimal cashAmount) {

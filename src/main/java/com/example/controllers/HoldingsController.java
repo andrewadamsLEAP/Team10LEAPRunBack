@@ -64,25 +64,5 @@ public class HoldingsController {
         return holdingsService.getAllClientHoldings(clientId);
     }
 
-    // Buy stock endpoint
-    // Example: POST /api/v1/holdings/buy?clientId=1&ticker=AAPL&quantity=10
-    @PostMapping("/buy")
-    public BuyStockResponse buyStock(
-            @RequestParam Long clientId,
-            @RequestParam String ticker,
-            @RequestParam Integer quantity) {
-        return holdingsService.buyStock(clientId, ticker, quantity);
-    }
-
-    // Sell stock endpoint
-    // Example: POST /api/v1/holdings/sell?clientId=1&ticker=AAPL&quantity=5
-    @PostMapping("/sell")
-    public SellStockResponse sellStock(
-            @RequestParam Long clientId,
-            @RequestParam String ticker,
-            @RequestParam Integer quantity) {
-        return holdingsService.sellStock(clientId, ticker, quantity);
-    }
-
     
 }
