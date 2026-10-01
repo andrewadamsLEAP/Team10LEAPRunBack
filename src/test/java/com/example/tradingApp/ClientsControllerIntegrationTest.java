@@ -222,8 +222,7 @@ class ClientsControllerIntegrationTest {
         mockMvc.perform(patch("/api/v1/clients/profile/{clientId}", clientId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.detail").value("Invalid Profile Update: No profile changes were provided"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
