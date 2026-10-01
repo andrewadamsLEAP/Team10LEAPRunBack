@@ -1,4 +1,4 @@
-package com.example.tradingApp;
+package com.example.controllers;
 
 import com.example.DTOs.clients.ChangePasswordRequest;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;

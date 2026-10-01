@@ -3,225 +3,154 @@ package com.example.repositories;
 import com.example.entities.Holding;
 import com.example.mappers.HoldingsMapper;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.InjectMocks;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class HoldingsRepositoryTest {
 
-    @Mock
-    private HoldingsMapper holdingsMapper;
-
-    @InjectMocks
-    private HoldingsRepository holdingsRepository;
-
-    /**
-     * Tests getting holding by client and ticker
-     */
     @Test
-    void getHoldingsByClientAndTicker_shouldReturnHoldingFromMapper() {
-        Long clientId = 1L;
-        String ticker = "AAPL";
-        Holding mockHolding = new Holding();
-        mockHolding.setClient_Id(clientId);
-        mockHolding.setTicker(ticker);
-        mockHolding.setQuantity(100);
+    void getHoldingsByClientAndTickerDelegatesToMapper() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        Holding expected = holding(1L, "AAPL", 100);
+        when(mapper.getHoldingsByClientAndTicker(1L, "AAPL")).thenReturn(expected);
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        when(holdingsMapper.getHoldingsByClientAndTicker(clientId, ticker)).thenReturn(mockHolding);
+        Holding actual = repository.getHoldingsByClientAndTicker(1L, "AAPL");
 
-        Holding result = holdingsRepository.getHoldingsByClientAndTicker(clientId, ticker);
-
-        assertNotNull(result);
-        assertEquals(clientId, result.getClient_Id());
-        assertEquals(ticker, result.getTicker());
-        assertEquals(100, result.getQuantity());
-        verify(holdingsMapper, times(1)).getHoldingsByClientAndTicker(clientId, ticker);
+        assertSame(expected, actual);
+        verify(mapper).getHoldingsByClientAndTicker(1L, "AAPL");
     }
 
-    /**
-     * Tests getting quantity by client and ticker
-     */
     @Test
-    void getQuantityByClientAndTicker_shouldReturnQuantityFromMapper() {
-        Long clientId = 1L;
-        String ticker = "GOOGL";
+    void getHoldingsByClientAndTickerReturnsNullWhenNotFound() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        when(mapper.getHoldingsByClientAndTicker(1L, "MISSING")).thenReturn(null);
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        when(holdingsMapper.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(50);
+        Holding actual = repository.getHoldingsByClientAndTicker(1L, "MISSING");
 
-        Integer result = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
-
-        assertNotNull(result);
-        assertEquals(50, result);
-        verify(holdingsMapper, times(1)).getQuantityByClientAndTicker(clientId, ticker);
+        assertNull(actual);
+        verify(mapper).getHoldingsByClientAndTicker(1L, "MISSING");
     }
 
-    /**
-     * Tests getting holdings by client
-     */
     @Test
-    void getHoldingsByClient_shouldReturnListOfHoldingsForClient() {
-        Long clientId = 1L;
-        List<Holding> mockHoldings = new ArrayList<>();
-        
-        Holding holding1 = new Holding();
-        holding1.setClient_Id(clientId);
-        holding1.setTicker("AAPL");
-        holding1.setQuantity(100);
-        mockHoldings.add(holding1);
+    void getQuantityByClientAndTickerDelegatesToMapper() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        when(mapper.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(50);
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        Holding holding2 = new Holding();
-        holding2.setClient_Id(clientId);
-        holding2.setTicker("GOOGL");
-        holding2.setQuantity(50);
-        mockHoldings.add(holding2);
+        Integer actual = repository.getQuantityByClientAndTicker(1L, "AAPL");
 
-        when(holdingsMapper.getHoldingsByClient(clientId)).thenReturn(mockHoldings);
-
-        List<Holding> result = holdingsRepository.getHoldingsByClient(clientId);
-
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals("AAPL", result.get(0).getTicker());
-        assertEquals("GOOGL", result.get(1).getTicker());
-        verify(holdingsMapper, times(1)).getHoldingsByClient(clientId);
+        assertEquals(50, actual);
+        verify(mapper).getQuantityByClientAndTicker(1L, "AAPL");
     }
 
-    /**
-     * Tests creating holding
-     */
     @Test
-    void createHolding_shouldReturnCreatedHolding() {
-        Holding holdingToCreate = new Holding();
-        holdingToCreate.setClient_Id(1L);
-        holdingToCreate.setTicker("MSFT");
-        holdingToCreate.setQuantity(75);
+    void getQuantityByClientAndTickerReturnsNullWhenNotFound() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        when(mapper.getQuantityByClientAndTicker(1L, "UNKNOWN")).thenReturn(null);
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        doNothing().when(holdingsMapper).createHolding(any(Holding.class));
+        Integer actual = repository.getQuantityByClientAndTicker(1L, "UNKNOWN");
 
-        Holding result = holdingsRepository.createHolding(holdingToCreate);
-
-        assertNotNull(result);
-        assertEquals(1L, result.getClient_Id());
-        assertEquals("MSFT", result.getTicker());
-        verify(holdingsMapper, times(1)).createHolding(any(Holding.class));
+        assertNull(actual);
     }
 
-    /**
-     * Tests updating buy holding
-     */
     @Test
-    void updateBuyHolding_shouldUpdateAndReturnAffectedRows() {
-        Integer quantity = 50;
-        Long clientId = 1L;
-        String ticker = "AAPL";
+    void getHoldingsByClientDelegatesToMapper() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        List<Holding> expected = List.of(holding(1L, "AAPL", 100), holding(1L, "MSFT", 50));
+        when(mapper.getHoldingsByClient(1L)).thenReturn(expected);
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        when(holdingsMapper.updateBuyHolding(quantity, clientId, ticker)).thenReturn(1);
+        List<Holding> actual = repository.getHoldingsByClient(1L);
 
-        int result = holdingsRepository.updateBuyHolding(quantity, clientId, ticker);
-
-        assertEquals(1, result);
-        verify(holdingsMapper, times(1)).updateBuyHolding(quantity, clientId, ticker);
+        assertSame(expected, actual);
+        assertEquals(2, actual.size());
+        verify(mapper).getHoldingsByClient(1L);
     }
 
-    /**
-     * Tests updating sell holding
-     */
     @Test
-    void updateSellHolding_shouldUpdateAndReturnAffectedRows() {
-        Integer quantity = 30;
-        Long clientId = 1L;
-        String ticker = "GOOGL";
+    void getHoldingsByClientReturnsEmptyListWhenNoHoldings() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        when(mapper.getHoldingsByClient(2L)).thenReturn(List.of());
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        when(holdingsMapper.updateSellHolding(quantity, clientId, ticker)).thenReturn(1);
+        List<Holding> actual = repository.getHoldingsByClient(2L);
 
-        int result = holdingsRepository.updateSellHolding(quantity, clientId, ticker);
-
-        assertEquals(1, result);
-        verify(holdingsMapper, times(1)).updateSellHolding(quantity, clientId, ticker);
+        assertEquals(0, actual.size());
     }
 
-    /**
-     * Tests getting holdings returns empty list
-     */
     @Test
-    void getHoldingsByClient_shouldReturnEmptyListWhenNoHoldings() {
-        Long clientId = 1L;
+    void createHoldingDelegatesToMapper() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        Holding holding = holding(1L, "AAPL", 100);
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        when(holdingsMapper.getHoldingsByClient(clientId)).thenReturn(new ArrayList<>());
+        Holding actual = repository.createHolding(holding);
 
-        List<Holding> result = holdingsRepository.getHoldingsByClient(clientId);
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
+        assertSame(holding, actual);
+        verify(mapper).createHolding(holding);
     }
 
-    /**
-     * Tests getting quantity returns null when no holding
-     */
     @Test
-    void getQuantityByClientAndTicker_shouldReturnNullWhenNoHolding() {
-        Long clientId = 1L;
-        String ticker = "NONEXISTENT";
+    void updateBuyHoldingDelegatesToMapper() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        when(mapper.updateBuyHolding(50, 1L, "AAPL")).thenReturn(1);
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        when(holdingsMapper.getQuantityByClientAndTicker(clientId, ticker)).thenReturn(null);
+        int actual = repository.updateBuyHolding(50, 1L, "AAPL");
 
-        Integer result = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
-
-        assertNull(result);
+        assertEquals(1, actual);
+        verify(mapper).updateBuyHolding(50, 1L, "AAPL");
     }
 
-    /**
-     * Tests getting holding returns null when not found
-     */
     @Test
-    void getHoldingsByClientAndTicker_shouldReturnNullWhenNotFound() {
-        Long clientId = 1L;
-        String ticker = "NONEXISTENT";
+    void updateBuyHoldingReturnsZeroWhenUpdateFails() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        when(mapper.updateBuyHolding(50, 1L, "MISSING")).thenReturn(0);
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        when(holdingsMapper.getHoldingsByClientAndTicker(clientId, ticker)).thenReturn(null);
+        int actual = repository.updateBuyHolding(50, 1L, "MISSING");
 
-        Holding result = holdingsRepository.getHoldingsByClientAndTicker(clientId, ticker);
-
-        assertNull(result);
+        assertEquals(0, actual);
     }
 
-    /**
-     * Tests updating buy holding with large quantity
-     */
     @Test
-    void updateBuyHolding_shouldHandleLargeQuantities() {
-        Integer quantity = 999999;
-        Long clientId = 1L;
-        String ticker = "AAPL";
+    void updateSellHoldingDelegatesToMapper() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        when(mapper.updateSellHolding(25, 1L, "AAPL")).thenReturn(1);
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        when(holdingsMapper.updateBuyHolding(quantity, clientId, ticker)).thenReturn(1);
+        int actual = repository.updateSellHolding(25, 1L, "AAPL");
 
-        int result = holdingsRepository.updateBuyHolding(quantity, clientId, ticker);
-
-        assertEquals(1, result);
+        assertEquals(1, actual);
+        verify(mapper).updateSellHolding(25, 1L, "AAPL");
     }
 
-    /**
-     * Tests update returns zero when holding not found
-     */
     @Test
-    void updateSellHolding_shouldReturnZeroWhenHoldingNotFound() {
-        Integer quantity = 50;
-        Long clientId = 999L;
-        String ticker = "NONEXISTENT";
+    void updateSellHoldingReturnsZeroWhenUpdateFails() {
+        HoldingsMapper mapper = mock(HoldingsMapper.class);
+        when(mapper.updateSellHolding(25, 1L, "MISSING")).thenReturn(0);
+        HoldingsRepository repository = new HoldingsRepository(mapper);
 
-        when(holdingsMapper.updateSellHolding(quantity, clientId, ticker)).thenReturn(0);
+        int actual = repository.updateSellHolding(25, 1L, "MISSING");
 
-        int result = holdingsRepository.updateSellHolding(quantity, clientId, ticker);
+        assertEquals(0, actual);
+    }
 
-        assertEquals(0, result);
+    private Holding holding(Long clientId, String ticker, Integer quantity) {
+        Holding holding = new Holding();
+        holding.setClient_Id(clientId);
+        holding.setTicker(ticker);
+        holding.setQuantity(quantity);
+        return holding;
     }
 }

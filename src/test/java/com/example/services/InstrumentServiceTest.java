@@ -1,4 +1,4 @@
-package com.example.instruments;
+package com.example.services;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,6 +8,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.example.repositories.InstrumentRepository;
 import com.example.services.InstrumentService;
 import com.example.entities.Instrument;
+
+import com.example.entities.Instrument;
+import com.example.repositories.InstrumentRepository;
+import com.example.services.InstrumentService;
 
 import java.util.Arrays;
 import java.util.List;
@@ -27,10 +31,6 @@ class InstrumentServiceTest {
     void setUp() {
         instrumentService = new InstrumentService(instrumentRepository);
     }
-
-    // =========================================================
-    // getAllInstruments tests
-    // =========================================================
 
     @Test
     void testGetAllInstruments_ReturnsAllInstruments() {
@@ -64,10 +64,6 @@ class InstrumentServiceTest {
         assertTrue(result.isEmpty());
         verify(instrumentRepository, times(1)).findAll();
     }
-
-    // =========================================================
-    // getInstrumentByTicker tests
-    // =========================================================
 
     @Test
     void testGetInstrumentByTicker_Success() {
@@ -165,10 +161,6 @@ class InstrumentServiceTest {
         verify(instrumentRepository, never()).findByTicker(any());
     }
 
-    // =========================================================
-    // instrumentExists tests
-    // =========================================================
-
     @Test
     void testInstrumentExists_ReturnsTrueWhenFound() {
         // Arrange
@@ -215,10 +207,6 @@ class InstrumentServiceTest {
         assertFalse(result);
         verify(instrumentRepository, never()).findByTicker(any());
     }
-
-    // =========================================================
-    // Helper methods
-    // =========================================================
 
     private Instrument createInstrument(String ticker, Double open, Double previousClose, String assetType) {
         Instrument instrument = new Instrument();

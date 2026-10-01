@@ -7,6 +7,8 @@ import com.example.entities.Instrument;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 
+import com.example.entities.Instrument;
+
 import java.util.List;
 
 @Mapper
