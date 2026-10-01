@@ -1,13 +1,13 @@
 package com.example.entities;
 
+import java.math.BigDecimal;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-import java.math.BigDecimal;
-
-public class Client {
-    private Long clientId;
+public class Employee {
+    private Long employeeId;
 
     @Email
     @NotBlank
@@ -30,27 +30,27 @@ public class Client {
     @Size(min = 1, max = 100)
     private String lastName;
 
-    private BigDecimal cashAmount;
+    @NotBlank 
+    private String role;
+    
+    private Employee(String email, String firstName, String lastName , String password , String username, String role)
+    {
+        this.email = email;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.password = password;
+        this.username = username;
+        this.role = role;
 
-    // Constructor
-    public Client() {
     }
 
-    // Getters and Setters
+     // Getters and Setters
     public Long getClientId() {
-        return clientId;
-    }
-
-    public void setClientId(Long clientId) {
-        this.clientId = clientId;
+        return employeeId;
     }
 
     public String getEmail() {
         return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
     }
 
     public String getUsername() {
@@ -85,12 +85,12 @@ public class Client {
         this.lastName = lastName;
     }
 
-    public BigDecimal getCashAmount() {
-        
-        return cashAmount;
+    public void setRole(String role)
+    {
+        this.role = role;
     }
-
-    public void setCashAmount(BigDecimal cashAmount) {
-        this.cashAmount = cashAmount;
+    public String getRole()
+    {
+        return role;
     }
 }
