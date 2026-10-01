@@ -41,10 +41,7 @@ pipeline {
                 
                 // Set test database credentials
                 withEnv(['DB_USERNAME=sa', 'DB_PASSWORD=', 'SPRING_PROFILES_ACTIVE=test']) {
-                    sh '''
-                        echo "Running tests with active profile: test"
-                        mvn test -Dtest.db.skip=false -X 2>&1 | tee test-output.log
-                    '''
+                    sh 'mvn test -Dtest.db.skip=false'
                 }
             }
 
@@ -57,20 +54,8 @@ pipeline {
                           allowEmptyResults: false,
                           keepLongSTDIN: true
                     
-                    // Print failed tests to console
-                    sh '''
-                        echo "===== TEST FAILURE SUMMARY ====="
-                        if [ -d "target/surefire-reports" ]; then
-                            find target/surefire-reports -name "*.txt" -exec cat {} \;
-                        fi
-                        echo "================================"
-                    '''
-                    
                     // Archive test reports for debugging
                     archiveArtifacts artifacts: 'target/surefire-reports/**', 
-                                     allowEmptyArchive: true
-                    
-                    archiveArtifacts artifacts: 'test-output.log', 
                                      allowEmptyArchive: true
                 }
                 
@@ -79,9 +64,8 @@ pipeline {
                 }
                 
                 failure {
-                    echo '❌ Tests failed! Check archived reports in Jenkins UI'
+                    echo '❌ Tests failed! Check archived test reports'
                     echo '📁 View test results: target/surefire-reports/'
-                    echo '📋 View logs: test-output.log'
                 }
             }
         }
