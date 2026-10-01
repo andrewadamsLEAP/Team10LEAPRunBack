@@ -1,7 +1,6 @@
 package com.example.repositories;
 
 import com.example.services.MarketDataService;
-import com.example.services.MarketDataService.Instrument;
 import com.example.mappers.MarketDataMapper;
 
 import org.springframework.stereotype.Repository;
@@ -29,7 +28,7 @@ public class MarketDataRepository {
     // Lots of MarketDataMapper methods
     // ================================
 
-    public List<Instrument> findInstruments() {
+    public List<MarketDataService.Instrument> findInstruments() {
 
         return marketDataMapper.findInstruments();
     }

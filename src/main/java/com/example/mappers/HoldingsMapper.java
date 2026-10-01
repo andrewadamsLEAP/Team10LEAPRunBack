@@ -1,12 +1,13 @@
 package com.example.mappers;
 
+import com.example.entities.Holding;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
-import com.example.entities.Holding;
+import java.util.List;
 
 @Mapper
 public interface HoldingsMapper {
@@ -31,7 +32,7 @@ public interface HoldingsMapper {
         FROM holdings
         WHERE client_id = #{client_id}
         """)
-    Holding getHoldingsByClient(@Param("client_id") Long client_id);
+    List<Holding> getHoldingsByClient(@Param("client_id") Long client_id);
 
 
 

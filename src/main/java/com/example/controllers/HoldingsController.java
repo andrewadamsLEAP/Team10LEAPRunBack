@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/holdings")
 public class HoldingsController {
@@ -32,7 +34,6 @@ public class HoldingsController {
         return holdingsService.test();
     }
 
-
     //Get specific holding for a client and ticker
     // Example: GET /api/holdings/1/AAPL
     @GetMapping("/{clientId}/{ticker}")
@@ -46,7 +47,7 @@ public class HoldingsController {
     // Get all holdings for a specific client
     // Example: GET /api/holdings/client/1
     @GetMapping("/client/{clientId}")
-    public Holding getClientHoldings(
+    public List<Holding> getClientHoldings(
             @PathVariable Long clientId) {
         return holdingsService.getClientHoldings(clientId);
     }

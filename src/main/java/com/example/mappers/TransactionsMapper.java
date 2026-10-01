@@ -27,7 +27,7 @@ public interface TransactionsMapper {
 
     @Update("""
         UPDATE clients
-        SET buying_power = buying_power + #{amount}
+        SET cash_amount = cash_amount + #{amount}
         WHERE client_id = #{clientId}
         """)
     int increaseBuyingPower(
@@ -37,7 +37,7 @@ public interface TransactionsMapper {
 
     @Update("""
         UPDATE clients
-        SET buying_power = buying_power - #{amount}
+        SET cash_amount = cash_amount - #{amount}
         WHERE client_id = #{clientId}
         """)
     int decreaseBuyingPower(

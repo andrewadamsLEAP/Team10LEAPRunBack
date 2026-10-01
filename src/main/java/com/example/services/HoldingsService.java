@@ -6,6 +6,8 @@ import com.example.entities.Order;
 
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class HoldingsService {
     
@@ -14,7 +16,6 @@ public class HoldingsService {
     public HoldingsService(HoldingsRepository holdingsRepository) {
         this.holdingsRepository = holdingsRepository;
     }
-
 
     //TEST METHOD
     public String test() {
@@ -33,7 +34,7 @@ public class HoldingsService {
     /**
      * Get all holdings for a specific client
      */
-    public Holding getClientHoldings(Long clientId) {
+    public List<Holding> getClientHoldings(Long clientId) {
         return holdingsRepository.getHoldingsByClient(clientId);
     }
 

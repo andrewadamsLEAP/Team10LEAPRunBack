@@ -8,7 +8,6 @@ import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
-import com.example.services.MarketDataService;
 import com.example.services.MarketDataService.Instrument;
 
 import java.math.BigDecimal;

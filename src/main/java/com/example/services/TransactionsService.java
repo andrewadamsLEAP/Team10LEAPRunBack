@@ -1,6 +1,7 @@
 package com.example.services;
 
 import com.example.entities.Transaction;
+import com.example.entities.TransactionType;
 import com.example.repositories.TransactionsRepository;
 
 import org.springframework.stereotype.Service;
@@ -13,11 +14,14 @@ import java.util.List;
 public class TransactionsService {
 
     private final TransactionsRepository transactionsRepository;
+    private final ClientsService clientsService;
 
     public TransactionsService(
-            TransactionsRepository transactionsRepository) {
+            TransactionsRepository transactionsRepository,
+            ClientsService clientsService) {
 
         this.transactionsRepository = transactionsRepository;
+        this.clientsService = clientsService;
     }
 
     public List<Transaction> getTransactions(Long clientId) {
@@ -29,6 +33,7 @@ public class TransactionsService {
             Long clientId,
             BigDecimal amount) {
 
+        validateClientExists(clientId);
         validateAmount(amount);
 
         transactionsRepository.increaseBuyingPower(
@@ -39,7 +44,7 @@ public class TransactionsService {
         Transaction transaction = new Transaction(
                 null,
                 clientId,
-                "DEPOSIT",
+                TransactionType.DEPOSIT.name(),
                 amount,
                 null
         );
@@ -54,6 +59,7 @@ public class TransactionsService {
             Long clientId,
             BigDecimal amount) {
 
+        validateClientExists(clientId);
         validateAmount(amount);
 
         transactionsRepository.decreaseBuyingPower(
@@ -64,7 +70,7 @@ public class TransactionsService {
         Transaction transaction = new Transaction(
                 null,
                 clientId,
-                "WITHDRAWAL",
+                TransactionType.WITHDRAWAL.name(),
                 amount,
                 null
         );
@@ -79,6 +85,7 @@ public class TransactionsService {
             Long clientId,
             BigDecimal amount) {
 
+        validateClientExists(clientId);
         validateAmount(amount);
 
         transactionsRepository.decreaseBuyingPower(
@@ -89,7 +96,7 @@ public class TransactionsService {
         Transaction transaction = new Transaction(
                 null,
                 clientId,
-                "PURCHASE",
+                TransactionType.PURCHASE.name(),
                 amount,
                 null
         );
@@ -97,6 +104,22 @@ public class TransactionsService {
         transactionsRepository.saveTransaction(transaction);
 
         return transaction;
+    }
+
+    private void validateClientExists(Long clientId) {
+        if (clientId == null || clientId <= 0) {
+            throw new IllegalArgumentException(
+                    "Client ID must be greater than zero"
+            );
+        }
+        
+        try {
+            clientsService.getClientProfile(clientId);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Client not found: " + clientId
+            );
+        }
     }
 
     private void validateAmount(BigDecimal amount) {

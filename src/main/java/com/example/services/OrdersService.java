@@ -20,17 +20,23 @@ public class OrdersService {
     private final MarketHoursService marketHoursService;
     private final HoldingsService holdingsService;
     private final OrderDtoConverter orderDtoConverter;
+    private final ClientsService clientsService;
+    private final InstrumentService instrumentService;
 
     public OrdersService(
             OrdersRepository ordersRepository,
             MarketHoursService marketHoursService,
             HoldingsService holdingsService,
-            OrderDtoConverter orderDtoConverter) {
+            OrderDtoConverter orderDtoConverter,
+            ClientsService clientsService,
+            InstrumentService instrumentService) {
 
         this.ordersRepository = ordersRepository;
         this.marketHoursService = marketHoursService;
         this.holdingsService = holdingsService;
         this.orderDtoConverter = orderDtoConverter;
+        this.clientsService = clientsService;
+        this.instrumentService = instrumentService;
     }
 
     // =========================================================
@@ -245,8 +251,24 @@ public class OrdersService {
         }
 
         validateId(clientId, "Client ID");
+        
+        // VALIDATION: Verify client exists in database
+        try {
+            clientsService.getClientProfile(clientId);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Client not found: " + clientId
+            );
+        }
 
         validateTicker(ticker);
+        
+        // VALIDATION: Verify ticker exists in instruments table
+        if (!instrumentService.instrumentExists(ticker)) {
+            throw new IllegalArgumentException(
+                    "Instrument not found: " + ticker
+            );
+        }
 
         if (quantity <= 0) {
 
