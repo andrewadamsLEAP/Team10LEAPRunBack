@@ -52,7 +52,7 @@ pipeline {
                     // Always publish test results, even if some fail
                     junit testResults: 'target/surefire-reports/*.xml', 
                           allowEmptyResults: false,
-                          keepLongSTDIN: true
+                          keepLongStdio: true
                     
                     // Archive test reports for debugging
                     archiveArtifacts artifacts: 'target/surefire-reports/**', 
