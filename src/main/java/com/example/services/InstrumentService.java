@@ -9,16 +9,34 @@ import com.example.repositories.InstrumentRepository;
 
 import java.util.List;
 
+//
+// Hey Kevin I set up some comments for you to kinda copy for the other functions below
+// Just go through every Instruments method and add similar Javadoc comments
+//
+
 
 @Service
 public class InstrumentService {
-
+    
+    /**
+     * The InstrumentRepository instance used to interact with the database.
+     */
     private final InstrumentRepository instrumentRepository;
 
+    /**
+     * Constructs a new InstrumentService with the specified InstrumentRepository.
+     *
+     * @param instrumentRepository the InstrumentRepository instance to use
+     */
     public InstrumentService(InstrumentRepository instrumentRepository) {
         this.instrumentRepository = instrumentRepository;
     }
 
+    /**
+     * Retrieves a list of all instruments from the database.
+     *
+     * @return a list of all instruments
+     */
     public List<Instrument> getAllInstruments() {
         return instrumentRepository.findAll();
     }
