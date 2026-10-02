@@ -1,18 +1,20 @@
 services:
-  postgres:
-    image: postgres:16
-    container_name: team-postgres
-
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trading-app
     environment:
-      POSTGRES_DB: teamdb
-      POSTGRES_USER: teamuser
-      POSTGRES_PASSWORD: teampassword
-
+      SPRING_DATASOURCE_URL: jdbc:postgresql://10.14.130.171:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SERVER_PORT: 8085
     ports:
-      - "8100:5432"
+      - "8085:8085"
+    networks:
+      - app-network
 
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
+networks:
+  app-network:
+    driver: bridge  
