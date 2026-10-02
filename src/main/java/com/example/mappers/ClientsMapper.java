@@ -1,7 +1,7 @@
 package com.example.mappers;
 
 import com.example.DTOs.clients.ClientAdminView;
-import com.example.DTOs.clients.ClientLoginView;
+import com.example.DTOs.clients.LoginView;
 import com.example.DTOs.clients.ClientReporterView;
 import com.example.entities.Client;
 import org.apache.ibatis.annotations.*;
@@ -84,7 +84,7 @@ public interface ClientsMapper {
             FROM clients
             WHERE username = #{username}
             """)
-    ClientLoginView findLoginClientByUsername(@Param("username") String username);
+    LoginView findLoginClientByUsername(@Param("username") String username);
 
     @Select("""
             SELECT client_id AS clientId,
@@ -93,7 +93,7 @@ public interface ClientsMapper {
             FROM clients
             WHERE client_id = #{clientId}
             """)
-    ClientLoginView findLoginClientById(@Param("clientId") Long clientId);
+    LoginView findLoginClientById(@Param("clientId") Long clientId);
 
     @Insert("""
         INSERT INTO clients (

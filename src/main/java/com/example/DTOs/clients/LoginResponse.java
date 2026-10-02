@@ -3,7 +3,7 @@ package com.example.DTOs.clients;
 /**
  * DTO for representing login response information.
  * LoginResponse
- * @param clientId
+ * @param userId
  * @param username
  * @param token
  * @param message
@@ -12,7 +12,7 @@ package com.example.DTOs.clients;
 // TODO:
 // eventually the token will store things like clientId and username I just dont know how that works
 public record LoginResponse( 
-        Long clientId,
+        Long userId,
         String username,
         String token,
         String message

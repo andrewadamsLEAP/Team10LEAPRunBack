@@ -1,6 +1,6 @@
 package com.example.exceptions;
 
-import com.example.DTOs.clients.ClientLoginView;
+import com.example.DTOs.clients.LoginView;
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -33,7 +33,7 @@ public class Validate {
 
     }
 
-    public static void validateClient(ClientLoginView client) {
+    public static void validateClient(LoginView client) {
         if (client == null) {
             throw new ClientNotFoundException("Client not found");        
         }

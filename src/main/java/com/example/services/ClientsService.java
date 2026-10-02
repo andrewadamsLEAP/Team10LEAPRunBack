@@ -2,7 +2,7 @@ package com.example.services;
 
 import com.example.DTOs.clients.ChangePasswordRequest;
 import com.example.DTOs.clients.ClientAdminView;
-import com.example.DTOs.clients.ClientLoginView;
+import com.example.DTOs.clients.LoginView;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientProfileView;
 import com.example.DTOs.clients.ClientReporterView;
@@ -47,29 +47,29 @@ public class ClientsService {
             throw new UpdateFailedException("Client signup failed");
         }
 
-        ClientLoginView createdClient = clientsRepository.findLoginClientByUsername(request.getUsername());
+        LoginView createdClient = clientsRepository.findLoginClientByUsername(request.getUsername());
 
         if (createdClient == null) {
             throw new UpdateFailedException("Client signup failed");
         }
 
-        return new LoginResponse(createdClient.clientId(), createdClient.username(), null, "Signup successful");
+        return new LoginResponse(createdClient.userId(), createdClient.username(), null, "Signup successful");
     }
 
     public LoginResponse login(LoginRequest request) {
         // TODO: Encode then compare passwords when we do the whole JwT node stuff
-        ClientLoginView loginClient = clientsRepository.findLoginClientByUsername(request.username());
+        LoginView loginClient = clientsRepository.findLoginClientByUsername(request.username());
 
         if (loginClient == null || !loginClient.password().equals(request.password())) {
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
 
-        return new LoginResponse(loginClient.clientId(), loginClient.username(), null, "Login successful");
+        return new LoginResponse(loginClient.userId(), loginClient.username(), null, "Login successful");
     }
 
     // TODO: Encode passwords and verify when we work on JwT stuff (& check if user = clientId)
     public void changePassword(Long clientId, ChangePasswordRequest request) {
-        ClientLoginView client = clientsRepository.findLoginClientById(clientId);
+        LoginView client = clientsRepository.findLoginClientById(clientId);
 
         Validate.validateClient(client);
 
