@@ -38,9 +38,8 @@ public class ClientsController {
         return ResponseEntity.ok(clientsService.login(request));
     }
 
-    @PatchMapping("/password/{clientId}")
+    @PatchMapping("/password")
     public ResponseEntity<Void> changePassword( 
-            @PathVariable Long clientId,
             @RequestBody @Valid ChangePasswordRequest request) {
         clientsService.changePassword(clientId, request);
         return ResponseEntity.noContent().build();

@@ -54,7 +54,7 @@ public class Validate {
             LoginView clientLoginView = clientsRepository.findLoginClientById(clientId);
             }
             catch (Exception e) {  
-                throw new ClientNotFoundException("Client not found: ", e);  
+                throw new ClientNotFoundException("Client not found:", e);  
             }      
         }
         else if (function == "getClientProfile") {
