@@ -189,6 +189,10 @@ public class OrdersService {
     //                   PUBLISH ORDER HELPER
     // =========================================================
     public void publishOrderAfterCommit(Order order) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalStateException("Order not actively in a transaction.");
+        }
+
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {

@@ -4,8 +4,11 @@ import com.example.DTOs.orders.OrderResponse;
 import com.example.entities.Order;
 import com.example.repositories.OrdersRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -44,6 +47,15 @@ class OrdersServiceTest {
                 kafkaTemplate,
                 "order-pending-topic"
         );
+
+        TransactionSynchronizationManager.initSynchronization();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 
     // ========== PLACE BUY ORDER TESTS ==========
@@ -63,6 +75,7 @@ class OrdersServiceTest {
         );
 
         Order result = ordersService.placeBuyOrder(clientId, ticker, quantity, price);
+        triggerAfterCommitCallbacks();
 
         assertNotNull(result);
         assertEquals(Order.OrderType.BUY, result.getOrderType());
@@ -175,12 +188,30 @@ class OrdersServiceTest {
         );
 
         Order result = ordersService.placeSellOrder(clientId, ticker, quantity, price);
+        triggerAfterCommitCallbacks();
 
         assertNotNull(result);
         assertEquals(Order.OrderType.SELL, result.getOrderType());
         verify(clientsService).getClientProfile(clientId);
         verify(instrumentService).instrumentExists(ticker);
         verify(kafkaTemplate).send("order-pending-topic", ticker, result);
+    }
+
+    @Test
+    void publishOrderAfterCommitThrowsWhenNoSynchronizationIsActive() {
+        TransactionSynchronizationManager.clearSynchronization();
+
+        IllegalStateException exception = assertThrows(
+            IllegalStateException.class,
+            () -> ordersService.publishOrderAfterCommit(
+                order(1L, 1L, "AAPL", Order.OrderType.BUY, 10, new BigDecimal("150.00"))
+            )
+        );
+
+        assertEquals(
+            "No active transaction synchronization; order publication must occur within a transaction.",
+            exception.getMessage()
+        );
     }
 
     @Test
@@ -250,5 +281,12 @@ class OrdersServiceTest {
         order.setPrice(price);
         order.setOrderDate(OffsetDateTime.now());
         return order;
+    }
+
+    private void triggerAfterCommitCallbacks() {
+        for (TransactionSynchronization synchronization : TransactionSynchronizationManager.getSynchronizations()) {
+            synchronization.afterCommit();
+        }
+        TransactionSynchronizationManager.clearSynchronization();
     }
 }
