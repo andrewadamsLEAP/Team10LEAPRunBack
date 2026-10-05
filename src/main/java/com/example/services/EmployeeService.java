@@ -4,9 +4,12 @@ import com.example.DTOs.clients.LoginResponse;
 
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+
 import com.example.DTOs.clients.ChangePasswordRequest;
 import com.example.DTOs.clients.ClientProfileView;
 import com.example.DTOs.clients.ClientReporterView;
+import com.example.DTOs.employees.EmployeeProfileView;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.DTOs.clients.LoginView;
 import com.example.entities.*;
@@ -14,7 +17,7 @@ import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
 import com.example.exceptions.Validate;
 import com.example.repositories.EmployeeRepository;
-
+@Service 
 public class EmployeeService {
     private final EmployeeRepository employeeRepository;
 
@@ -36,9 +39,9 @@ public class EmployeeService {
     }
 
      public void changePassword(Long employeeId, ChangePasswordRequest request) {
-        LoginView employee = employeeRepository.findLoginEmployeetById(employeeId);
+        LoginView employee = employeeRepository.findLoginEmployeeById(employeeId);
 
-        Validate.validateClient(employee);
+       // Validate.validateClient(employee);
 
         if (!employee.password().equals(request.currentPassword())) {
             throw new InvalidArgumentsException("Invalid Password Change", "Current password is incorrect");
@@ -58,7 +61,7 @@ public class EmployeeService {
        public EmployeeProfileView getEmployeeProfile(Long employeeId) {
         Employee employee = employeeRepository.findEmployeeById(employeeId);
 
-        Validate.validateEmployee(employee);
+      //  Validate.validateEmployee(employee);
 
         return new EmployeeProfileView(
                 employee.getEmployeeId(),
