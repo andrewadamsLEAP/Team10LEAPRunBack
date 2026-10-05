@@ -1,6 +1,8 @@
 package com.example.generalServices;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,8 @@ import java.util.Map;
 
 @Service
 public class AlpacaClient {
+
+    private static final Logger logger = LoggerFactory.getLogger(AlpacaClient.class);
 
 private final RestClient stocksClient;
 private final RestClient cryptoClient;
@@ -150,6 +154,8 @@ public void validateCredentials() {
 public AlpacaQuotesResponse getStockQuotes(
         List<String> symbols) {
 
+    logger.debug("Requesting stock quotes for {} symbols: {}", symbols.size(), symbols);
+    
     String symbolParameter =
             String.join(",", symbols);
 
@@ -166,6 +172,8 @@ public AlpacaQuotesResponse getStockQuotes(
 public AlpacaQuotesResponse getCryptoQuotes(
         String symbols) {
 
+    logger.debug("Requesting crypto quotes for symbols: {}", symbols);
+    
     return executeQuoteRequest(
             cryptoClient,
             "/latest/quotes",
@@ -231,6 +239,7 @@ private AlpacaQuotesResponse executeQuoteRequest(
 
             if (attempt == maxRetries) {
 
+                logger.error("Alpaca API request failed after {} retries. Error: {}", maxRetries, exception.getMessage(), exception);
                 throw exception;
             }
 
@@ -242,6 +251,8 @@ private AlpacaQuotesResponse executeQuoteRequest(
                     maxRetries +
                     ". Error: " +
                     exception.getMessage());
+            
+            logger.warn("Alpaca request failed. Retrying {}/{}. Error: {}", (attempt + 1), maxRetries, exception.getMessage());
 
             sleepBeforeRetry();
         }

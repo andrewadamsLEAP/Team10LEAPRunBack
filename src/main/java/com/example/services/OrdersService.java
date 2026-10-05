@@ -6,6 +6,8 @@ import com.example.services.HoldingsService;
 import com.example.DTOs.orders.OrderResponse;
 import com.example.DTOs.orders.OrderHistoryView;
 import com.example.exceptions.InvalidArgumentsException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +18,7 @@ import java.util.List;
 
 @Service
 public class OrdersService {
+    private static final Logger logger = LoggerFactory.getLogger(OrdersService.class);
 
     private final OrdersRepository ordersRepository;
     private final MarketHoursService marketHoursService;
@@ -114,6 +117,8 @@ public class OrdersService {
             int quantity,
             BigDecimal price) {
 
+        logger.info("Place buy order: clientId={}, ticker={}, quantity={}, price={}", clientId, ticker, quantity, price);
+        
         validateOrder(
                 clientId,
                 ticker,
@@ -132,7 +137,9 @@ public class OrdersService {
                 OffsetDateTime.now()
         );
 
-        return ordersRepository.createOrder(order);
+        Order createdOrder = ordersRepository.createOrder(order);
+        logger.info("Buy order created: orderId={}, clientId={}, ticker={}", createdOrder.getOrderId(), clientId, ticker);
+        return createdOrder;
     }
 
 
@@ -147,6 +154,8 @@ public class OrdersService {
             int quantity,
             BigDecimal price) {
 
+        logger.info("Place sell order: clientId={}, ticker={}, quantity={}, price={}", clientId, ticker, quantity, price);
+        
         validateOrder(
                 clientId,
                 ticker,
@@ -165,7 +174,9 @@ public class OrdersService {
                 OffsetDateTime.now()
         );
 
-        return ordersRepository.createOrder(order);
+        Order createdOrder = ordersRepository.createOrder(order);
+        logger.info("Sell order created: orderId={}, clientId={}, ticker={}", createdOrder.getOrderId(), clientId, ticker);
+        return createdOrder;
     }
 
 
@@ -175,11 +186,12 @@ public class OrdersService {
 
     @Transactional
     public Order cancelOrder(Long orderId) {
+        logger.info("Cancel order request: orderId={}", orderId);
 
         Order order = getOrderById(orderId);
 
         if (order.getOrderStatus() != Order.OrderStatus.PENDING) {
-
+            logger.warn("Cannot cancel order: orderId={}, status={}", orderId, order.getOrderStatus());
             throw new IllegalStateException(
                     "Order " + orderId +
                     " cannot be cancelled because it is " +
