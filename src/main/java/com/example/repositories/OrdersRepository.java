@@ -85,6 +85,22 @@ public class OrdersRepository {
         return ordersMapper.getPendingSellOrdersForTicker(ticker);
     }
 
+    public List<Order> getPendingSellOrdersForClient(Long clientId) {
+
+        return ordersMapper.getPendingSellOrdersForClient(clientId);
+    }
+
+    /**
+     * Get pending sell orders for a specific client and ticker.
+     *
+     * @param clientId the ID of the client
+     * @param ticker the ticker symbol
+     * @return a list of pending sell orders for the specified client and ticker
+     */
+    public List<Order> getPendingSellOrdersForClientAndTicker(Long clientId, String ticker) {
+
+        return ordersMapper.getPendingSellOrdersForClientAndTicker(clientId, ticker);
+    }
 
     /**
      * Get pending buy orders for a specific ticker.
@@ -96,6 +112,12 @@ public class OrdersRepository {
             String ticker) {
 
         return ordersMapper.getPendingBuyOrdersForTicker(ticker);
+    }
+
+
+    public List<Order> getPendingBuyOrdersForClient(Long clientId) {
+
+        return ordersMapper.getPendingBuyOrdersForClient(clientId);
     }
 
 

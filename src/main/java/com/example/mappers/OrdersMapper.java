@@ -157,6 +157,85 @@ public interface OrdersMapper {
 
 
     /**
+     * Retrieves all pending buy orders for a specific client.
+     *
+     * @param clientId the ID of the client
+     * @return a list of pending buy orders for the specified client
+     */
+    @Select("""
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
+        FROM orders
+        WHERE order_status = 'PENDING'
+          AND client_id = #{clientId}
+          AND order_type = 'BUY'
+        """)
+    List<Order> getPendingBuyOrdersForClient(
+            @Param("clientId") Long clientId
+    );
+
+    /**
+     * Retrieves all pending sell orders for a specific client.
+     *
+     * @param clientId the ID of the client
+     * @return a list of pending sell orders for the specified client
+     */
+    @Select("""
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
+        FROM orders
+        WHERE order_status = 'PENDING'
+          AND client_id = #{clientId}
+          AND order_type = 'SELL'
+        """)
+    List<Order> getPendingSellOrdersForClient(
+            @Param("clientId") Long clientId
+    );
+
+    /**
+     * Retrieves all pending sell orders for a specific client and ticker.
+     *
+     * @param clientId the ID of the client
+     * @param ticker the ticker symbol
+     * @return a list of pending sell orders for the specified client and ticker
+     */
+    @Select("""
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
+        FROM orders
+        WHERE order_status = 'PENDING'
+          AND client_id = #{clientId}
+          AND ticker = #{ticker}
+          AND order_type = 'SELL'
+        """)
+    List<Order> getPendingSellOrdersForClientAndTicker(
+            @Param("clientId") Long clientId,
+            @Param("ticker") String ticker
+    );
+
+
+    /**
      * Creates a new order in the database.
      *
      * @param order the order to create

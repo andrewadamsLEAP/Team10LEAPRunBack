@@ -114,7 +114,7 @@ public class OrdersService {
             int quantity,
             BigDecimal price) {
 
-        validateOrder(
+        validateBuyOrder(
                 clientId,
                 ticker,
                 quantity,
@@ -147,7 +147,7 @@ public class OrdersService {
             int quantity,
             BigDecimal price) {
 
-        validateOrder(
+        validateSellOrder(
                 clientId,
                 ticker,
                 quantity,
@@ -244,7 +244,81 @@ public class OrdersService {
     //                       VALIDATION
     // =========================================================
 
-    private void validateOrder(
+    /**
+     * Validation for BUY orders: checks basic order validity plus
+     * whether the client has sufficient cash to purchase the shares.
+     */
+    private void validateBuyOrder(
+            Long clientId,
+            String ticker,
+            int quantity,
+            BigDecimal price) {
+
+        // First, validate basic order requirements
+        validateOrderCommon(clientId, ticker, quantity, price);
+
+        // VALIDATION: Verify client has enough cash
+        BigDecimal orderCost = price.multiply(BigDecimal.valueOf(quantity));
+        BigDecimal clientCash = clientsService.getClientProfile(clientId).cashAmount();
+
+        List<Order> pendingBuyOrders = ordersRepository.getPendingBuyOrdersForClient(clientId);
+        for(int i = 0; i < pendingBuyOrders.size(); i++) {
+            orderCost = orderCost.add(pendingBuyOrders.get(i).getPrice().multiply(BigDecimal.valueOf(pendingBuyOrders.get(i).getQuantity())));
+        }
+
+        if (clientCash.compareTo(orderCost) < 0) {
+            throw new IllegalArgumentException(
+                    "Insufficient cash. Client has $" + clientCash +
+                    " but order costs $" + orderCost
+            );
+        }
+    }
+
+    /**
+     * Validation for SELL orders: checks basic order validity plus
+     * whether the client has sufficient shares to sell.
+     */
+    private void validateSellOrder(
+            Long clientId,
+            String ticker,
+            int quantity,
+            BigDecimal price) {
+
+        // First, validate basic order requirements
+        validateOrderCommon(clientId, ticker, quantity, price);
+
+        List<Order> pendingSellOrders = ordersRepository.getPendingSellOrdersForClientAndTicker(clientId, ticker.toUpperCase());
+        int reservedShares = 0;
+        for(int i = 0; i < pendingSellOrders.size(); i++) {
+            reservedShares += pendingSellOrders.get(i).getQuantity();
+        }
+
+        // VALIDATION: Verify client has enough shares to sell
+        try {
+            com.example.DTOs.holdings.HoldingResponse holding = 
+                holdingsService.getHolding(clientId, ticker.toUpperCase());
+            
+            if (holding.quantity() - reservedShares < quantity) {
+                throw new IllegalArgumentException(
+                        "Insufficient holdings. Client has " + holding.quantity() +
+                        " shares of " + ticker + " but " + reservedShares + " are reserved and trying to sell " + quantity
+                );
+            }
+        } catch (IllegalArgumentException e) {
+            // Re-throw IllegalArgumentException as is
+            throw e;
+        } catch (Exception e) {
+            // If holding doesn't exist, client has no shares
+            throw new IllegalArgumentException(
+                    "Client does not own any shares of " + ticker
+            );
+        }
+    }
+
+    /**
+     * Common validation for all orders
+     */
+    private void validateOrderCommon(
             Long clientId,
             String ticker,
             int quantity,
