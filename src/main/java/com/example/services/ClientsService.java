@@ -69,9 +69,8 @@ public class ClientsService {
 
     // TODO: Encode passwords and verify when we work on JwT stuff (& check if user = clientId)
     public void changePassword(Long clientId, ChangePasswordRequest request) {
-        LoginView client = clientsRepository.findLoginClientById(clientId);
 
-        Validate.validateClient(client);
+        Validate.validateClient(clientId);
 
         if (!client.password().equals(request.currentPassword())) {
             throw new InvalidArgumentsException("Invalid Password Change", "Current password is incorrect");
@@ -104,8 +103,8 @@ public class ClientsService {
 
     public ClientAdminView getClientDataAdmin(Long clientId) {
         ClientAdminView client = clientsRepository.findClientByIdAdmin(clientId);
-
-        Validate.validateClient(client);
+        String = "getClientDataAdmin";
+        Validate.validateClient(clientId, );
 
         return client;
     }
@@ -137,7 +136,7 @@ public class ClientsService {
     public BigDecimal updateCashAmount(Long clientId, BigDecimal change) {
         Client client = clientsRepository.findClientById(clientId);
 
-        Validate.validateClient(client);
+        Validate.validateClient(clientId);
 
         BigDecimal currentBalance = client.getCashAmount();
 
@@ -159,7 +158,7 @@ public class ClientsService {
     public void updateProfile(Long clientId, ClientProfileUpdateRequest request) {
         Client client = clientsRepository.findClientById(clientId);
 
-        Validate.validateClient(client);
+        Validate.validateClient(clientId);
 
         if (!request.hasUpdates()) {
             throw new InvalidArgumentsException("Invalid Profile Update", "No profile changes were provided");
