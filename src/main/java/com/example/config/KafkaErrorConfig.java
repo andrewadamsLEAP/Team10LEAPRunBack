@@ -11,7 +11,7 @@ import org.springframework.util.backoff.FixedBackOff;
 public class KafkaErrorConfig {
     
     @Bean
-    public DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<String, Object> template) {
+    public DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<Object, Object> template) {
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(template);
         FixedBackOff backOff = new FixedBackOff(1000L, 3L);
         return new DefaultErrorHandler(recoverer, backOff);

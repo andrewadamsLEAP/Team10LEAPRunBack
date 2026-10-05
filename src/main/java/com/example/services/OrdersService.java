@@ -27,7 +27,7 @@ public class OrdersService {
     private final OrderDtoConverter orderDtoConverter;
     private final ClientsService clientsService;
     private final InstrumentService instrumentService;
-    private final KafkaTemplate<String, Order> kafkaTemplate;
+    private final KafkaTemplate<Object, Object> kafkaTemplate;
     private final String orderPendingTopic;
 
     public OrdersService(
@@ -37,7 +37,7 @@ public class OrdersService {
             OrderDtoConverter orderDtoConverter,
             ClientsService clientsService,
             InstrumentService instrumentService,
-            KafkaTemplate<String,Order> kafkaTemplate,
+            KafkaTemplate<Object, Object> kafkaTemplate,
             @Value("${app.kafka.topics.order-pending}") String orderPendingTopic
         ) {
 

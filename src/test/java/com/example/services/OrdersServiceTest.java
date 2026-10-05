@@ -24,7 +24,7 @@ class OrdersServiceTest {
     private OrderDtoConverter orderDtoConverter;
     private ClientsService clientsService;
     private InstrumentService instrumentService;
-    private KafkaTemplate<String, Order> kafkaTemplate;
+    private KafkaTemplate<Object, Object> kafkaTemplate;
     private OrdersService ordersService;
 
     @BeforeEach
