@@ -11,6 +11,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = TradingAppApplication.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(KafkaTestConfig.class)
 @Sql(scripts = "classpath:clients-schema.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class ClientsControllerIntegrationTest {
 
@@ -44,7 +46,7 @@ class ClientsControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(signupJson(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.clientId").isNumber())
+                .andExpect(jsonPath("$.userId").isNumber())
                 .andExpect(jsonPath("$.username").value("newuser"))
                 .andExpect(jsonPath("$.message").value("Signup successful"));
 
@@ -91,7 +93,7 @@ class ClientsControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginJson(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.clientId").value(clientId))
+                .andExpect(jsonPath("$.userId").value(clientId))
                 .andExpect(jsonPath("$.username").value("loginuser"))
                 .andExpect(jsonPath("$.message").value("Login successful"));
     }

@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.example.tradingApp.TradingAppApplication;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
@@ -20,6 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(classes = TradingAppApplication.class)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Import(KafkaTestConfig.class)
 @Sql(scripts = "classpath:holdings-schema.sql", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
 class HoldingsControllerIntegrationTest {
 

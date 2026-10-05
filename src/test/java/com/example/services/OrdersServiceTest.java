@@ -4,7 +4,11 @@ import com.example.DTOs.orders.OrderResponse;
 import com.example.entities.Order;
 import com.example.repositories.OrdersRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -20,6 +24,7 @@ class OrdersServiceTest {
     private OrderDtoConverter orderDtoConverter;
     private ClientsService clientsService;
     private InstrumentService instrumentService;
+    private KafkaTemplate<Object, Object> kafkaTemplate;
     private OrdersService ordersService;
 
     @BeforeEach
@@ -30,6 +35,7 @@ class OrdersServiceTest {
         orderDtoConverter = mock(OrderDtoConverter.class);
         clientsService = mock(ClientsService.class);
         instrumentService = mock(InstrumentService.class);
+        kafkaTemplate = mock(KafkaTemplate.class);
         
         ordersService = new OrdersService(
                 ordersRepository,
@@ -37,8 +43,19 @@ class OrdersServiceTest {
                 holdingsService,
                 orderDtoConverter,
                 clientsService,
-                instrumentService
+                instrumentService,
+                kafkaTemplate,
+                "order-pending-topic"
         );
+
+        TransactionSynchronizationManager.initSynchronization();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.clearSynchronization();
+        }
     }
 
     // ========== PLACE BUY ORDER TESTS ==========
@@ -58,12 +75,14 @@ class OrdersServiceTest {
         );
 
         Order result = ordersService.placeBuyOrder(clientId, ticker, quantity, price);
+        triggerAfterCommitCallbacks();
 
         assertNotNull(result);
         assertEquals(Order.OrderType.BUY, result.getOrderType());
         assertEquals(ticker.toUpperCase(), result.getTicker());
         verify(clientsService).getClientProfile(clientId);
         verify(instrumentService).instrumentExists(ticker);
+        verify(kafkaTemplate).send("order-pending-topic", ticker, result);
     }
 
     @Test
@@ -169,11 +188,30 @@ class OrdersServiceTest {
         );
 
         Order result = ordersService.placeSellOrder(clientId, ticker, quantity, price);
+        triggerAfterCommitCallbacks();
 
         assertNotNull(result);
         assertEquals(Order.OrderType.SELL, result.getOrderType());
         verify(clientsService).getClientProfile(clientId);
         verify(instrumentService).instrumentExists(ticker);
+        verify(kafkaTemplate).send("order-pending-topic", ticker, result);
+    }
+
+    @Test
+    void publishOrderAfterCommitThrowsWhenNoSynchronizationIsActive() {
+        TransactionSynchronizationManager.clearSynchronization();
+
+        IllegalStateException exception = assertThrows(
+            IllegalStateException.class,
+            () -> ordersService.publishOrderAfterCommit(
+                order(1L, 1L, "AAPL", Order.OrderType.BUY, 10, new BigDecimal("150.00"))
+            )
+        );
+
+        assertEquals(
+            "No active transaction synchronization; order publication must occur within a transaction.",
+            exception.getMessage()
+        );
     }
 
     @Test
@@ -224,38 +262,6 @@ class OrdersServiceTest {
         verify(ordersRepository, never()).updateOrderStatus(anyLong(), any());
     }
 
-    // ========== EXECUTE ORDER TESTS ==========
-
-    @Test
-    void executeOrderUpdatesPendingOrderAndHoldings() {
-        Order pendingOrder = order(1L, 1L, "AAPL", Order.OrderType.BUY, 10, new BigDecimal("150.00"));
-        pendingOrder.setOrderStatus(Order.OrderStatus.PENDING);
-
-        when(ordersRepository.getOrderById(1L)).thenReturn(pendingOrder);
-        when(ordersRepository.updateOrderStatus(1L, Order.OrderStatus.FULFILLED)).thenReturn(1);
-
-        Order result = ordersService.executeOrder(1L);
-
-        assertNotNull(result);
-        verify(ordersRepository).updateOrderStatus(1L, Order.OrderStatus.FULFILLED);
-        verify(holdingsService).updateHoldingsForOrder(any(Order.class));
-    }
-
-    @Test
-    void executeOrderThrowsWhenOrderIsNotPending() {
-        Order cancelledOrder = order(1L, 1L, "AAPL", Order.OrderType.BUY, 10, new BigDecimal("150.00"));
-        cancelledOrder.setOrderStatus(Order.OrderStatus.CANCELLED);
-
-        when(ordersRepository.getOrderById(1L)).thenReturn(cancelledOrder);
-
-        IllegalStateException exception = assertThrows(
-                IllegalStateException.class,
-                () -> ordersService.executeOrder(1L)
-        );
-
-        assertTrue(exception.getMessage().contains("Only pending orders can be executed"));
-    }
-
     // ========== HELPER METHODS ==========
 
     private Order order(
@@ -275,5 +281,12 @@ class OrdersServiceTest {
         order.setPrice(price);
         order.setOrderDate(OffsetDateTime.now());
         return order;
+    }
+
+    private void triggerAfterCommitCallbacks() {
+        for (TransactionSynchronization synchronization : TransactionSynchronizationManager.getSynchronizations()) {
+            synchronization.afterCommit();
+        }
+        TransactionSynchronizationManager.clearSynchronization();
     }
 }

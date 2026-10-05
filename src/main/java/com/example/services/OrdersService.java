@@ -10,8 +10,12 @@ import com.example.exceptions.InvalidArgumentsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -27,6 +31,8 @@ public class OrdersService {
     private final OrderDtoConverter orderDtoConverter;
     private final ClientsService clientsService;
     private final InstrumentService instrumentService;
+    private final KafkaTemplate<Object, Object> kafkaTemplate;
+    private final String orderPendingTopic;
 
     public OrdersService(
             OrdersRepository ordersRepository,
@@ -34,7 +40,10 @@ public class OrdersService {
             HoldingsService holdingsService,
             OrderDtoConverter orderDtoConverter,
             ClientsService clientsService,
-            InstrumentService instrumentService) {
+            InstrumentService instrumentService,
+            KafkaTemplate<Object, Object> kafkaTemplate,
+            @Value("${app.kafka.topics.order-pending}") String orderPendingTopic
+        ) {
 
         this.ordersRepository = ordersRepository;
         this.marketHoursService = marketHoursService;
@@ -42,6 +51,8 @@ public class OrdersService {
         this.orderDtoConverter = orderDtoConverter;
         this.clientsService = clientsService;
         this.instrumentService = instrumentService;
+        this.kafkaTemplate = kafkaTemplate;
+        this.orderPendingTopic = orderPendingTopic;
     }
 
     // =========================================================
@@ -189,6 +200,7 @@ public class OrdersService {
 
         Order createdOrder = ordersRepository.createOrder(order);
         logger.info("Buy order created: orderId={}, clientId={}, ticker={}", createdOrder.getOrderId(), clientId, ticker);
+        publishOrderAfterCommit(createdOrder);
         return createdOrder;
     }
 
@@ -238,9 +250,25 @@ public class OrdersService {
 
         Order createdOrder = ordersRepository.createOrder(order);
         logger.info("Sell order created: orderId={}, clientId={}, ticker={}", createdOrder.getOrderId(), clientId, ticker);
+        publishOrderAfterCommit(createdOrder);
         return createdOrder;
     }
 
+    // =========================================================
+    //                   PUBLISH ORDER HELPER
+    // =========================================================
+    public void publishOrderAfterCommit(Order order) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalStateException("Order not actively in a transaction.");
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                kafkaTemplate.send(orderPendingTopic, order.getTicker(), order);
+            }
+        });
+    }
 
     // =========================================================
     //                       CANCEL ORDER
