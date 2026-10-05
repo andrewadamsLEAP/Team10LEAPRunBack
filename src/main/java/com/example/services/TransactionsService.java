@@ -3,6 +3,8 @@ package com.example.services;
 import com.example.entities.Transaction;
 import com.example.entities.TransactionType;
 import com.example.repositories.TransactionsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +14,7 @@ import java.util.List;
 
 @Service
 public class TransactionsService {
+    private static final Logger logger = LoggerFactory.getLogger(TransactionsService.class);
 
     private final TransactionsRepository transactionsRepository;
     private final ClientsService clientsService;
@@ -32,6 +35,7 @@ public class TransactionsService {
     public Transaction deposit(
             Long clientId,
             BigDecimal amount) {
+        logger.info("Deposit request: clientId={}, amount={}", clientId, amount);
 
         validateClientExists(clientId);
         validateAmount(amount);
@@ -50,7 +54,7 @@ public class TransactionsService {
         );
 
         transactionsRepository.saveTransaction(transaction);
-
+        logger.info("Deposit completed: clientId={}, amount={}", clientId, amount);
         return transaction;
     }
 
@@ -58,6 +62,7 @@ public class TransactionsService {
     public Transaction withdrawal(
             Long clientId,
             BigDecimal amount) {
+        logger.info("Withdrawal request: clientId={}, amount={}", clientId, amount);
 
         validateClientExists(clientId);
         validateAmount(amount);
@@ -76,7 +81,7 @@ public class TransactionsService {
         );
 
         transactionsRepository.saveTransaction(transaction);
-
+        logger.info("Withdrawal completed: clientId={}, amount={}", clientId, amount);
         return transaction;
     }
 
@@ -84,6 +89,7 @@ public class TransactionsService {
     public Transaction purchase(
             Long clientId,
             BigDecimal amount) {
+        logger.info("Purchase transaction: clientId={}, amount={}", clientId, amount);
 
         validateClientExists(clientId);
         validateAmount(amount);

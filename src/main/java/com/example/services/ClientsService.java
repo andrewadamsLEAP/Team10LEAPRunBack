@@ -12,6 +12,8 @@ import com.example.entities.Client;
 import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
 import com.example.repositories.ClientsRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.example.exceptions.Validate;
@@ -21,6 +23,7 @@ import java.util.List;
 
 @Service 
 public class ClientsService {
+    private static final Logger logger = LoggerFactory.getLogger(ClientsService.class);
     private final ClientsRepository clientsRepository;
     // TODO: Need to integrate JwT stuff but for now we're doing it without.
 
@@ -29,41 +32,52 @@ public class ClientsService {
     }
 
     public LoginResponse signup(Client request) {
+        logger.info("Signup attempt for email: {}", request.getEmail());
+        
         Long existingEmailClientId = clientsRepository.findClientIdByEmail(request.getEmail());
 
         if (existingEmailClientId != null) {
+            logger.warn("Signup failed: Email already in use - {}", request.getEmail());
             throw new InvalidArgumentsException("Invalid Email", "Email is already in use");
         }
 
         Long existingClientId = clientsRepository.findClientIdByUsername(request.getUsername());
 
         if (existingClientId != null) {
+            logger.warn("Signup failed: Username not unique - {}", request.getUsername());
             throw new InvalidArgumentsException("Invalid Username", "Username is not unique");
         }
 
         int createdRows = clientsRepository.createClient(request);
 
         if (createdRows != 1) {
+            logger.error("Signup failed: Database insert returned {} rows", createdRows);
             throw new UpdateFailedException("Client signup failed");
         }
 
         LoginView createdClient = clientsRepository.findLoginClientByUsername(request.getUsername());
 
         if (createdClient == null) {
+            logger.error("Signup failed: Created client not found after insert - {}", request.getUsername());
             throw new UpdateFailedException("Client signup failed");
         }
 
+        logger.info("Signup successful for username: {}", request.getUsername());
         return new LoginResponse(createdClient.userId(), createdClient.username(), null, "Signup successful");
     }
 
     public LoginResponse login(LoginRequest request) {
+        logger.info("Login attempt for username: {}", request.username());
+        
         // TODO: Encode then compare passwords when we do the whole JwT node stuff
         LoginView loginClient = clientsRepository.findLoginClientByUsername(request.username());
 
         if (loginClient == null || !loginClient.password().equals(request.password())) {
+            logger.warn("Login failed: Invalid credentials for username - {}", request.username());
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
 
+        logger.info("Login successful for username: {}", request.username());
         return new LoginResponse(loginClient.userId(), loginClient.username(), null, "Login successful");
     }
 
