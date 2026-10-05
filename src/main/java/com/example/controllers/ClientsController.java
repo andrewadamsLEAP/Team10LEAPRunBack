@@ -69,15 +69,4 @@ public class ClientsController {
     public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
         return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
     }
-
-    // Reporter endpoints - for reporting/analytics access
-    @GetMapping("/reporter/{clientId}")
-    public ResponseEntity<ClientReporterView> getClientAsReporter(@PathVariable Long clientId) {
-        return ResponseEntity.ok(clientsService.getClientDataReporter(clientId));
-    }
-
-    @GetMapping("/reporter")
-    public ResponseEntity<List<ClientReporterView>> getAllClientsAsReporter() {
-        return ResponseEntity.ok(clientsService.getAllClientDataReporter());
-    }
 }
