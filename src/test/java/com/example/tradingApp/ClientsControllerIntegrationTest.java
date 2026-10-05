@@ -44,7 +44,7 @@ class ClientsControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(signupJson(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.clientId").isNumber())
+                .andExpect(jsonPath("$.userId").isNumber())
                 .andExpect(jsonPath("$.username").value("newuser"))
                 .andExpect(jsonPath("$.message").value("Signup successful"));
 
@@ -91,7 +91,7 @@ class ClientsControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginJson(request)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.clientId").value(clientId))
+                .andExpect(jsonPath("$.userId").value(clientId))
                 .andExpect(jsonPath("$.username").value("loginuser"))
                 .andExpect(jsonPath("$.message").value("Login successful"));
     }

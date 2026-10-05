@@ -2,6 +2,7 @@ package com.example.services;
 
 import com.example.DTOs.orders.OrderResponse;
 import com.example.entities.Order;
+import com.example.entities.Instrument;
 import com.example.repositories.OrdersRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,10 +50,14 @@ class OrdersServiceTest {
         String ticker = "AAPL";
         int quantity = 10;
         BigDecimal price = new BigDecimal("150.00");
+        BigDecimal cashAmount = new BigDecimal("5000.00");
 
         when(marketHoursService.isUsMarketHours()).thenReturn(true);
-        when(clientsService.getClientProfile(clientId)).thenReturn(null); // Mock successful validation
-        when(instrumentService.instrumentExists(ticker)).thenReturn(true);
+        when(clientsService.getClientProfile(clientId)).thenReturn(
+                new com.example.DTOs.clients.ClientProfileView(clientId, "user@test.com", "testuser", "Test", "User", cashAmount)
+        );
+        when(instrumentService.getInstrumentByTicker(ticker)).thenReturn(instrument(ticker, "STOCK"));
+        when(ordersRepository.getPendingBuyOrdersForClient(clientId)).thenReturn(java.util.Collections.emptyList());
         when(ordersRepository.createOrder(any(Order.class))).thenReturn(
                 order(1L, clientId, ticker, Order.OrderType.BUY, quantity, price)
         );
@@ -62,13 +67,17 @@ class OrdersServiceTest {
         assertNotNull(result);
         assertEquals(Order.OrderType.BUY, result.getOrderType());
         assertEquals(ticker.toUpperCase(), result.getTicker());
-        verify(clientsService).getClientProfile(clientId);
-        verify(instrumentService).instrumentExists(ticker);
+        verify(clientsService, times(2)).getClientProfile(clientId);
+        verify(instrumentService).getInstrumentByTicker(ticker);
     }
 
     @Test
     void placeBuyOrderThrowsWhenMarketIsClosed() {
+        when(instrumentService.getInstrumentByTicker("AAPL")).thenReturn(instrument("AAPL", "STOCK"));
         when(marketHoursService.isUsMarketHours()).thenReturn(false);
+        when(clientsService.getClientProfile(1L)).thenReturn(
+                new com.example.DTOs.clients.ClientProfileView(1L, "user@test.com", "testuser", "Test", "User", new BigDecimal("5000.00"))
+        );
 
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
@@ -82,6 +91,7 @@ class OrdersServiceTest {
     @Test
     void placeBuyOrderThrowsWhenClientDoesNotExist() {
         Long clientId = 999L;
+        when(instrumentService.getInstrumentByTicker("AAPL")).thenReturn(instrument("AAPL", "STOCK"));
         when(marketHoursService.isUsMarketHours()).thenReturn(true);
         when(clientsService.getClientProfile(clientId)).thenThrow(new IllegalArgumentException("Client not found"));
 
@@ -91,7 +101,6 @@ class OrdersServiceTest {
         );
 
         assertEquals("Client not found: 999", exception.getMessage());
-        verify(instrumentService, never()).instrumentExists(anyString());
         verify(ordersRepository, never()).createOrder(any());
     }
 
@@ -99,9 +108,7 @@ class OrdersServiceTest {
     void placeBuyOrderThrowsWhenInstrumentDoesNotExist() {
         Long clientId = 1L;
         String ticker = "FAKE";
-        when(marketHoursService.isUsMarketHours()).thenReturn(true);
-        when(clientsService.getClientProfile(clientId)).thenReturn(null);
-        when(instrumentService.instrumentExists(ticker)).thenReturn(false);
+        when(instrumentService.getInstrumentByTicker(ticker)).thenReturn(null);
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -114,9 +121,11 @@ class OrdersServiceTest {
 
     @Test
     void placeBuyOrderThrowsWhenQuantityIsNegative() {
+        when(instrumentService.getInstrumentByTicker("AAPL")).thenReturn(instrument("AAPL", "STOCK"));
         when(marketHoursService.isUsMarketHours()).thenReturn(true);
-        when(clientsService.getClientProfile(1L)).thenReturn(null);
-        when(instrumentService.instrumentExists("AAPL")).thenReturn(true);
+        when(clientsService.getClientProfile(1L)).thenReturn(
+                new com.example.DTOs.clients.ClientProfileView(1L, "user@test.com", "testuser", "Test", "User", new BigDecimal("5000.00"))
+        );
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -128,9 +137,11 @@ class OrdersServiceTest {
 
     @Test
     void placeBuyOrderThrowsWhenPriceIsNegative() {
+        when(instrumentService.getInstrumentByTicker("AAPL")).thenReturn(instrument("AAPL", "STOCK"));
         when(marketHoursService.isUsMarketHours()).thenReturn(true);
-        when(clientsService.getClientProfile(1L)).thenReturn(null);
-        when(instrumentService.instrumentExists("AAPL")).thenReturn(true);
+        when(clientsService.getClientProfile(1L)).thenReturn(
+                new com.example.DTOs.clients.ClientProfileView(1L, "user@test.com", "testuser", "Test", "User", new BigDecimal("5000.00"))
+        );
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -162,8 +173,15 @@ class OrdersServiceTest {
         BigDecimal price = new BigDecimal("160.00");
 
         when(marketHoursService.isUsMarketHours()).thenReturn(true);
-        when(clientsService.getClientProfile(clientId)).thenReturn(null);
-        when(instrumentService.instrumentExists(ticker)).thenReturn(true);
+        when(clientsService.getClientProfile(clientId)).thenReturn(
+                new com.example.DTOs.clients.ClientProfileView(clientId, "user@test.com", "testuser", "Test", "User", new BigDecimal("5000.00"))
+        );
+        when(instrumentService.getInstrumentByTicker(ticker)).thenReturn(instrument(ticker, "STOCK"));
+        when(ordersRepository.getPendingSellOrdersForClientAndTicker(clientId, ticker.toUpperCase()))
+                .thenReturn(java.util.Collections.emptyList());
+        when(holdingsService.getHolding(clientId, ticker.toUpperCase())).thenReturn(
+                new com.example.DTOs.holdings.HoldingResponse(clientId, ticker, 10)
+        );
         when(ordersRepository.createOrder(any(Order.class))).thenReturn(
                 order(2L, clientId, ticker, Order.OrderType.SELL, quantity, price)
         );
@@ -173,16 +191,14 @@ class OrdersServiceTest {
         assertNotNull(result);
         assertEquals(Order.OrderType.SELL, result.getOrderType());
         verify(clientsService).getClientProfile(clientId);
-        verify(instrumentService).instrumentExists(ticker);
+        verify(instrumentService).getInstrumentByTicker(ticker);
     }
 
     @Test
     void placeSellOrderThrowsWhenInstrumentDoesNotExist() {
         Long clientId = 1L;
         String ticker = "INVALID";
-        when(marketHoursService.isUsMarketHours()).thenReturn(true);
-        when(clientsService.getClientProfile(clientId)).thenReturn(null);
-        when(instrumentService.instrumentExists(ticker)).thenReturn(false);
+        when(instrumentService.getInstrumentByTicker(ticker)).thenReturn(null);
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -258,6 +274,19 @@ class OrdersServiceTest {
 
     // ========== HELPER METHODS ==========
 
+    /**
+     * Creates a mock Instrument with the given ticker and asset type.
+     */
+    private Instrument instrument(String ticker, String assetType) {
+        Instrument instrument = new Instrument();
+        instrument.setTicker(ticker);
+        instrument.setAssetType(assetType);
+        return instrument;
+    }
+
+    /**
+     * Creates a test Order with the given parameters.
+     */
     private Order order(
             Long orderId,
             Long clientId,
