@@ -10,8 +10,16 @@ import java.util.List;
 @Repository
 public class OrdersRepository {
 
+    /**
+     * The OrdersMapper instance used to interact with the database.
+     */
     private final OrdersMapper ordersMapper;
 
+    /**
+     * Constructs a new OrdersRepository with the specified OrdersMapper.
+     *
+     * @param ordersMapper the OrdersMapper instance to use
+     */
     public OrdersRepository(OrdersMapper ordersMapper) {
         this.ordersMapper = ordersMapper;
     }
@@ -20,35 +28,86 @@ public class OrdersRepository {
     //                      SEARCH FUNCTIONS
     // =========================================================
 
+    /**
+     * Get order by ID.
+     *
+     * @param orderId the ID of the order to retrieve
+     * @return the order with the specified ID
+     */
     public Order getOrderById(Long orderId) {
 
         return ordersMapper.getOrderById(orderId);
     }
 
 
+    /**
+     * Get fulfilled orders for a specific client.
+     *
+     * @param clientId the ID of the client
+     * @return a list of fulfilled orders for the specified client
+     */
     public List<Order> getFulfilledOrders(Long clientId) {
 
         return ordersMapper.getFulfilledOrders(clientId);
     }
 
 
+    /**
+     * Get cancelled orders.
+     *
+     * @return a list of all cancelled orders
+     */
     public List<Order> getCancelledOrders() {
 
         return ordersMapper.getCancelledOrders();
     }
 
+    /**
+     * Get cancelled orders for a specific client.
+     *
+     * @param clientId the ID of the client
+     * @return a list of cancelled orders for the specified client
+     */
     public List<Order> getCancelledOrdersForClient(Long clientId) {
 
         return ordersMapper.getCancelledOrdersForClient(clientId);
     }
 
+    /**
+     * Get pending sell orders for a specific ticker.
+     *
+     * @param ticker the ticker symbol
+     * @return a list of pending sell orders for the specified ticker
+     */
     public List<Order> getPendingSellOrdersForTicker(
             String ticker) {
 
         return ordersMapper.getPendingSellOrdersForTicker(ticker);
     }
 
+    public List<Order> getPendingSellOrdersForClient(Long clientId) {
 
+        return ordersMapper.getPendingSellOrdersForClient(clientId);
+    }
+
+    /**
+     * Get pending sell orders for a specific client and ticker.
+     *
+     * @param clientId the ID of the client
+     * @param ticker the ticker symbol
+     * @return a list of pending sell orders for the specified client and ticker
+     */
+    public List<Order> getPendingSellOrdersForClientAndTicker(Long clientId, String ticker) {
+
+        return ordersMapper.getPendingSellOrdersForClientAndTicker(clientId, ticker);
+    }
+
+    /**
+     * Get pending buy orders for a specific ticker.
+     *
+     * @param ticker the ticker symbol
+     * @return a list of pending buy orders for the specified ticker
+     */
     public List<Order> getPendingBuyOrdersForTicker(
             String ticker) {
 
@@ -56,10 +115,22 @@ public class OrdersRepository {
     }
 
 
+    public List<Order> getPendingBuyOrdersForClient(Long clientId) {
+
+        return ordersMapper.getPendingBuyOrdersForClient(clientId);
+    }
+
+
     // =========================================================
     //                  ORDER MANIPULATION
     // =========================================================
 
+    /**
+     * Create an order in the database.
+     *
+     * @param order the order to create
+     * @return the created order
+     */
     public Order createOrder(Order order) {
 
         ordersMapper.createOrder(order);
@@ -68,6 +139,13 @@ public class OrdersRepository {
     }
 
 
+    /**
+     * Update the status of an existing order.
+     *
+     * @param orderId the ID of the order to update
+     * @param status the new status of the order
+     * @return the number of rows affected
+     */
     public int updateOrderStatus(
             Long orderId,
             Order.OrderStatus status) {

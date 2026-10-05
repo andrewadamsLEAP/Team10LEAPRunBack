@@ -2,9 +2,6 @@ pipeline {
     agent any
 
     environment {
-        MAVEN_HOME = tool 'Maven3'
-        JAVA_HOME = tool 'JDK17'
-        PATH = "${MAVEN_HOME}/bin:${JAVA_HOME}/bin:${PATH}"
         PROJECT_VERSION = '0.0.3'
         DOCKER_REGISTRY = 'your-docker-registry'
     }
@@ -52,7 +49,7 @@ pipeline {
                     // Always publish test results, even if some fail
                     junit testResults: 'target/surefire-reports/*.xml', 
                           allowEmptyResults: false,
-                          keepLongSTDIN: true
+                          keepLongStdio: true
                     
                     // Archive test reports for debugging
                     archiveArtifacts artifacts: 'target/surefire-reports/**', 

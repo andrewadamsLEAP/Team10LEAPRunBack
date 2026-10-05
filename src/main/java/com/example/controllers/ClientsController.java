@@ -26,6 +26,9 @@ public class ClientsController {
         this.clientsService = clientsService;
     }
 
+    // Check on this, might need tochange this to have all users be able to sign up
+    // Maybe not :o)
+    // TODO: When NestJS JWT is ready, add: @PreAuthorize("permitAll()")
     @PostMapping("/sign-up")
     public ResponseEntity<LoginResponse> signup(
             @RequestBody @Valid Client request) {
@@ -60,22 +63,26 @@ public class ClientsController {
     }
 
     // Admin endpoints - for administrative access
+    // TODO: When NestJS JWT is ready, add: @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin/{clientId}")
     public ResponseEntity<ClientAdminView> getClientAsAdmin(@PathVariable Long clientId) {
         return ResponseEntity.ok(clientsService.getClientDataAdmin(clientId));
     }
 
+    // TODO: When NestJS JWT is ready, add: @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/admin")
     public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
         return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
     }
 
     // Reporter endpoints - for reporting/analytics access
+    // TODO: When NestJS JWT is ready, add: @PreAuthorize("hasRole('REPORTER')")
     @GetMapping("/reporter/{clientId}")
     public ResponseEntity<ClientReporterView> getClientAsReporter(@PathVariable Long clientId) {
         return ResponseEntity.ok(clientsService.getClientDataReporter(clientId));
     }
 
+    // TODO: When NestJS JWT is ready, add: @PreAuthorize("hasRole('REPORTER')")
     @GetMapping("/reporter")
     public ResponseEntity<List<ClientReporterView>> getAllClientsAsReporter() {
         return ResponseEntity.ok(clientsService.getAllClientDataReporter());

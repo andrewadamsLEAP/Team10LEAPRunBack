@@ -15,13 +15,25 @@ import jakarta.validation.Valid;
 
 import java.util.List;
 
+//
+//  At somepoint can you or me, whoever, change the old === comments to new-style Javadoc comments
+//
+
 @RestController
 @RequestMapping("/api/v1/orders")
 public class OrdersController {
 
-
+/**
+ * The OrdersController class handles HTTP requests related to orders.
+ * It provides endpoints for retrieving, creating, and updating orders.
+ */
 private final OrdersService ordersService;
 
+/**
+ * Constructs a new OrdersController with the specified OrdersService.
+ *
+ * @param ordersService the OrdersService instance to use
+ */
 public OrdersController(OrdersService ordersService) {
     this.ordersService = ordersService;
 }
