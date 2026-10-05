@@ -11,8 +11,17 @@ import com.example.entities.Instrument;
 
 import java.util.List;
 
+/**
+ * MyBatis mapper interface for Instrument database operations.
+ * Handles data access for instruments stored in the database.
+ */
 @Mapper
 public interface InstrumentMapper {
+    /**
+     * Retrieves all instruments from the database, ordered by ticker.
+     *
+     * @return a list of all instruments
+     */
     @Select("""
         SELECT ticker, previous_close, open, volume,
                avg_volume, asset_type
@@ -29,6 +38,12 @@ public interface InstrumentMapper {
     })
     List<Instrument> findAll();
 
+    /**
+     * Retrieves an instrument by its ticker symbol.
+     *
+     * @param ticker the ticker symbol to search for
+     * @return the instrument with the specified ticker, or null if not found
+     */
     @Select("""
         SELECT ticker, previous_close, open, volume,
                avg_volume, asset_type

@@ -12,21 +12,41 @@ import com.example.services.InstrumentService;
 
 import java.util.List;
 
+/**
+ * REST controller for handling instrument-related HTTP requests.
+ * Provides endpoints to retrieve instrument data.
+ */
 @RestController
 @RequestMapping("/api/v1/instruments")
 public class InstrumentController {
+    /** The InstrumentService instance used to handle business logic. */
     private final InstrumentService instrumentService;
 
-
+    /**
+     * Constructs a new InstrumentController with the specified InstrumentService.
+     *
+     * @param instrumentService the InstrumentService instance to use
+     */
     public InstrumentController(InstrumentService instrumentService) {
         this.instrumentService = instrumentService;
     }
 
+    /**
+     * Retrieves all instruments.
+     *
+     * @return a list of all instruments
+     */
     @GetMapping
     public List<Instrument> getAllInstruments() {
         return instrumentService.getAllInstruments();
     }
 
+    /**
+     * Retrieves an instrument by its ticker symbol.
+     *
+     * @param ticker the ticker symbol of the instrument to retrieve
+     * @return the instrument with the specified ticker
+     */
     @GetMapping("/{ticker}")
     public Instrument getInstrumentByTicker(@PathVariable String ticker) {
         return instrumentService.getInstrumentByTicker(ticker);

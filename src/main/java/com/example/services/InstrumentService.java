@@ -41,6 +41,13 @@ public class InstrumentService {
         return instrumentRepository.findAll();
     }
 
+    /**
+     * Retrieves an instrument by its ticker symbol.
+     *
+     * @param ticker the ticker symbol of the instrument to retrieve
+     * @return the instrument with the specified ticker
+     * @throws IllegalArgumentException if the ticker is null, empty, or if the instrument is not found
+     */
     public Instrument getInstrumentByTicker(String ticker) {
         if (ticker == null || ticker.trim().isEmpty()) {
             throw new IllegalArgumentException("Ticker cannot be null or empty");
@@ -56,6 +63,12 @@ public class InstrumentService {
         return instrument;
     }
 
+    /**
+     * Checks whether an instrument with the specified ticker exists.
+     *
+     * @param ticker the ticker symbol to check
+     * @return true if the instrument exists, false otherwise
+     */
     public boolean instrumentExists(String ticker) {
         if (ticker == null || ticker.trim().isEmpty()) {
             return false;
