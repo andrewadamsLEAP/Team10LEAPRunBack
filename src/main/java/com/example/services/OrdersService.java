@@ -423,11 +423,14 @@ public class OrdersService {
         BigDecimal orderCost = price.multiply(BigDecimal.valueOf(quantity));
         BigDecimal clientCash = clientsService.getClientProfile(clientId).cashAmount();
 
+        // Second, step through all the pending buy orders using the repository 
+        // and add their costs to the total order cost to account for reserved cash
         List<Order> pendingBuyOrders = ordersRepository.getPendingBuyOrdersForClient(clientId);
         for(int i = 0; i < pendingBuyOrders.size(); i++) {
             orderCost = orderCost.add(pendingBuyOrders.get(i).getPrice().multiply(BigDecimal.valueOf(pendingBuyOrders.get(i).getQuantity())));
         }
 
+        // If client cash is less than the total order cost (including reserved cash), throw an exception
         if (clientCash.compareTo(orderCost) < 0) {
             throw new IllegalArgumentException(
                     "Insufficient cash. Client has $" + clientCash +
@@ -457,6 +460,7 @@ public class OrdersService {
         // First, validate basic order requirements
         validateOrderCommon(clientId, ticker, quantity, price);
 
+        // Second, add the amount trying to be sold to the reserved shares for this client and ticker
         List<Order> pendingSellOrders = ordersRepository.getPendingSellOrdersForClientAndTicker(clientId, ticker.toUpperCase());
         int reservedShares = 0;
         for(int i = 0; i < pendingSellOrders.size(); i++) {
