@@ -7,8 +7,12 @@ import com.example.DTOs.orders.OrderResponse;
 import com.example.DTOs.orders.OrderHistoryView;
 import com.example.exceptions.InvalidArgumentsException;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -23,6 +27,8 @@ public class OrdersService {
     private final OrderDtoConverter orderDtoConverter;
     private final ClientsService clientsService;
     private final InstrumentService instrumentService;
+    private final KafkaTemplate<String, Order> kafkaTemplate;
+    private final String orderPendingTopic;
 
     public OrdersService(
             OrdersRepository ordersRepository,
@@ -30,7 +36,10 @@ public class OrdersService {
             HoldingsService holdingsService,
             OrderDtoConverter orderDtoConverter,
             ClientsService clientsService,
-            InstrumentService instrumentService) {
+            InstrumentService instrumentService,
+            KafkaTemplate<String,Order> kafkaTemplate,
+            @Value("${app.kafka.topics.order-pending}") String orderPendingTopic
+        ) {
 
         this.ordersRepository = ordersRepository;
         this.marketHoursService = marketHoursService;
@@ -38,6 +47,8 @@ public class OrdersService {
         this.orderDtoConverter = orderDtoConverter;
         this.clientsService = clientsService;
         this.instrumentService = instrumentService;
+        this.kafkaTemplate = kafkaTemplate;
+        this.orderPendingTopic = orderPendingTopic;
     }
 
     // =========================================================
@@ -132,7 +143,10 @@ public class OrdersService {
                 OffsetDateTime.now()
         );
 
-        return ordersRepository.createOrder(order);
+        Order createdOrder = ordersRepository.createOrder(order);
+        publishOrderAfterCommit(createdOrder);
+
+        return createdOrder;
     }
 
 
@@ -165,9 +179,23 @@ public class OrdersService {
                 OffsetDateTime.now()
         );
 
-        return ordersRepository.createOrder(order);
+        Order createdOrder = ordersRepository.createOrder(order);
+        publishOrderAfterCommit(createdOrder);
+
+        return createdOrder;
     }
 
+    // =========================================================
+    //                   PUBLISH ORDER HELPER
+    // =========================================================
+    public void publishOrderAfterCommit(Order order) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                kafkaTemplate.send(orderPendingTopic, order.getTicker(), order);
+            }
+        });
+    }
 
     // =========================================================
     //                       CANCEL ORDER
@@ -200,43 +228,6 @@ public class OrdersService {
         }
 
         return getOrderById(orderId);
-    }
-
-
-    // =========================================================
-    //                    EXECUTE ORDER
-    // =========================================================
-
-    @Transactional
-    public Order executeOrder(Long orderId) {
-
-        Order order = getOrderById(orderId);
-
-        if (order.getOrderStatus() != Order.OrderStatus.PENDING) {
-
-            throw new IllegalStateException(
-                    "Only pending orders can be executed."
-            );
-        }
-
-        int updated = ordersRepository.updateOrderStatus(
-                orderId,
-                Order.OrderStatus.FULFILLED
-        );
-
-        if (updated == 0) {
-            throw new IllegalStateException(
-                    "Order " + orderId +
-                    " is no longer pending and could not be executed."
-            );
-        }
-
-        Order fulfilledOrder = getOrderById(orderId);
-        
-        // Update holdings when order is fulfilled
-        holdingsService.updateHoldingsForOrder(fulfilledOrder);
-        
-        return fulfilledOrder;
     }
 
 
