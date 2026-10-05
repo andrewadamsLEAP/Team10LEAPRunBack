@@ -8,6 +8,8 @@ import com.example.DTOs.holdings.BuyStockResponse;
 import com.example.DTOs.holdings.SellStockResponse;
 import com.example.DTOs.holdings.HoldingDtoConverter;
 import com.example.exceptions.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import com.example.repositories.HoldingsRepository;
 import com.example.repositories.ClientsRepository;
@@ -16,6 +18,7 @@ import java.util.List;
 
 @Service
 public class HoldingsService {
+    private static final Logger logger = LoggerFactory.getLogger(HoldingsService.class);
     
     private final HoldingsRepository holdingsRepository;
     private final ClientsRepository clientsRepository;
@@ -74,6 +77,8 @@ public class HoldingsService {
      * If client doesn't own this ticker yet, create new holding
      */     
     public BuyStockResponse buyStock(Long clientId, String ticker, Integer quantity) {
+        logger.info("Buy stock request: clientId={}, ticker={}, quantity={}", clientId, ticker, quantity);
+        
         Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
         Validate.validateQuantity(quantity);
@@ -102,12 +107,15 @@ public class HoldingsService {
      * Validates client has sufficient shares
      */
     public SellStockResponse sellStock(Long clientId, String ticker, Integer quantity) {
+        logger.info("Sell stock request: clientId={}, ticker={}, quantity={}", clientId, ticker, quantity);
+        
         Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
         Validate.validateTicker(ticker);
         Validate.validateQuantity(quantity);
         Integer currentQty = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
         
         if (currentQty == null || currentQty < quantity) {
+            logger.warn("Insufficient shares to sell: clientId={}, ticker={}, requested={}, available={}", clientId, ticker, quantity, (currentQty == null ? 0 : currentQty));
             throw new IllegalArgumentException(
                     "Insufficient shares to sell. Current: " + 
                     (currentQty == null ? 0 : currentQty) + 
