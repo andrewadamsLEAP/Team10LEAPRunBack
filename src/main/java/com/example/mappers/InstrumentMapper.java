@@ -11,10 +11,6 @@ import com.example.entities.Instrument;
 
 import java.util.List;
 
-/**
- * MyBatis mapper interface for Instrument database operations.
- * Handles data access for instruments stored in the database.
- */
 @Mapper
 public interface InstrumentMapper {
     /**

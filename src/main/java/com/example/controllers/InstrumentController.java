@@ -12,14 +12,9 @@ import com.example.services.InstrumentService;
 
 import java.util.List;
 
-/**
- * REST controller for handling instrument-related HTTP requests.
- * Provides endpoints to retrieve instrument data.
- */
 @RestController
 @RequestMapping("/api/v1/instruments")
 public class InstrumentController {
-    /** The InstrumentService instance used to handle business logic. */
     private final InstrumentService instrumentService;
 
     /**
