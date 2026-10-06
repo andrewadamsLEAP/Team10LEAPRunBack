@@ -200,11 +200,13 @@ public class OrdersService {
                 OffsetDateTime.now()
         );
 
+        Order createdOrder = ordersRepository.createOrder(order);
+        
         logger.info("Buy order created: orderId={}, clientId={}, ticker={}, price={}", 
-                    order.getOrderId(), clientId, ticker, currentPrice);
+                    createdOrder.getOrderId(), clientId, ticker, currentPrice);
 
-        publishOrderAfterCommit(order);
-        return order;
+        publishOrderAfterCommit(createdOrder);
+        return createdOrder;
     }
 
 
@@ -249,11 +251,13 @@ public class OrdersService {
                 OffsetDateTime.now()
         );
 
+        Order createdOrder = ordersRepository.createOrder(order);
+        
         logger.info("Sell order created: orderId={}, clientId={}, ticker={}, price={}", 
-                    order.getOrderId(), clientId, ticker, currentPrice);
+                    createdOrder.getOrderId(), clientId, ticker, currentPrice);
 
-        publishOrderAfterCommit(order);
-        return order;
+        publishOrderAfterCommit(createdOrder);
+        return createdOrder;
     }
 
     // =========================================================
