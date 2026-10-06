@@ -645,6 +645,7 @@ public class OrdersService {
      * @throws IllegalArgumentException if validation fails
      * @throws IllegalStateException if market is closed or order cannot be created
      */
+    @Transactional
     public OrderResponse placeBuyOrderAsDto(
             Long clientId,
             String ticker,
@@ -665,6 +666,7 @@ public class OrdersService {
      * @throws IllegalArgumentException if validation fails
      * @throws IllegalStateException if market is closed or order cannot be created
      */
+    @Transactional
     public OrderResponse placeSellOrderAsDto(
             Long clientId,
             String ticker,
@@ -682,6 +684,7 @@ public class OrdersService {
      * @throws InvalidArgumentsException if order is not found
      * @throws IllegalStateException if order status is not PENDING
      */
+    @Transactional
     public OrderResponse cancelOrderAsDto(Long orderId) {
         Order order = cancelOrder(orderId);
         return orderDtoConverter.toOrderResponse(order);
