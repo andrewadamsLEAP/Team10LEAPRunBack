@@ -10,8 +10,12 @@ import com.example.exceptions.InvalidArgumentsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -28,6 +32,8 @@ public class OrdersService {
     private final OrderDtoConverter orderDtoConverter;
     private final ClientsService clientsService;
     private final InstrumentService instrumentService;
+    private final KafkaTemplate kafkaTemplate;
+    private final String orderPendingTopic;
     private final MarketDataService marketDataService;
 
     public OrdersService(
@@ -37,14 +43,18 @@ public class OrdersService {
             OrderDtoConverter orderDtoConverter,
             ClientsService clientsService,
             InstrumentService instrumentService,
-            MarketDataService marketDataService) {
-
+             MarketDataService marketDataService,
+            KafkaTemplate kafkaTemplate,
+            @Value("${app.kafka.topics.order-pending}") String orderPendingTopic
+        ) {
         this.ordersRepository = ordersRepository;
         this.marketHoursService = marketHoursService;
         this.holdingsService = holdingsService;
         this.orderDtoConverter = orderDtoConverter;
         this.clientsService = clientsService;
         this.instrumentService = instrumentService;
+        this.kafkaTemplate = kafkaTemplate;
+        this.orderPendingTopic = orderPendingTopic;
         this.marketDataService = marketDataService;
     }
 
@@ -244,6 +254,21 @@ public class OrdersService {
         return createdOrder;
     }
 
+    // =========================================================
+    //                   PUBLISH ORDER HELPER
+    // =========================================================
+    public void publishOrderAfterCommit(Order order) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            throw new IllegalStateException("Order not actively in a transaction.");
+        }
+
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                kafkaTemplate.send(orderPendingTopic, order.getTicker(), order);
+            }
+        });
+    }
 
     // =========================================================
     //                       CANCEL ORDER
