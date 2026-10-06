@@ -20,7 +20,7 @@ public class MarketHoursService {
             LocalTime.of(9, 30);
 
     private static final LocalTime MARKET_CLOSE =
-            LocalTime.of(18, 0);
+            LocalTime.of(16, 0);
 
     public boolean isUsMarketHours() {
 
