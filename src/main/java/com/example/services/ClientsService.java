@@ -200,12 +200,12 @@ public class ClientsService {
      * Retrieves all client data for admin view.
      *
      * @return a list of ClientAdminView containing all clients' data for admin purposes
-     * @throws IllegalArgumentException if the client list is invalid within validate client list for admin
+     * @throws IllegalArgumentException if the client list is invalid
      */
     public List<ClientAdminView> getAllClientDataAdmin() {
         List<ClientAdminView> clients = clientsRepository.findClientsAsAdmin();
 
-        Validate.validateClientListForAdmin(clients);
+        Validate.validateClientList(clients);
 
         return clients;
     }
@@ -214,12 +214,12 @@ public class ClientsService {
      * Retrieves all client data for reporter view.
      *
      * @return a list of ClientReporterView containing all clients' data for reporter purposes
-     * @throws IllegalArgumentException if the client list is invalid within validate client list for reporter
+     * @throws IllegalArgumentException if the client list is invalid
      */ 
     public List<ClientReporterView> getAllClientDataReporter() {
         List<ClientReporterView> clients = clientsRepository.findClientsAsReporter();
 
-        Validate.validateClientListForReporter(clients);
+        Validate.validateClientList(clients);
 
         return clients;
     }

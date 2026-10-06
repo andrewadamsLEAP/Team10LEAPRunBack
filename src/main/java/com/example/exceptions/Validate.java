@@ -1,12 +1,8 @@
 package com.example.exceptions;
 
-import com.example.DTOs.clients.LoginView;
-
 import java.util.List;
 import java.util.function.Supplier;
 
-import com.example.DTOs.clients.ClientAdminView;
-import com.example.DTOs.clients.ClientReporterView;
 import com.example.entities.Client;
 
 /**
@@ -123,47 +119,19 @@ public class Validate {
      * @param client the client entity to validate
      * @throws ClientNotFoundException if client is null
      */
-    private static void validateCustomerExists(Object client) {
+    public static void validateClient(Object client) {
         if (client == null) {
             throw new ClientNotFoundException("Customer not found");
         }
     }
 
-    public static void validateClient(LoginView client) {
-        validateCustomerExists(client);
-    }
-
-    public static void validateClient(Client client) {
-        validateCustomerExists(client);
-    }
-
-    public static void validateClient(ClientAdminView client) {
-        validateCustomerExists(client);
-    }
-
-    public static void validateClient(ClientReporterView client) {
-        validateCustomerExists(client);
-    }
-
     /**
-     * Validates that a client list for admin view is not empty.
+     * Validates that a client list is not empty.
      *
      * @param clients the list of clients to validate
      * @throws ClientNotFoundException if list is null or empty
      */
-    public static void validateClientListForAdmin(List<ClientAdminView> clients) {
-        if (clients == null || clients.isEmpty()) {
-            throw new ClientNotFoundException("No clients found");
-        }
-    }
-
-    /**
-     * Validates that a client list for reporter view is not empty.
-     *
-     * @param clients the list of clients to validate
-     * @throws ClientNotFoundException if list is null or empty
-     */
-    public static void validateClientListForReporter(List<ClientReporterView> clients) {
+    public static void validateClientList(List<?> clients) {
         if (clients == null || clients.isEmpty()) {
             throw new ClientNotFoundException("No clients found");
         }

@@ -32,7 +32,7 @@ public class OrdersService {
     private final OrderDtoConverter orderDtoConverter;
     private final ClientsService clientsService;
     private final InstrumentService instrumentService;
-    private final KafkaTemplate kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String orderPendingTopic;
     private final MarketDataService marketDataService;
 
@@ -44,7 +44,7 @@ public class OrdersService {
             ClientsService clientsService,
             InstrumentService instrumentService,
              MarketDataService marketDataService,
-            KafkaTemplate kafkaTemplate,
+            KafkaTemplate<String, Object> kafkaTemplate,
             @Value("${app.kafka.topics.order-pending}") String orderPendingTopic
         ) {
         this.ordersRepository = ordersRepository;
