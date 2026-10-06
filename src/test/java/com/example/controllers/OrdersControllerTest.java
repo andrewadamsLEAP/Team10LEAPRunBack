@@ -134,14 +134,14 @@ class OrdersControllerTest {
                 1L, "AAPL", 100, new BigDecimal("150.00"), "PENDING", null
         );
 
-        when(ordersService.placeBuyOrderAsDto(1L, "AAPL", 100, new BigDecimal("150.00")))
+        when(ordersService.placeBuyOrderAsDto(1L, "AAPL", 100))
                 .thenReturn(mockResponse);
 
         OrderResponse result = ordersController.placeBuyOrder(request);
 
         assertNotNull(result);
         assertEquals("AAPL", result.ticker());
-        verify(ordersService, times(1)).placeBuyOrderAsDto(1L, "AAPL", 100, new BigDecimal("150.00"));
+        verify(ordersService, times(1)).placeBuyOrderAsDto(1L, "AAPL", 100);
     }
 
     /**
@@ -154,14 +154,14 @@ class OrdersControllerTest {
                 1L, "MSFT", 50, new BigDecimal("200.00"), "PENDING", null
         );
 
-        when(ordersService.placeSellOrderAsDto(1L, "MSFT", 50, new BigDecimal("200.00")))
+        when(ordersService.placeSellOrderAsDto(1L, "MSFT", 50))
                 .thenReturn(mockResponse);
 
         OrderResponse result = ordersController.placeSellOrder(request);
 
         assertNotNull(result);
         assertEquals("MSFT", result.ticker());
-        verify(ordersService, times(1)).placeSellOrderAsDto(1L, "MSFT", 50, new BigDecimal("200.00"));
+        verify(ordersService, times(1)).placeSellOrderAsDto(1L, "MSFT", 50);
     }
 
     /**

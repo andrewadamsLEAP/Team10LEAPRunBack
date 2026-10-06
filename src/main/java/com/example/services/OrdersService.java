@@ -20,6 +20,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class OrdersService {
@@ -33,6 +34,7 @@ public class OrdersService {
     private final InstrumentService instrumentService;
     private final KafkaTemplate kafkaTemplate;
     private final String orderPendingTopic;
+    private final MarketDataService marketDataService;
 
     public OrdersService(
             OrdersRepository ordersRepository,
@@ -41,10 +43,10 @@ public class OrdersService {
             OrderDtoConverter orderDtoConverter,
             ClientsService clientsService,
             InstrumentService instrumentService,
+             MarketDataService marketDataService,
             KafkaTemplate kafkaTemplate,
             @Value("${app.kafka.topics.order-pending}") String orderPendingTopic
         ) {
-
         this.ordersRepository = ordersRepository;
         this.marketHoursService = marketHoursService;
         this.holdingsService = holdingsService;
@@ -53,6 +55,7 @@ public class OrdersService {
         this.instrumentService = instrumentService;
         this.kafkaTemplate = kafkaTemplate;
         this.orderPendingTopic = orderPendingTopic;
+        this.marketDataService = marketDataService;
     }
 
     // =========================================================
@@ -162,13 +165,13 @@ public class OrdersService {
 
     /**
      * Places a buy order for a client to purchase shares/crypto.
-     * Validates sufficient cash and applies market hours restrictions for stocks.
+     * Uses the current market price from the database and validates sufficient cash.
+     * Applies market hours restrictions for stocks.
      *
      * @param clientId the ID of the client placing the order
      * @param ticker the ticker symbol of the asset to buy
      * @param quantity the number of shares/units to buy (must be > 0)
-     * @param price the price per share/unit (must be > 0)
-     * @return the created Order object with PENDING status
+     * @return the created Order object with PENDING status, priced at current market ask price
      * @throws IllegalArgumentException if validation fails (insufficient cash, invalid ticker, etc.)
      * @throws IllegalStateException if market is closed for stocks or order cannot be created
      */
@@ -176,16 +179,15 @@ public class OrdersService {
     public Order placeBuyOrder(
             Long clientId,
             String ticker,
-            int quantity,
-            BigDecimal price) {
+            int quantity) {
 
-        logger.info("Place buy order: clientId={}, ticker={}, quantity={}, price={}", clientId, ticker, quantity, price);
-        validateBuyOrder(
-                clientId,
-                ticker,
-                quantity,
-                price
-        );
+        // Fetch current market price (ask price for buys)
+        BigDecimal currentPrice = fetchAskPrice(ticker);
+        
+        logger.info("Place buy order: clientId={}, ticker={}, quantity={}, marketPrice={}", 
+                    clientId, ticker, quantity, currentPrice);
+        
+        validateBuyOrder(clientId, ticker, quantity, currentPrice);
 
         Order order = new Order(
                 null,
@@ -194,13 +196,13 @@ public class OrdersService {
                 Order.OrderType.BUY,
                 Order.OrderStatus.PENDING,
                 quantity,
-                price,
+                currentPrice,
                 OffsetDateTime.now()
         );
 
         Order createdOrder = ordersRepository.createOrder(order);
-        logger.info("Buy order created: orderId={}, clientId={}, ticker={}", createdOrder.getOrderId(), clientId, ticker);
-        publishOrderAfterCommit(createdOrder);
+        logger.info("Buy order created: orderId={}, clientId={}, ticker={}, price={}", 
+                    createdOrder.getOrderId(), clientId, ticker, currentPrice);
         return createdOrder;
     }
 
@@ -211,13 +213,13 @@ public class OrdersService {
 
     /**
      * Places a sell order for a client to sell their holdings.
-     * Validates sufficient holdings and applies market hours restrictions for stocks.
+     * Uses the current market price from the database and validates sufficient holdings.
+     * Applies market hours restrictions for stocks.
      *
      * @param clientId the ID of the client placing the order
      * @param ticker the ticker symbol of the asset to sell
      * @param quantity the number of shares/units to sell (must be > 0)
-     * @param price the price per share/unit (must be > 0)
-     * @return the created Order object with PENDING status
+     * @return the created Order object with PENDING status, priced at current market bid price
      * @throws IllegalArgumentException if validation fails (insufficient holdings, invalid ticker, etc.)
      * @throws IllegalStateException if market is closed for stocks or order cannot be created
      */
@@ -225,17 +227,15 @@ public class OrdersService {
     public Order placeSellOrder(
             Long clientId,
             String ticker,
-            int quantity,
-            BigDecimal price) {
+            int quantity) {
 
-        logger.info("Place sell order: clientId={}, ticker={}, quantity={}, price={}", clientId, ticker, quantity, price);
+        // Fetch current market price (bid price for sells)
+        BigDecimal currentPrice = fetchBidPrice(ticker);
         
-        validateSellOrder(
-                clientId,
-                ticker,
-                quantity,
-                price
-        );
+        logger.info("Place sell order: clientId={}, ticker={}, quantity={}, marketPrice={}", 
+                    clientId, ticker, quantity, currentPrice);
+        
+        validateSellOrder(clientId, ticker, quantity, currentPrice);
 
         Order order = new Order(
                 null,
@@ -244,13 +244,13 @@ public class OrdersService {
                 Order.OrderType.SELL,
                 Order.OrderStatus.PENDING,
                 quantity,
-                price,
+                currentPrice,
                 OffsetDateTime.now()
         );
 
         Order createdOrder = ordersRepository.createOrder(order);
-        logger.info("Sell order created: orderId={}, clientId={}, ticker={}", createdOrder.getOrderId(), clientId, ticker);
-        publishOrderAfterCommit(createdOrder);
+        logger.info("Sell order created: orderId={}, clientId={}, ticker={}, price={}", 
+                    createdOrder.getOrderId(), clientId, ticker, currentPrice);
         return createdOrder;
     }
 
@@ -451,11 +451,14 @@ public class OrdersService {
         BigDecimal orderCost = price.multiply(BigDecimal.valueOf(quantity));
         BigDecimal clientCash = clientsService.getClientProfile(clientId).cashAmount();
 
+        // Second, step through all the pending buy orders using the repository 
+        // and add their costs to the total order cost to account for reserved cash
         List<Order> pendingBuyOrders = ordersRepository.getPendingBuyOrdersForClient(clientId);
         for(int i = 0; i < pendingBuyOrders.size(); i++) {
             orderCost = orderCost.add(pendingBuyOrders.get(i).getPrice().multiply(BigDecimal.valueOf(pendingBuyOrders.get(i).getQuantity())));
         }
 
+        // If client cash is less than the total order cost (including reserved cash), throw an exception
         if (clientCash.compareTo(orderCost) < 0) {
             throw new IllegalArgumentException(
                     "Insufficient cash. Client has $" + clientCash +
@@ -485,6 +488,7 @@ public class OrdersService {
         // First, validate basic order requirements
         validateOrderCommon(clientId, ticker, quantity, price);
 
+        // Second, add the amount trying to be sold to the reserved shares for this client and ticker
         List<Order> pendingSellOrders = ordersRepository.getPendingSellOrdersForClientAndTicker(clientId, ticker.toUpperCase());
         int reservedShares = 0;
         for(int i = 0; i < pendingSellOrders.size(); i++) {
@@ -556,6 +560,64 @@ public class OrdersService {
                     " must be greater than zero."
             );
         }
+    }
+
+    /**
+     * Fetches the current ask price (what sellers are asking) for a ticker.
+     * Used for buy orders - clients must pay at least this price.
+     *
+     * @param ticker the ticker symbol
+     * @return the current ask price from market data
+     * @throws IllegalArgumentException if ticker not found or no market data available
+     */
+    private BigDecimal fetchAskPrice(String ticker) {
+        List<Map<String, Object>> priceData = marketDataService.getLatestPrice(ticker.toUpperCase());
+        
+        if (priceData == null || priceData.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No market data available for ticker: " + ticker
+            );
+        }
+        
+        Map<String, Object> latestPrice = priceData.get(0);
+        Object askPrice = latestPrice.get("ask_price");
+        
+        if (askPrice == null) {
+            throw new IllegalArgumentException(
+                    "Ask price not available for ticker: " + ticker
+            );
+        }
+        
+        return new BigDecimal(askPrice.toString());
+    }
+
+    /**
+     * Fetches the current bid price (what buyers are bidding) for a ticker.
+     * Used for sell orders - clients receive at most this price.
+     *
+     * @param ticker the ticker symbol
+     * @return the current bid price from market data
+     * @throws IllegalArgumentException if ticker not found or no market data available
+     */
+    private BigDecimal fetchBidPrice(String ticker) {
+        List<Map<String, Object>> priceData = marketDataService.getLatestPrice(ticker.toUpperCase());
+        
+        if (priceData == null || priceData.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "No market data available for ticker: " + ticker
+            );
+        }
+        
+        Map<String, Object> latestPrice = priceData.get(0);
+        Object bidPrice = latestPrice.get("bid_price");
+        
+        if (bidPrice == null) {
+            throw new IllegalArgumentException(
+                    "Bid price not available for ticker: " + ticker
+            );
+        }
+        
+        return new BigDecimal(bidPrice.toString());
     }
 
     // =========================================================
@@ -636,11 +698,11 @@ public class OrdersService {
 
     /**
      * Places a buy order for a client and returns the result as a DTO.
+     * Uses current market ask price from the database.
      *
      * @param clientId the ID of the client
      * @param ticker the ticker symbol
      * @param quantity the number of shares/units to buy
-     * @param price the price per share/unit
      * @return an OrderResponse DTO with the created order data
      * @throws IllegalArgumentException if validation fails
      * @throws IllegalStateException if market is closed or order cannot be created
@@ -648,19 +710,18 @@ public class OrdersService {
     public OrderResponse placeBuyOrderAsDto(
             Long clientId,
             String ticker,
-            int quantity,
-            BigDecimal price) {
-        Order order = placeBuyOrder(clientId, ticker, quantity, price);
+            int quantity) {
+        Order order = placeBuyOrder(clientId, ticker, quantity);
         return orderDtoConverter.toOrderResponse(order);
     }
 
     /**
      * Places a sell order for a client and returns the result as a DTO.
+     * Uses current market bid price from the database.
      *
      * @param clientId the ID of the client
      * @param ticker the ticker symbol
      * @param quantity the number of shares/units to sell
-     * @param price the price per share/unit
      * @return an OrderResponse DTO with the created order data
      * @throws IllegalArgumentException if validation fails
      * @throws IllegalStateException if market is closed or order cannot be created
@@ -668,9 +729,8 @@ public class OrdersService {
     public OrderResponse placeSellOrderAsDto(
             Long clientId,
             String ticker,
-            int quantity,
-            BigDecimal price) {
-        Order order = placeSellOrder(clientId, ticker, quantity, price);
+            int quantity) {
+        Order order = placeSellOrder(clientId, ticker, quantity);
         return orderDtoConverter.toOrderResponse(order);
     }
 
