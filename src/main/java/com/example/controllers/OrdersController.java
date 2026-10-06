@@ -119,8 +119,7 @@ public OrderResponse placeBuyOrder(
     return ordersService.placeBuyOrderAsDto(
             request.clientId(),
             request.ticker(),
-            request.quantity(),
-            request.price()
+            request.quantity()
     );
 }
 
@@ -135,8 +134,7 @@ public OrderResponse placeSellOrder(
     return ordersService.placeSellOrderAsDto(
             request.clientId(),
             request.ticker(),
-            request.quantity(),
-            request.price()
+            request.quantity()
     );
 }
 

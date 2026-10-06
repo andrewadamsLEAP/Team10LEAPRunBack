@@ -6,6 +6,9 @@ import java.time.DayOfWeek;
 import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+/**
+ * Service for determining if the current time is within US market hours.
+ */
 
 @Service
 public class MarketHoursService {

@@ -31,11 +31,21 @@ public class ClientsService {
         this.clientsRepository = clientsRepository;
     }
 
+
+    /**
+     * Handles the signup process for a new client.
+     *
+     * @param request the client information for signup
+     * @return a LoginResponse containing the created client's details
+     * @throws InvalidArgumentsException if the email or username is already in use
+     * @throws UpdateFailedException if the client could not be created in the database
+     */
     public LoginResponse signup(Client request) {
         logger.info("Signup attempt for email: {}", request.getEmail());
         
         Long existingEmailClientId = clientsRepository.findClientIdByEmail(request.getEmail());
 
+        // Check if the email already exists in the database
         if (existingEmailClientId != null) {
             logger.warn("Signup failed: Email already in use - {}", request.getEmail());
             throw new InvalidArgumentsException("Invalid Email", "Email is already in use");
@@ -43,6 +53,7 @@ public class ClientsService {
 
         Long existingClientId = clientsRepository.findClientIdByUsername(request.getUsername());
 
+        // Check if the username is already taken
         if (existingClientId != null) {
             logger.warn("Signup failed: Username not unique - {}", request.getUsername());
             throw new InvalidArgumentsException("Invalid Username", "Username is not unique");
@@ -50,6 +61,7 @@ public class ClientsService {
 
         int createdRows = clientsRepository.createClient(request);
 
+        // If the database doesn't record that a new row is created, it means the insert failed
         if (createdRows != 1) {
             logger.error("Signup failed: Database insert returned {} rows", createdRows);
             throw new UpdateFailedException("Client signup failed");
@@ -57,6 +69,7 @@ public class ClientsService {
 
         LoginView createdClient = clientsRepository.findLoginClientByUsername(request.getUsername());
 
+        // Check if the client was successfully created in the database
         if (createdClient == null) {
             logger.error("Signup failed: Created client not found after insert - {}", request.getUsername());
             throw new UpdateFailedException("Client signup failed");
@@ -66,6 +79,13 @@ public class ClientsService {
         return new LoginResponse(createdClient.userId(), createdClient.username(), null, "Signup successful");
     }
 
+    /**
+     * Handles the login process for an existing client.
+     *
+     * @param request the login request containing username and password
+     * @return a LoginResponse containing the client's details if login is successful
+     * @throws InvalidArgumentsException if the credentials are invalid
+     */
     public LoginResponse login(LoginRequest request) {
         logger.info("Login attempt for username: {}", request.username());
         
@@ -81,6 +101,14 @@ public class ClientsService {
         return new LoginResponse(loginClient.userId(), loginClient.username(), null, "Login successful");
     }
 
+    /**
+     * Handles the password change process for an existing client.
+     *
+     * @param clientId the ID of the client
+     * @param request the change password request containing the current and new passwords
+     * @throws InvalidArgumentsException if the current password is incorrect or the new password is the same as the current password
+     * @throws UpdateFailedException if the password could not be updated in the database
+     */
     // TODO: Encode passwords and verify when we work on JwT stuff (& check if user = clientId)
     public void changePassword(Long clientId, ChangePasswordRequest request) {
         LoginView client = clientsRepository.findLoginClientById(clientId);
@@ -102,6 +130,13 @@ public class ClientsService {
         }
     }
 
+    /**
+     * Retrieves the profile information for a specific client.
+     *
+     * @param clientId the ID of the client
+     * @return a ClientProfileView containing the client's profile information
+     * @throws IllegalArgumentException if the client does not exist wtithin validate client
+     */
     public ClientProfileView getClientProfile(Long clientId) {
         Client client = clientsRepository.findClientById(clientId);
 
@@ -116,6 +151,13 @@ public class ClientsService {
                 client.getCashAmount());
     }
 
+    /**
+     * Retrieves the client data for a specific client as an admin view.
+     *
+     * @param clientId the ID of the client
+     * @return a ClientAdminView containing the client's data for admin purposes
+     * @throws IllegalArgumentException if the client does not exist within validate client
+     */
     public ClientAdminView getClientDataAdmin(Long clientId) {
         ClientAdminView client = clientsRepository.findClientByIdAdmin(clientId);
 
@@ -124,6 +166,13 @@ public class ClientsService {
         return client;
     }
 
+    /**
+     * Retrieves the client data for a specific client as a reporter view.
+     *
+     * @param clientId the ID of the client
+     * @return a ClientReporterView containing the client's data for reporter purposes
+     * @throws IllegalArgumentException if the client does not exist within validate client
+     */
     public ClientReporterView getClientDataReporter(Long clientId) {
         ClientReporterView client = clientsRepository.findClientByIdReporter(clientId);
 
@@ -132,6 +181,12 @@ public class ClientsService {
         return client;
     }
 
+    /**
+     * Retrieves all client data for admin view.
+     *
+     * @return a list of ClientAdminView containing all clients' data for admin purposes
+     * @throws IllegalArgumentException if the client list is invalid within validate client list for admin
+     */
     public List<ClientAdminView> getAllClientDataAdmin() {
         List<ClientAdminView> clients = clientsRepository.findClientsAsAdmin();
 
@@ -140,6 +195,12 @@ public class ClientsService {
         return clients;
     }
 
+    /**
+     * Retrieves all client data for reporter view.
+     *
+     * @return a list of ClientReporterView containing all clients' data for reporter purposes
+     * @throws IllegalArgumentException if the client list is invalid within validate client list for reporter
+     */ 
     public List<ClientReporterView> getAllClientDataReporter() {
         List<ClientReporterView> clients = clientsRepository.findClientsAsReporter();
 
@@ -148,6 +209,16 @@ public class ClientsService {
         return clients;
     }
 
+
+    /**
+     * Main method for updating cash amount which is within the clients table
+     *
+     * @param clientId the ID of the client
+     * @param change the amount to change the client's cash balance by
+     * @return the new cash balance
+     * @throws InvalidArgumentsException if the transaction is invalid
+     * @throws UpdateFailedException if the update fails
+     */
     public BigDecimal updateCashAmount(Long clientId, BigDecimal change) {
         Client client = clientsRepository.findClientById(clientId);
 
@@ -170,6 +241,14 @@ public class ClientsService {
         return net;
     }
 
+    /**
+     * Main method to update the client profile
+     *
+     * @param clientId the ID of the client
+     * @param request the profile update request containing the new profile information
+     * @throws InvalidArgumentsException if the profile update is invalid
+     * @throws UpdateFailedException if the update fails
+     */
     public void updateProfile(Long clientId, ClientProfileUpdateRequest request) {
         Client client = clientsRepository.findClientById(clientId);
 
