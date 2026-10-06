@@ -137,5 +137,11 @@ public class TransactionsService {
                     "Amount must be greater than zero"
             );
         }
+
+        if (amount.compareTo(new BigDecimal("3000000")) > 0) {
+            throw new IllegalArgumentException(
+                    "Amount must not exceed 3,000,000"
+            );
+        }
     }
 }
