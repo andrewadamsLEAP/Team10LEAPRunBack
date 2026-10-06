@@ -519,7 +519,7 @@ public class OrdersService {
 
     /**
      * Validates that a ticker is in valid format.
-     * Valid ticker must be 1-10 alphabetic characters (case-insensitive).
+     * Valid ticker must be 1-10 characters: alphabetic, hyphens, or forward slashes (case-insensitive).
      *
      * @param ticker the ticker symbol to validate
      * @throws IllegalArgumentException if ticker is null, empty, or invalid format
@@ -533,7 +533,7 @@ public class OrdersService {
             );
         }
 
-        if (!ticker.matches("[A-Za-z]{1,10}")) {
+        if (!ticker.matches("[A-Za-z\\-/]{1,10}")) {
 
             throw new IllegalArgumentException(
                     "Invalid ticker: " + ticker

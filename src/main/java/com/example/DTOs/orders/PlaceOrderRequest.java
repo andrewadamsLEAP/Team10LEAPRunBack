@@ -3,24 +3,27 @@ package com.example.DTOs.orders;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.NotBlank;
-import java.math.BigDecimal;
 
 /**
  * DTO for placing a new order (BUY or SELL)
- * Example: Client wants to BUY 100 shares of AAPL
+ * The system automatically uses the current live market price.
+ * Similar to MarketWatch market simulation - users specify quantity only.
+ * 
+ * Example: Client wants to BUY 10 shares of AAPL
  * {
  *   "clientId": 1,
  *   "ticker": "AAPL",
- *   "quantity": 100,
- *   "price": 150.00  // IGNORED - order will use current market price (ask for buy, bid for sell)
+ *   "quantity": 10
  * }
+ * 
+ * The order will be created using:
+ * - BUY orders: current market ask price
+ * - SELL orders: current market bid price
+ * 
  * @param clientId client ID
  * @param ticker ticker symbol
- * @param quantity number of shares/units
- * @param price DEPRECATED/IGNORED - order will use current market price from database
+ * @param quantity number of shares/units to buy or sell
  */
-
-
 public record PlaceOrderRequest(
         @NotNull
         Long clientId,
@@ -29,8 +32,5 @@ public record PlaceOrderRequest(
         String ticker,
         
         @Positive
-        Integer quantity,
-        
-        @Positive
-        BigDecimal price  // Kept for backward compatibility but ignored - server uses current market price
+        Integer quantity
 ) {}

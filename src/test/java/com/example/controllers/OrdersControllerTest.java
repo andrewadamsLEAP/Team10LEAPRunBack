@@ -129,7 +129,7 @@ class OrdersControllerTest {
      */
     @Test
     void placeBuyOrder_shouldPlaceOrderAndReturnResponse() {
-        PlaceOrderRequest request = new PlaceOrderRequest(1L, "AAPL", 100, new BigDecimal("150.00"));
+        PlaceOrderRequest request = new PlaceOrderRequest(1L, "AAPL", 100);
         OrderResponse mockResponse = new OrderResponse(
                 1L, "AAPL", 100, new BigDecimal("150.00"), "PENDING", null
         );
@@ -149,7 +149,7 @@ class OrdersControllerTest {
      */
     @Test
     void placeSellOrder_shouldPlaceOrderAndReturnResponse() {
-        PlaceOrderRequest request = new PlaceOrderRequest(1L, "MSFT", 50, new BigDecimal("200.00"));
+        PlaceOrderRequest request = new PlaceOrderRequest(1L, "MSFT", 50);
         OrderResponse mockResponse = new OrderResponse(
                 1L, "MSFT", 50, new BigDecimal("200.00"), "PENDING", null
         );
