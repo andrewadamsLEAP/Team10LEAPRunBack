@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   kafka:
     image: apache/kafka:3.7.0
@@ -24,13 +26,27 @@ services:
     networks:
       - app-network
 
+  postgres-main:
+    image: postgres:16
+    container_name: postgres-main
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_main_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
   app:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: trading-app
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://${SPRING_DATASOURCE_URL_IP}:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-main:5432/${POSTGRES_DB}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
@@ -39,25 +55,15 @@ services:
     ports:
       - "8085:8085"
     depends_on:
-      - postgres-main
-      - kafka:
-          condition: service_healthy
-    networks:
-      - app-network
-  
-
-  postgres-main:
-    image: postgres:16
-    container_name: postgres-main
-    ports:
-      - "5432:5432" 
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      postgres-main:
+        condition: service_started
+      kafka:
+        condition: service_healthy
     networks:
       - app-network
 
+volumes:
+  postgres_main_data:
 
 networks:
   app-network:
