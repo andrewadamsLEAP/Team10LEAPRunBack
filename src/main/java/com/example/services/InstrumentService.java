@@ -9,12 +9,6 @@ import com.example.repositories.InstrumentRepository;
 
 import java.util.List;
 
-//
-// Hey Kevin I set up some comments for you to kinda copy for the other functions below
-// Just go through every Instruments method and add similar Javadoc comments
-//
-
-
 @Service
 public class InstrumentService {
     
@@ -41,6 +35,12 @@ public class InstrumentService {
         return instrumentRepository.findAll();
     }
 
+
+    /**
+     * Main method to get instrument information by the ticker symbol.
+     * @param ticker the ticker symbol of the instrument to retrieve
+     * @return the Instrument object corresponding to the given ticker symbol
+     */
     public Instrument getInstrumentByTicker(String ticker) {
         if (ticker == null || ticker.trim().isEmpty()) {
             throw new IllegalArgumentException("Ticker cannot be null or empty");
@@ -56,6 +56,11 @@ public class InstrumentService {
         return instrument;
     }
 
+    /**
+     * Main method to check if an instrument exists by its ticker.
+     * @param ticker the ticker symbol of the instrument to check
+     * @return true if the instrument exists, false otherwise
+     */
     public boolean instrumentExists(String ticker) {
         if (ticker == null || ticker.trim().isEmpty()) {
             return false;
