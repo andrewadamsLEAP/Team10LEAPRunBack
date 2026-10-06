@@ -535,7 +535,7 @@ public class OrdersService {
             );
         }
 
-        if (!ticker.matches("[A-Za-z]{1,10}")) {
+        if (!ticker.matches("[A-Za-z]+(-[A-Za-z]+)?")) {
 
             throw new IllegalArgumentException(
                     "Invalid ticker: " + ticker
