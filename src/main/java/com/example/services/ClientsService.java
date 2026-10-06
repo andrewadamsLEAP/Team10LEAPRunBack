@@ -131,6 +131,21 @@ public class ClientsService {
     }
 
     /**
+     * Retrieves a client by their username.
+     * Used for customer validation at the API layer (JWT-ready).
+     *
+     * @param username the customer's username
+     * @return the Client entity if found, null otherwise
+     */
+    public Client findClientByUsername(String username) {
+        Long clientId = clientsRepository.findClientIdByUsername(username);
+        if (clientId == null) {
+            return null;
+        }
+        return clientsRepository.findClientById(clientId);
+    }
+
+    /**
      * Retrieves the profile information for a specific client.
      *
      * @param clientId the ID of the client
