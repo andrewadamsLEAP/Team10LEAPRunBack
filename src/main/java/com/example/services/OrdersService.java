@@ -339,6 +339,29 @@ public class OrdersService {
             );
         }
 
+        // Fetch CURRENT market price at execution time (not the stale price from placement)
+        BigDecimal currentPrice;
+        if (order.getOrderType() == Order.OrderType.BUY) {
+            currentPrice = fetchAskPrice(order.getTicker());
+        } else {
+            currentPrice = fetchBidPrice(order.getTicker());
+        }
+        
+        // VALIDATION: Re-validate at execution time with current price
+        // This catches cases where price changed significantly since placement
+        if (order.getOrderType() == Order.OrderType.BUY) {
+            validateBuyOrderAtExecution(order.getClientId(), order.getTicker(), order.getQuantity(), currentPrice);
+        } else if (order.getOrderType() == Order.OrderType.SELL) {
+            validateSellOrderAtExecution(order.getClientId(), order.getTicker(), order.getQuantity());
+        }
+        
+        // Update order price to current market price before execution
+        ordersRepository.updateOrderPrice(orderId, currentPrice);
+        order.setPrice(currentPrice);
+        
+        logger.info("Executing order at current market price: orderId={}, ticker={}, type={}, staledPrice={}, currentPrice={}", 
+                    orderId, order.getTicker(), order.getOrderType(), order.getPrice(), currentPrice);
+
         int updated = ordersRepository.updateOrderStatus(
                 orderId,
                 Order.OrderStatus.FULFILLED
@@ -353,7 +376,7 @@ public class OrdersService {
 
         Order fulfilledOrder = getOrderById(orderId);
         
-        // Update holdings when order is fulfilled
+        // Update holdings when order is fulfilled (also updates client cash based on order price)
         holdingsService.updateHoldingsForOrder(fulfilledOrder);
         
         return fulfilledOrder;
@@ -513,6 +536,90 @@ public class OrdersService {
             // If holding doesn't exist, client has no shares
             throw new IllegalArgumentException(
                     "Client does not own any shares of " + ticker
+            );
+        }
+    }
+
+    /**
+     * Re-validates a BUY order at execution time using the CURRENT market price.
+     * This catches cases where price changed significantly since order placement.
+     * Cancels order instead of throwing exception to avoid failing the scheduler.
+     *
+     * @param clientId the ID of the client
+     * @param ticker the ticker symbol
+     * @param quantity the number of shares to buy
+     * @param currentPrice the CURRENT market price (not the placement price)
+     * @throws IllegalArgumentException if client cannot afford the order at current price
+     */
+    private void validateBuyOrderAtExecution(
+            Long clientId,
+            String ticker,
+            int quantity,
+            BigDecimal currentPrice) {
+
+        // Calculate cost at CURRENT price
+        BigDecimal orderCost = currentPrice.multiply(BigDecimal.valueOf(quantity));
+        BigDecimal clientCash = clientsService.getClientProfile(clientId).cashAmount();
+
+        // Account for OTHER pending buy orders (reserved cash)
+        List<Order> pendingBuyOrders = ordersRepository.getPendingBuyOrdersForClient(clientId);
+        BigDecimal reservedCash = BigDecimal.ZERO;
+        for (Order pendingOrder : pendingBuyOrders) {
+            reservedCash = reservedCash.add(
+                pendingOrder.getPrice().multiply(BigDecimal.valueOf(pendingOrder.getQuantity()))
+            );
+        }
+
+        BigDecimal totalNeeded = orderCost.add(reservedCash);
+
+        // If insufficient cash at current price, throw exception (order will be cancelled by scheduler)
+        if (clientCash.compareTo(totalNeeded) < 0) {
+            throw new IllegalArgumentException(
+                    "Insufficient cash at execution. Client has $" + clientCash +
+                    " but order costs $" + orderCost + " at current price (placed at $" + 
+                    (orderCost.divide(BigDecimal.valueOf(quantity), BigDecimal.ROUND_HALF_UP)) + ")"
+            );
+        }
+    }
+
+    /**
+     * Re-validates a SELL order at execution time.
+     * Checks if client still has sufficient shares (accounts for pending orders).
+     * Cancels order instead of throwing exception to avoid failing the scheduler.
+     *
+     * @param clientId the ID of the client
+     * @param ticker the ticker symbol
+     * @param quantity the number of shares to sell
+     * @throws IllegalArgumentException if client no longer has sufficient holdings
+     */
+    private void validateSellOrderAtExecution(
+            Long clientId,
+            String ticker,
+            int quantity) {
+
+        // Account for pending sell orders (reserved shares)
+        List<Order> pendingSellOrders = ordersRepository.getPendingSellOrdersForClientAndTicker(clientId, ticker.toUpperCase());
+        int reservedShares = 0;
+        for (Order pendingOrder : pendingSellOrders) {
+            reservedShares += pendingOrder.getQuantity();
+        }
+
+        // Check if client still owns the shares
+        try {
+            com.example.DTOs.holdings.HoldingResponse holding = 
+                holdingsService.getHolding(clientId, ticker.toUpperCase());
+            
+            if (holding.quantity() - reservedShares < quantity) {
+                throw new IllegalArgumentException(
+                        "Insufficient holdings at execution. Client has " + holding.quantity() +
+                        " shares of " + ticker + " but " + reservedShares + " are reserved and trying to sell " + quantity
+                );
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Client no longer owns any shares of " + ticker
             );
         }
     }

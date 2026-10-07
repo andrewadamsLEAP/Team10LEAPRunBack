@@ -5,6 +5,7 @@ import com.example.mappers.OrdersMapper;
 
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Repository
@@ -132,10 +133,17 @@ public class OrdersRepository {
         return ordersMapper.getPendingBuyOrdersForClient(clientId);
     }
 
+    /**
+     * Get ALL pending orders across all clients (both buy and sell).
+     * Used by the order execution scheduler to find orders ready to execute.
+     *
+     * @return a list of all pending orders
+     */
+    public List<Order> getPendingOrders() {
 
-    // =========================================================
-    //                  ORDER MANIPULATION
-    // =========================================================
+        return ordersMapper.getPendingOrders();
+    }
+
 
     /**
      * Create an order in the database.
@@ -166,5 +174,16 @@ public class OrdersRepository {
                 orderId,
                 status
         );
+    }
+
+    /**
+     * Update the execution price of an order (used when executing at current market price).
+     *
+     * @param orderId the ID of the order to update
+     * @param price the new execution price
+     * @return the number of rows affected
+     */
+    public int updateOrderPrice(Long orderId, BigDecimal price) {
+        return ordersMapper.updateOrderPrice(orderId, price);
     }
 }

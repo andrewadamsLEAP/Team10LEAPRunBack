@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import com.example.repositories.HoldingsRepository;
 import com.example.repositories.ClientsRepository;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -23,11 +24,13 @@ public class HoldingsService {
     private final HoldingsRepository holdingsRepository;
     private final ClientsRepository clientsRepository;
     private final HoldingDtoConverter holdingDtoConverter;
+    private final ClientsService clientsService;
 
-    public HoldingsService(HoldingsRepository holdingsRepository, ClientsRepository clientsRepository, HoldingDtoConverter holdingDtoConverter) {
+    public HoldingsService(HoldingsRepository holdingsRepository, ClientsRepository clientsRepository, HoldingDtoConverter holdingDtoConverter, ClientsService clientsService) {
         this.holdingsRepository = holdingsRepository;
         this.clientsRepository = clientsRepository;
         this.holdingDtoConverter = holdingDtoConverter;
+        this.clientsService = clientsService;
     }
 
     //TEST METHOD
@@ -154,16 +157,29 @@ public class HoldingsService {
     /**
      * Update holdings based on fulfilled order
      * Called by OrdersService when order status is set to FULFILLED
-     * If BUY: increases quantity
-     * If SELL: decreases quantity
-     * @param order the fulfilled order containing clientId, ticker, quantity, and order type
+     * Updates both holdings (shares/crypto) and client cash amount:
+     * 
+     * BUY order: Increases quantity, deducts cash (quantity * price)
+     * SELL order: Decreases quantity, adds cash (quantity * price)
+     * 
+     * @param order the fulfilled order containing clientId, ticker, quantity, order type, and execution price
      * @throws IllegalArgumentException if the order is invalid or contains invalid data
      */
     public void updateHoldingsForOrder(Order order) {
+        BigDecimal totalCost = new BigDecimal(order.getQuantity()).multiply(order.getPrice());
+        
         if (order.getOrderType() == Order.OrderType.BUY) {
             buyStock(order.getClientId(), order.getTicker(), order.getQuantity());
+            // Deduct cash for BUY order (negative change)
+            clientsService.updateCashAmount(order.getClientId(), totalCost.negate());
+            logger.info("BUY order executed: clientId={}, ticker={}, quantity={}, price={}, totalCost={}", 
+                        order.getClientId(), order.getTicker(), order.getQuantity(), order.getPrice(), totalCost);
         } else if (order.getOrderType() == Order.OrderType.SELL) {
             sellStock(order.getClientId(), order.getTicker(), order.getQuantity());
+            // Add cash for SELL order (positive change)
+            clientsService.updateCashAmount(order.getClientId(), totalCost);
+            logger.info("SELL order executed: clientId={}, ticker={}, quantity={}, price={}, totalProceeds={}", 
+                        order.getClientId(), order.getTicker(), order.getQuantity(), order.getPrice(), totalCost);
         }
     }
 }

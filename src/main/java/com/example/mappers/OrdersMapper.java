@@ -281,4 +281,42 @@ public interface OrdersMapper {
             @Param("orderId") Long orderId,
             @Param("status") Order.OrderStatus status
     );
+    /**
+     * Retrieves all pending orders across the entire system.
+     * Used by the order execution scheduler to find orders ready for execution.
+     *
+     * @return a list of all orders with PENDING status
+     */
+    @Select("""
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
+        FROM orders
+        WHERE order_status = 'PENDING'
+        ORDER BY order_date ASC
+        """)
+    List<Order> getPendingOrders();
+
+    /**
+     * Updates the execution price of an order.
+     *
+     * @param orderId the ID of the order to update
+     * @param price the new execution price
+     * @return the number of rows affected
+     */
+    @Update("""
+        UPDATE orders
+        SET price = #{price}
+        WHERE order_id = #{orderId}
+        """)
+    int updateOrderPrice(
+            @Param("orderId") Long orderId,
+            @Param("price") java.math.BigDecimal price
+    );
 }
