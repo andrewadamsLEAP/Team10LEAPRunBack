@@ -1,13 +1,7 @@
 package com.example.exceptions;
 
-import com.example.DTOs.clients.LoginView;
-
 import java.util.List;
 import java.util.function.Supplier;
-
-import com.example.DTOs.clients.ClientAdminView;
-import com.example.DTOs.clients.ClientReporterView;
-import com.example.entities.Client;
 
 public class Validate {
 
@@ -30,42 +24,31 @@ public class Validate {
         if (quantity == null || quantity <= 0) {
             throw new InvalidArgumentsException("Invalid Quantity","Quantity must be positive: " + quantity);
         }
-
     }
 
-    public static void validateClient(LoginView client) {
-        if (client == null) {
-            throw new ClientNotFoundException("Client not found");        
+    /**
+     * Generic null validation for any object type.
+     * @param obj the object to validate
+     * @param message the error message if null
+     * @param <T> the type of object
+     * @throws ClientNotFoundException if object is null
+     */
+    public static <T> void validateNotNull(T obj, String message) {
+        if (obj == null) {
+            throw new ClientNotFoundException(message);
         }
     }
 
-    public static void validateClient(Client client) {
-        if (client == null) {
-            throw new ClientNotFoundException("Client not found");        
-        }
-    }
-
-    public static void validateClient(ClientAdminView client) {
-        if (client == null) {
-            throw new ClientNotFoundException("Client not found");        
-        }
-    }
-
-    public static void validateClient(ClientReporterView client) {
-        if (client == null) {
-            throw new ClientNotFoundException("Client not found");        
-        }
-    }
-
-    public static void validateClientListForAdmin(List<ClientAdminView> clients) {
-        if (clients == null || clients.isEmpty()) {
-            throw new ClientNotFoundException("No clients found");
-        }
-    }
-
-    public static void validateClientListForReporter(List<ClientReporterView> clients) {
-        if (clients == null || clients.isEmpty()) {
-            throw new ClientNotFoundException("No clients found");
+    /**
+     * Generic null or empty validation for lists.
+     * @param list the list to validate
+     * @param message the error message if null or empty
+     * @param <T> the type of list elements
+     * @throws ClientNotFoundException if list is null or empty
+     */
+    public static <T> void validateListNotEmpty(List<T> list, String message) {
+        if (list == null || list.isEmpty()) {
+            throw new ClientNotFoundException(message);
         }
     }
 }

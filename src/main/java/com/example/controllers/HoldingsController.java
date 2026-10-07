@@ -24,13 +24,6 @@ public class HoldingsController {
         return "Test endpoint works!";
     }
 
-    //Test the service layer
-    //Example: GET /api/holdings/service-test
-    @GetMapping("/service-test")
-    public String serviceTest() {
-        return holdingsService.test();
-    }
-
     //Get specific holding (entire holding) for a client and ticker
     // Example: GET /api/v1/holdings/1/AAPL
     @GetMapping("/{clientId}/{ticker}")
