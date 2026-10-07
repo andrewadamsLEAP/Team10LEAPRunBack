@@ -4,7 +4,6 @@ import com.example.DTOs.clients.ChangePasswordRequest;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.entities.Client;
-import com.example.tradingApp.TradingAppApplication;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;

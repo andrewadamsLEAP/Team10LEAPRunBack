@@ -9,8 +9,9 @@ import org.springframework.kafka.core.KafkaTemplate;
 public class KafkaTestConfig {
 
     @Bean
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    public KafkaTemplate kafkaTemplate() {
-        return Mockito.mock(KafkaTemplate.class);
+    public KafkaTemplate<String, Object> kafkaTemplate() {
+        @SuppressWarnings("unchecked")
+        KafkaTemplate<String, Object> template = Mockito.mock(KafkaTemplate.class);
+        return template;
     }
 }

@@ -66,7 +66,7 @@ public class KafkaConfig {
      * Configure producer factory with connection and serialization settings
      */
     @Bean
-    public ProducerFactory<Object, Object> producerFactory() {
+    public ProducerFactory<String, Object> producerFactory() {
         Map<String, Object> configProps = new HashMap<>();
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
@@ -82,7 +82,7 @@ public class KafkaConfig {
      * Configure KafkaTemplate for sending messages
      */
     @Bean
-    public KafkaTemplate<Object, Object> kafkaTemplate() {
+    public KafkaTemplate<String, Object> kafkaTemplate() {
         return new KafkaTemplate<>(producerFactory());
     }
 }

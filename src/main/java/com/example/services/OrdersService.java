@@ -2,8 +2,7 @@ package com.example.services;
 import com.example.entities.Order;
 import com.example.entities.Instrument;
 import com.example.repositories.OrdersRepository;
-import com.example.services.MarketHoursService;
-import com.example.services.HoldingsService;
+
 import com.example.DTOs.orders.OrderResponse;
 import com.example.DTOs.orders.OrderHistoryView;
 import com.example.exceptions.InvalidArgumentsException;
@@ -18,6 +17,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +32,7 @@ public class OrdersService {
     private final OrderDtoConverter orderDtoConverter;
     private final ClientsService clientsService;
     private final InstrumentService instrumentService;
-    private final KafkaTemplate kafkaTemplate;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
     private final String orderPendingTopic;
     private final MarketDataService marketDataService;
 
@@ -44,7 +44,7 @@ public class OrdersService {
             ClientsService clientsService,
             InstrumentService instrumentService,
              MarketDataService marketDataService,
-            KafkaTemplate kafkaTemplate,
+            KafkaTemplate<String, Object> kafkaTemplate,
             @Value("${app.kafka.topics.order-pending}") String orderPendingTopic
         ) {
         this.ordersRepository = ordersRepository;
@@ -577,7 +577,7 @@ public class OrdersService {
             throw new IllegalArgumentException(
                     "Insufficient cash at execution. Client has $" + clientCash +
                     " but order costs $" + orderCost + " at current price (placed at $" + 
-                    (orderCost.divide(BigDecimal.valueOf(quantity), BigDecimal.ROUND_HALF_UP)) + ")"
+                    (orderCost.divide(BigDecimal.valueOf(quantity), java.math.RoundingMode.HALF_UP)) + ")"
             );
         }
     }

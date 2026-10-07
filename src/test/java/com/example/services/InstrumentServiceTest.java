@@ -9,10 +9,6 @@ import com.example.repositories.InstrumentRepository;
 import com.example.services.InstrumentService;
 import com.example.entities.Instrument;
 
-import com.example.entities.Instrument;
-import com.example.repositories.InstrumentRepository;
-import com.example.services.InstrumentService;
-
 import java.util.Arrays;
 import java.util.List;
 

@@ -15,7 +15,6 @@ import com.example.repositories.HoldingsRepository;
 import com.example.repositories.ClientsRepository;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Service
 public class HoldingsService {

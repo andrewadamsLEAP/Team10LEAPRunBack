@@ -8,7 +8,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
@@ -29,7 +28,7 @@ class OrdersServiceTest {
     private OrderDtoConverter orderDtoConverter;
     private ClientsService clientsService;
     private InstrumentService instrumentService;
-    private KafkaTemplate<Object, Object> kafkaTemplate;
+    private KafkaTemplate<String, Object> kafkaTemplate;
     private MarketDataService marketDataService;
     private OrdersService ordersService;
 
@@ -41,7 +40,9 @@ class OrdersServiceTest {
         orderDtoConverter = mock(OrderDtoConverter.class);
         clientsService = mock(ClientsService.class);
         instrumentService = mock(InstrumentService.class);
-        kafkaTemplate = mock(KafkaTemplate.class);
+        @SuppressWarnings("unchecked")
+        KafkaTemplate<String, Object> tempKafka = mock(KafkaTemplate.class);
+        kafkaTemplate = tempKafka;
         marketDataService = mock(MarketDataService.class);
         
         ordersService = new OrdersService(
