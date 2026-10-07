@@ -29,11 +29,12 @@ class OrdersServiceTest {
     private OrderDtoConverter orderDtoConverter;
     private ClientsService clientsService;
     private InstrumentService instrumentService;
-    private KafkaTemplate<Object, Object> kafkaTemplate;
+    private KafkaTemplate<String, String> kafkaTemplate;
     private MarketDataService marketDataService;
     private OrdersService ordersService;
 
     @BeforeEach
+    @SuppressWarnings("unchecked")
     void setUp() {
         ordersRepository = mock(OrdersRepository.class);
         marketHoursService = mock(MarketHoursService.class);
@@ -54,7 +55,6 @@ class OrdersServiceTest {
                 marketDataService,
                 kafkaTemplate,
                 "order-pending-topic"
-                
         );
 
         TransactionSynchronizationManager.initSynchronization();
