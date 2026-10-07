@@ -5,11 +5,8 @@ import com.example.entities.Order;
 import com.example.entities.Instrument;
 import com.example.repositories.OrdersRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
@@ -29,12 +26,11 @@ class OrdersServiceTest {
     private OrderDtoConverter orderDtoConverter;
     private ClientsService clientsService;
     private InstrumentService instrumentService;
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private ApplicationEventPublisher applicationEventPublisher;
     private MarketDataService marketDataService;
     private OrdersService ordersService;
 
     @BeforeEach
-    @SuppressWarnings("unchecked")
     void setUp() {
         ordersRepository = mock(OrdersRepository.class);
         marketHoursService = mock(MarketHoursService.class);
@@ -42,7 +38,7 @@ class OrdersServiceTest {
         orderDtoConverter = mock(OrderDtoConverter.class);
         clientsService = mock(ClientsService.class);
         instrumentService = mock(InstrumentService.class);
-        kafkaTemplate = mock(KafkaTemplate.class);
+        applicationEventPublisher = mock(ApplicationEventPublisher.class);
         marketDataService = mock(MarketDataService.class);
         
         ordersService = new OrdersService(
@@ -52,19 +48,9 @@ class OrdersServiceTest {
                 orderDtoConverter,
                 clientsService,
                 instrumentService,
-                marketDataService,
-                kafkaTemplate,
-                "order-pending-topic"
+                applicationEventPublisher,
+                marketDataService
         );
-
-        TransactionSynchronizationManager.initSynchronization();
-    }
-
-    @AfterEach
-    void tearDown() {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
     }
 
     // ========== PLACE BUY ORDER TESTS ==========
@@ -98,6 +84,7 @@ class OrdersServiceTest {
         verify(marketDataService).getLatestPrice(ticker.toUpperCase());
         verify(clientsService, times(2)).getClientProfile(clientId);
         verify(instrumentService).getInstrumentByTicker(ticker);
+        verify(applicationEventPublisher).publishEvent(any(Order.class));
     }
 
     @Test
@@ -248,6 +235,7 @@ class OrdersServiceTest {
         verify(marketDataService).getLatestPrice(ticker.toUpperCase());
         verify(clientsService).getClientProfile(clientId);
         verify(instrumentService).getInstrumentByTicker(ticker);
+        verify(applicationEventPublisher).publishEvent(any(Order.class));
     }
 
     @Test

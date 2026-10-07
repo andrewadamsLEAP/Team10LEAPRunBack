@@ -7,12 +7,9 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.example.DTOs.orders.OrderHistoryView;
 import com.example.DTOs.orders.OrderResponse;
@@ -32,9 +29,7 @@ public class OrdersService {
     private final OrderDtoConverter orderDtoConverter;
     private final ClientsService clientsService;
     private final InstrumentService instrumentService;
-    private final KafkaTemplate<String, String> kafkaTemplate;
-    private final ObjectMapper objectMapper;
-    private final String orderPendingTopic;
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final MarketDataService marketDataService;
 
     public OrdersService(
@@ -44,20 +39,15 @@ public class OrdersService {
             OrderDtoConverter orderDtoConverter,
             ClientsService clientsService,
             InstrumentService instrumentService,
-            MarketDataService marketDataService,
-            KafkaTemplate<String, String> kafkaTemplate,
-            @Value("${app.kafka.topics.order-pending:order-pending-topic}") String orderPendingTopic) {
+            ApplicationEventPublisher applicationEventPublisher,
+            MarketDataService marketDataService) {
         this.ordersRepository = ordersRepository;
         this.marketHoursService = marketHoursService;
         this.holdingsService = holdingsService;
         this.orderDtoConverter = orderDtoConverter;
         this.clientsService = clientsService;
         this.instrumentService = instrumentService;
-        this.kafkaTemplate = kafkaTemplate;
-        this.objectMapper = new com.fasterxml.jackson.databind.ObjectMapper()
-                .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
-                .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        this.orderPendingTopic = orderPendingTopic;
+        this.applicationEventPublisher = applicationEventPublisher;
         this.marketDataService = marketDataService;
     }
 
@@ -207,7 +197,7 @@ public class OrdersService {
         logger.info("Buy order created: orderId={}, clientId={}, ticker={}, price={}",
                 createdOrder.getOrderId(), clientId, ticker, currentPrice);
 
-        publishOrderAfterCommit(createdOrder);
+        applicationEventPublisher.publishEvent(createdOrder);
         return createdOrder;
     }
 
@@ -260,37 +250,8 @@ public class OrdersService {
         logger.info("Sell order created: orderId={}, clientId={}, ticker={}, price={}",
                 createdOrder.getOrderId(), clientId, ticker, currentPrice);
 
-        publishOrderAfterCommit(createdOrder);
+        applicationEventPublisher.publishEvent(createdOrder);
         return createdOrder;
-    }
-
-    // =========================================================
-    // PUBLISH ORDER HELPER
-    // =========================================================
-    public void publishOrderAfterCommit(Order order) {
-        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
-            throw new IllegalStateException("Order not actively in a transaction.");
-        }
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            @Override
-            public void afterCommit() {
-                try {
-                    // Manually serialize using ObjectMapper to avoid Kafka JsonSerializer
-                    // configuration issues.
-                    // This uses the default ObjectMapper with JavaTimeModule registered so
-                    // OffsetDateTime won't crash.
-                    String orderJson = objectMapper.writeValueAsString(order);
-                    kafkaTemplate.send(orderPendingTopic, order.getTicker(), orderJson);
-                    logger.info("Successfully published order to Kafka: {}", order.getOrderId());
-                } catch (Exception e) {
-                    // Catching the exception ensures that a serialization failure here
-                    // doesn't propagate up and cause a generic 500 error to the client,
-                    // since the transaction has already committed successfully.
-                    logger.error("Failed to publish order to Kafka: " + order.getOrderId(), e);
-                }
-            }
-        });
     }
 
     // =========================================================
