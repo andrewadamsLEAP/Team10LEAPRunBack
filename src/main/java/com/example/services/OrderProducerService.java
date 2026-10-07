@@ -34,10 +34,11 @@ public class OrderProducerService {
 
         try {
             String orderJson = objectMapper.writeValueAsString(order);
+            logger.info("succeeded to write value as string in mapper");
             kafkaTemplate.send(orderPendingTopic, order.getTicker(), orderJson);
             logger.info("Successfully published order to Kafka: {}", order.getOrderId());
         } catch (Exception e) {
-            logger.error("Failed to publish order to Kafka: " + order.getOrderId(), e);
+            logger.error("Failed to publish order to Kafka: " + order.getOrderId() + "Exception: " + e, e);
         }
     }
     
