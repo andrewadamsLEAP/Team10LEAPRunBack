@@ -25,6 +25,7 @@ import java.util.Map;
  * Kafka configuration for the trading application.
  * Configures the KafkaTemplate bean required by OrdersService and other components.
  * This configuration is only loaded for production (non-test) profiles.
+ * For local development without Kafka, LocalKafkaConfig provides a fallback bean.
  */
 @Configuration
 @EnableKafka

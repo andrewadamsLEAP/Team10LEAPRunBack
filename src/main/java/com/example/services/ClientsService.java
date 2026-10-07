@@ -131,6 +131,21 @@ public class ClientsService {
     }
 
     /**
+     * Retrieves a client by their username.
+     * Used for customer validation at the API layer (JWT-ready).
+     *
+     * @param username the customer's username
+     * @return the Client entity if found, null otherwise
+     */
+    public Client findClientByUsername(String username) {
+        Long clientId = clientsRepository.findClientIdByUsername(username);
+        if (clientId == null) {
+            return null;
+        }
+        return clientsRepository.findClientById(clientId);
+    }
+
+    /**
      * Retrieves the profile information for a specific client.
      *
      * @param clientId the ID of the client
@@ -185,12 +200,12 @@ public class ClientsService {
      * Retrieves all client data for admin view.
      *
      * @return a list of ClientAdminView containing all clients' data for admin purposes
-     * @throws IllegalArgumentException if the client list is invalid within validate client list for admin
+     * @throws IllegalArgumentException if the client list is invalid
      */
     public List<ClientAdminView> getAllClientDataAdmin() {
         List<ClientAdminView> clients = clientsRepository.findClientsAsAdmin();
 
-        Validate.validateClientListForAdmin(clients);
+        Validate.validateClientList(clients);
 
         return clients;
     }
@@ -199,12 +214,12 @@ public class ClientsService {
      * Retrieves all client data for reporter view.
      *
      * @return a list of ClientReporterView containing all clients' data for reporter purposes
-     * @throws IllegalArgumentException if the client list is invalid within validate client list for reporter
+     * @throws IllegalArgumentException if the client list is invalid
      */ 
     public List<ClientReporterView> getAllClientDataReporter() {
         List<ClientReporterView> clients = clientsRepository.findClientsAsReporter();
 
-        Validate.validateClientListForReporter(clients);
+        Validate.validateClientList(clients);
 
         return clients;
     }

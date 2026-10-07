@@ -129,19 +129,23 @@ class OrdersControllerTest {
      */
     @Test
     void placeBuyOrder_shouldPlaceOrderAndReturnResponse() {
-        PlaceOrderRequest request = new PlaceOrderRequest(1L, "AAPL", 100, new BigDecimal("150.00"));
+        Long clientId = 1L;
+        String ticker = "AAPL";
+        int quantity = 100;
+        
+        PlaceOrderRequest request = new PlaceOrderRequest(clientId, ticker, quantity, new BigDecimal("150.00"));
         OrderResponse mockResponse = new OrderResponse(
-                1L, "AAPL", 100, new BigDecimal("150.00"), "PENDING", null
+                clientId, ticker, quantity, new BigDecimal("150.00"), "PENDING", null
         );
 
-        when(ordersService.placeBuyOrderAsDto(1L, "AAPL", 100))
+        when(ordersService.placeBuyOrderAsDto(clientId, ticker, quantity))
                 .thenReturn(mockResponse);
 
         OrderResponse result = ordersController.placeBuyOrder(request);
 
         assertNotNull(result);
-        assertEquals("AAPL", result.ticker());
-        verify(ordersService, times(1)).placeBuyOrderAsDto(1L, "AAPL", 100);
+        assertEquals(ticker, result.ticker());
+        verify(ordersService, times(1)).placeBuyOrderAsDto(clientId, ticker, quantity);
     }
 
     /**
@@ -149,19 +153,23 @@ class OrdersControllerTest {
      */
     @Test
     void placeSellOrder_shouldPlaceOrderAndReturnResponse() {
-        PlaceOrderRequest request = new PlaceOrderRequest(1L, "MSFT", 50, new BigDecimal("200.00"));
+        Long clientId = 2L;
+        String ticker = "MSFT";
+        int quantity = 50;
+        
+        PlaceOrderRequest request = new PlaceOrderRequest(clientId, ticker, quantity, new BigDecimal("200.00"));
         OrderResponse mockResponse = new OrderResponse(
-                1L, "MSFT", 50, new BigDecimal("200.00"), "PENDING", null
+                clientId, ticker, quantity, new BigDecimal("200.00"), "PENDING", null
         );
 
-        when(ordersService.placeSellOrderAsDto(1L, "MSFT", 50))
+        when(ordersService.placeSellOrderAsDto(clientId, ticker, quantity))
                 .thenReturn(mockResponse);
 
         OrderResponse result = ordersController.placeSellOrder(request);
 
         assertNotNull(result);
-        assertEquals("MSFT", result.ticker());
-        verify(ordersService, times(1)).placeSellOrderAsDto(1L, "MSFT", 50);
+        assertEquals(ticker, result.ticker());
+        verify(ordersService, times(1)).placeSellOrderAsDto(clientId, ticker, quantity);
     }
 
     /**

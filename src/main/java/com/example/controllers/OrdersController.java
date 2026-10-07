@@ -1,9 +1,11 @@
 package com.example.controllers;
 
 import com.example.services.OrdersService;
+import com.example.services.ClientsService;
 import com.example.DTOs.orders.PlaceOrderRequest;
 import com.example.DTOs.orders.OrderResponse;
 import com.example.DTOs.orders.OrderHistoryView;
+import com.example.exceptions.Validate;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,16 +28,20 @@ public class OrdersController {
 /**
  * The OrdersController class handles HTTP requests related to orders.
  * It provides endpoints for retrieving, creating, and updating orders.
+ * Uses username-based validation (JWT-ready for future integration).
  */
 private final OrdersService ordersService;
+private final ClientsService clientsService;
 
 /**
- * Constructs a new OrdersController with the specified OrdersService.
+ * Constructs a new OrdersController with the specified services.
  *
  * @param ordersService the OrdersService instance to use
+ * @param clientsService the ClientsService instance for customer validation
  */
-public OrdersController(OrdersService ordersService) {
+public OrdersController(OrdersService ordersService, ClientsService clientsService) {
     this.ordersService = ordersService;
+    this.clientsService = clientsService;
 }
 
 // =========================================================
@@ -109,13 +115,21 @@ public List<OrderHistoryView> getPendingBuyOrdersForTicker(
 }
 
 
-// =========================================================
-// Place a buy order
-// =========================================================
-
+/**
+ * Places a buy order for the authenticated customer.
+ * 
+ * Currently: clientId is passed in request body.
+ * With JWT: clientId will be extracted from the JWT token (validated at login time).
+ * 
+ * @param request the order request containing clientId, ticker, and quantity
+ * @return an OrderResponse with the created order details
+ * @throws com.example.exceptions.InvalidArgumentsException if validation fails
+ */
 @PostMapping("/buy")
 public OrderResponse placeBuyOrder(
         @Valid @RequestBody PlaceOrderRequest request) {
+    // For now: use clientId from request
+    // When JWT lands: extract clientId from token instead of request
     return ordersService.placeBuyOrderAsDto(
             request.clientId(),
             request.ticker(),
@@ -124,13 +138,21 @@ public OrderResponse placeBuyOrder(
 }
 
 
-// =========================================================
-// Place a sell order
-// =========================================================
-
+/**
+ * Places a sell order for the authenticated customer.
+ * 
+ * Currently: clientId is passed in request body.
+ * With JWT: clientId will be extracted from the JWT token (validated at login time).
+ * 
+ * @param request the order request containing clientId, ticker, and quantity
+ * @return an OrderResponse with the created order details
+ * @throws com.example.exceptions.InvalidArgumentsException if validation fails
+ */
 @PostMapping("/sell")
 public OrderResponse placeSellOrder(
         @Valid @RequestBody PlaceOrderRequest request) {
+    // For now: use clientId from request
+    // When JWT lands: extract clientId from token instead of request
     return ordersService.placeSellOrderAsDto(
             request.clientId(),
             request.ticker(),
