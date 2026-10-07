@@ -37,13 +37,15 @@ public class ClientsController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
-            @RequestBody @Valid LoginRequest request) {
-        return ResponseEntity.ok(clientsService.login(request));
+            @RequestBody @Valid LoginRequest request,
+        @RequestParam Long clientId) {
+        return ResponseEntity.ok(clientsService.login(clientId, request));
     }
 
     @PatchMapping("/password")
     public ResponseEntity<Void> changePassword( 
-            @RequestBody @Valid ChangePasswordRequest request) {
+            @RequestBody @Valid ChangePasswordRequest request,
+            @RequestParam Long clientId) {
         clientsService.changePassword(clientId, request);
         return ResponseEntity.noContent().build();
     }

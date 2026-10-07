@@ -47,7 +47,7 @@ public class Validate {
             throw new ClientNotFoundException("Client not found");        
         }
     }
-
+    /*
    public void validateClient(Long clientId, String function) {
         if (function == "changePassword") {
             try {
@@ -102,5 +102,5 @@ public class Validate {
             throw new ClientNotFoundException("No clients found");
         }
     
-}
+}*/
 }

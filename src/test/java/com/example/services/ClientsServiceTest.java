@@ -105,10 +105,10 @@ class ClientsServiceTest {
     @Test
     void loginReturnsLoginResponseWhenCredentialsAreValid() {
         LoginRequest request = loginRequest("loginuser", "password1");
-        when(clientsRepository.findLoginClientByUsername("loginuser"))
+        when(clientsRepository.findLoginClientById(3L))
                 .thenReturn(loginClientView(3L, "loginuser", "password1"));
 
-        LoginResponse response = clientsService.login(request);
+        LoginResponse response = clientsService.login(3L, request);
 
         assertEquals(3L, response.userId());
         assertEquals("loginuser", response.username());
@@ -118,9 +118,9 @@ class ClientsServiceTest {
     @Test
     void loginThrowsInvalidCredentialsWhenClientDoesNotExist() {
         LoginRequest request = loginRequest("missing", "password1");
-        when(clientsRepository.findLoginClientByUsername("missing")).thenReturn(null);
+        when(clientsRepository.findLoginClientById(99L)).thenReturn(null);
 
-        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.login(request));
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.login(99L, request));
 
         assertEquals("Invalid Credentials: Invalid username or password", exception.getMessage());
     }
@@ -128,10 +128,10 @@ class ClientsServiceTest {
     @Test
     void loginThrowsInvalidCredentialsWhenPasswordDoesNotMatch() {
         LoginRequest request = loginRequest("loginuser", "wrongpass");
-        when(clientsRepository.findLoginClientByUsername("loginuser"))
+        when(clientsRepository.findLoginClientById(3L))
                 .thenReturn(loginClientView(3L, "loginuser", "password1"));
 
-        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.login(request));
+        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.login(3L, request));
 
         assertEquals("Invalid Credentials: Invalid username or password", exception.getMessage());
     }
@@ -436,7 +436,7 @@ class ClientsServiceTest {
     }
 
     private ChangePasswordRequest changePasswordRequest(String currentPassword, String newPassword) {
-        return new ChangePasswordRequest(currentPassword, newPassword);
+        return new ChangePasswordRequest("test@example.com", currentPassword, newPassword);
     }
 
     private ClientAdminView adminView(
