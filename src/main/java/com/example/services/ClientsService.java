@@ -9,6 +9,7 @@ import com.example.DTOs.clients.ClientReporterView;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.DTOs.clients.LoginResponse;
 import com.example.entities.Client;
+import com.example.exceptions.ClientNotFoundException;
 import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
 import com.example.repositories.ClientsRepository;
@@ -86,19 +87,25 @@ public class ClientsService {
      * @return a LoginResponse containing the client's details if login is successful
      * @throws InvalidArgumentsException if the credentials are invalid
      */
-    public LoginResponse login(LoginRequest request) {
-        logger.info("Login attempt for username: {}", request.username());
+    public LoginResponse login(Long clientId, LoginRequest request) {
+        logger.info("Login attempt for client: {}", clientId);
         
         // TODO: Encode then compare passwords when we do the whole JwT node stuff
-        LoginView loginClient = clientsRepository.findLoginClientByUsername(request.username());
-
-        if (loginClient == null || !loginClient.password().equals(request.password())) {
-            logger.warn("Login failed: Invalid credentials for username - {}", request.username());
+        LoginView loginClient;
+        try{
+            loginClient = clientsRepository.findLoginClientById(clientId);
+        } catch (Exception e) {
+            logger.error("Login failed: Error occurred while fetching client - {}", clientId, e);
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
 
-        logger.info("Login successful for username: {}", request.username());
-        return new LoginResponse(loginClient.userId(), loginClient.username(), null, "Login successful");
+        if (loginClient == null || !loginClient.password().equals(request.password())) {
+            logger.warn("Login failed: Invalid credentials for client - {}", clientId);
+            throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
+        }
+
+        logger.info("Login successful for client: {}", clientId);
+        return new LoginResponse(clientId, loginClient.username(), null, "Login successful");
     }
 
     /**
@@ -111,10 +118,17 @@ public class ClientsService {
      */
     // TODO: Encode passwords and verify when we work on JwT stuff (& check if user = clientId)
     public void changePassword(Long clientId, ChangePasswordRequest request) {
-        LoginView client = clientsRepository.findLoginClientById(clientId);
+        LoginView client;
 
-        Validate.validateClient(client);
-
+        try{
+            client = clientsRepository.findLoginClientById(clientId);
+            if (client == null) {
+                throw new ClientNotFoundException("Client not found");
+            }
+        }catch (Exception e) {  
+                throw new ClientNotFoundException("Client not found");  
+            }  
+        
         if (!client.password().equals(request.currentPassword())) {
             throw new InvalidArgumentsException("Invalid Password Change", "Current password is incorrect");
         }
@@ -138,9 +152,15 @@ public class ClientsService {
      * @throws IllegalArgumentException if the client does not exist wtithin validate client
      */
     public ClientProfileView getClientProfile(Long clientId) {
-        Client client = clientsRepository.findClientById(clientId);
-
-        Validate.validateClient(client);
+        Client client;
+        try{
+            client = clientsRepository.findClientById(clientId);
+            if (client == null) {
+                throw new ClientNotFoundException("Client not found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("Client not found");  
+        }  
 
         return new ClientProfileView(
                 client.getClientId(),
@@ -159,9 +179,16 @@ public class ClientsService {
      * @throws IllegalArgumentException if the client does not exist within validate client
      */
     public ClientAdminView getClientDataAdmin(Long clientId) {
-        ClientAdminView client = clientsRepository.findClientByIdAdmin(clientId);
-
-        Validate.validateClient(client);
+        
+        ClientAdminView client;
+        try{
+            client = clientsRepository.findClientByIdAdmin(clientId);
+            if (client == null) {
+                throw new ClientNotFoundException("Client not found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("Client not found");  
+        }  
 
         return client;
     }
@@ -174,9 +201,15 @@ public class ClientsService {
      * @throws IllegalArgumentException if the client does not exist within validate client
      */
     public ClientReporterView getClientDataReporter(Long clientId) {
-        ClientReporterView client = clientsRepository.findClientByIdReporter(clientId);
-
-        Validate.validateClient(client);
+        ClientReporterView client;
+        try{
+            client = clientsRepository.findClientByIdReporter(clientId);
+            if (client == null) {
+                throw new ClientNotFoundException("Client not found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("Client not found");  
+        }  
 
         return client;
     }
@@ -188,9 +221,15 @@ public class ClientsService {
      * @throws IllegalArgumentException if the client list is invalid within validate client list for admin
      */
     public List<ClientAdminView> getAllClientDataAdmin() {
-        List<ClientAdminView> clients = clientsRepository.findClientsAsAdmin();
-
-        Validate.validateClientListForAdmin(clients);
+        List<ClientAdminView> clients;
+        try{
+            clients = clientsRepository.findClientsAsAdmin();
+            if (clients == null || clients.isEmpty()) {
+                throw new ClientNotFoundException("Clients not found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("Clients not found");  
+        }  
 
         return clients;
     }
@@ -202,9 +241,15 @@ public class ClientsService {
      * @throws IllegalArgumentException if the client list is invalid within validate client list for reporter
      */ 
     public List<ClientReporterView> getAllClientDataReporter() {
-        List<ClientReporterView> clients = clientsRepository.findClientsAsReporter();
-
-        Validate.validateClientListForReporter(clients);
+        List<ClientReporterView> clients;
+        try{
+            clients = clientsRepository.findClientsAsReporter();
+            if (clients == null || clients.isEmpty()) {
+                throw new ClientNotFoundException("Clients not found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("Clients not found");  
+        }  
 
         return clients;
     }
@@ -220,9 +265,15 @@ public class ClientsService {
      * @throws UpdateFailedException if the update fails
      */
     public BigDecimal updateCashAmount(Long clientId, BigDecimal change) {
-        Client client = clientsRepository.findClientById(clientId);
-
-        Validate.validateClient(client);
+        Client client;
+        try{
+            client = clientsRepository.findClientById(clientId);
+            if (client == null) {
+                throw new ClientNotFoundException("Client not found");
+            }
+        }catch (Exception e) {
+            throw new ClientNotFoundException("Client not found");
+        }
 
         BigDecimal currentBalance = client.getCashAmount();
 
@@ -250,9 +301,16 @@ public class ClientsService {
      * @throws UpdateFailedException if the update fails
      */
     public void updateProfile(Long clientId, ClientProfileUpdateRequest request) {
-        Client client = clientsRepository.findClientById(clientId);
+        Client client;
+        try{
+            client = clientsRepository.findClientById(clientId);
+            if (client == null) {
+                throw new ClientNotFoundException("Client not found");
+            }
+        }catch (Exception e) {
+            throw new ClientNotFoundException("Client not found");
+        }
 
-        Validate.validateClient(client);
 
         if (!request.hasUpdates()) {
             throw new InvalidArgumentsException("Invalid Profile Update", "No profile changes were provided");
