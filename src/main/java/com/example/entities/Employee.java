@@ -1,7 +1,5 @@
 package com.example.entities;
 
-import java.math.BigDecimal;
-
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

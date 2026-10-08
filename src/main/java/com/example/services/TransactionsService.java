@@ -31,85 +31,56 @@ public class TransactionsService {
         return transactionsRepository.getTransactions(clientId);
     }
 
+    /**
+     * Execute a transaction (deposit, withdrawal, or purchase).
+     * This is the core method that handles all transaction types.
+     * 
+     * @param clientId the ID of the client
+     * @param amount the transaction amount
+     * @param type the type of transaction (DEPOSIT, WITHDRAWAL, PURCHASE)
+     * @return the created transaction
+     */
     @Transactional
-    public Transaction deposit(
-            Long clientId,
-            BigDecimal amount) {
-        logger.info("Deposit request: clientId={}, amount={}", clientId, amount);
+    public Transaction executeTransaction(Long clientId, BigDecimal amount, TransactionType type) {
+        logger.info("{} request: clientId={}, amount={}", type, clientId, amount);
 
         validateClientExists(clientId);
         validateAmount(amount);
 
-        transactionsRepository.increaseBuyingPower(
-                clientId,
-                amount
-        );
+        // Apply operation based on type
+        if (type == TransactionType.DEPOSIT) {
+            transactionsRepository.increaseBuyingPower(clientId, amount);
+        } else if (type == TransactionType.WITHDRAWAL || type == TransactionType.PURCHASE) {
+            transactionsRepository.decreaseBuyingPower(clientId, amount);
+        }
 
+        // Create and save transaction
         Transaction transaction = new Transaction(
                 null,
                 clientId,
-                TransactionType.DEPOSIT.name(),
+                type.name(),
                 amount,
                 null
         );
 
         transactionsRepository.saveTransaction(transaction);
-        logger.info("Deposit completed: clientId={}, amount={}", clientId, amount);
+        logger.info("{} completed: clientId={}, amount={}", type, clientId, amount);
         return transaction;
     }
 
     @Transactional
-    public Transaction withdrawal(
-            Long clientId,
-            BigDecimal amount) {
-        logger.info("Withdrawal request: clientId={}, amount={}", clientId, amount);
-
-        validateClientExists(clientId);
-        validateAmount(amount);
-
-        transactionsRepository.decreaseBuyingPower(
-                clientId,
-                amount
-        );
-
-        Transaction transaction = new Transaction(
-                null,
-                clientId,
-                TransactionType.WITHDRAWAL.name(),
-                amount,
-                null
-        );
-
-        transactionsRepository.saveTransaction(transaction);
-        logger.info("Withdrawal completed: clientId={}, amount={}", clientId, amount);
-        return transaction;
+    public Transaction deposit(Long clientId, BigDecimal amount) {
+        return executeTransaction(clientId, amount, TransactionType.DEPOSIT);
     }
 
     @Transactional
-    public Transaction purchase(
-            Long clientId,
-            BigDecimal amount) {
-        logger.info("Purchase transaction: clientId={}, amount={}", clientId, amount);
+    public Transaction withdrawal(Long clientId, BigDecimal amount) {
+        return executeTransaction(clientId, amount, TransactionType.WITHDRAWAL);
+    }
 
-        validateClientExists(clientId);
-        validateAmount(amount);
-
-        transactionsRepository.decreaseBuyingPower(
-                clientId,
-                amount
-        );
-
-        Transaction transaction = new Transaction(
-                null,
-                clientId,
-                TransactionType.PURCHASE.name(),
-                amount,
-                null
-        );
-
-        transactionsRepository.saveTransaction(transaction);
-
-        return transaction;
+    @Transactional
+    public Transaction purchase(Long clientId, BigDecimal amount) {
+        return executeTransaction(clientId, amount, TransactionType.PURCHASE);
     }
 
     private void validateClientExists(Long clientId) {

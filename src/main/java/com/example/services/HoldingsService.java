@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 import com.example.repositories.HoldingsRepository;
 import com.example.repositories.ClientsRepository;
 
-import java.util.List;
+import java.math.BigDecimal;
 
 @Service
 public class HoldingsService {
@@ -23,17 +23,16 @@ public class HoldingsService {
     private final HoldingsRepository holdingsRepository;
     private final ClientsRepository clientsRepository;
     private final HoldingDtoConverter holdingDtoConverter;
+    private final ClientsService clientsService;
 
-    public HoldingsService(HoldingsRepository holdingsRepository, ClientsRepository clientsRepository, HoldingDtoConverter holdingDtoConverter) {
+    public HoldingsService(HoldingsRepository holdingsRepository, ClientsRepository clientsRepository, HoldingDtoConverter holdingDtoConverter, ClientsService clientsService) {
         this.holdingsRepository = holdingsRepository;
         this.clientsRepository = clientsRepository;
         this.holdingDtoConverter = holdingDtoConverter;
+        this.clientsService = clientsService;
     }
 
-    //TEST METHOD
-    public String test() {
-        return "Test service works! Hooray!";
-    }
+
 
     /**
      * Get holding for a specific client and ticker
@@ -84,6 +83,49 @@ public class HoldingsService {
 
 
     /**
+     * Validate common holdings transaction parameters.
+     * @param clientId the ID of the client
+     * @param ticker the ticker symbol
+     * @param quantity the quantity
+     */
+    private void validateHoldingsTransaction(Long clientId, String ticker, Integer quantity) {
+        Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
+        Validate.validateTicker(ticker);
+        Validate.validateQuantity(quantity);
+    }
+
+    /**
+     * Update holdings for a buy or sell operation.
+     * @param clientId the ID of the client
+     * @param ticker the ticker symbol
+     * @param quantity the quantity to transact
+     * @param isBuy true for buy, false for sell
+     * @return the new quantity after the operation
+     */
+    private Integer updateHoldings(Long clientId, String ticker, Integer quantity, boolean isBuy) {
+        Integer currentQty = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
+        Integer newQty;
+
+        if (isBuy) {
+            newQty = currentQty == null ? quantity : currentQty + quantity;
+            if (currentQty == null || currentQty == 0) {
+                Holding holding = new Holding();
+                holding.setClient_Id(clientId);
+                holding.setTicker(ticker);
+                holding.setQuantity(quantity);
+                holdingsRepository.createHolding(holding);
+            } else {
+                holdingsRepository.updateBuyHolding(quantity, clientId, ticker);
+            }
+        } else {
+            newQty = currentQty - quantity;
+            holdingsRepository.updateSellHolding(quantity, clientId, ticker);
+        }
+
+        return newQty;
+    }
+
+    /**
      * Buy stock logic - increase quantity for client/ticker
      * If client doesn't own this ticker yet, create new holding
      * @param clientId the ID of the client
@@ -95,28 +137,11 @@ public class HoldingsService {
     public BuyStockResponse buyStock(Long clientId, String ticker, Integer quantity) {
         logger.info("Buy stock request: clientId={}, ticker={}, quantity={}", clientId, ticker, quantity);
         
-        Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
-        Validate.validateTicker(ticker);
-        Validate.validateQuantity(quantity);
-        Integer currentQty = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
+        validateHoldingsTransaction(clientId, ticker, quantity);
+        Integer newQty = updateHoldings(clientId, ticker, quantity, true);
         
-        if (currentQty == null || currentQty == 0) {
-            // First time buying this ticker
-            Holding holding = new Holding();
-            holding.setClient_Id(clientId);
-            holding.setTicker(ticker);
-            holding.setQuantity(quantity);
-            holdingsRepository.createHolding(holding);
-            return holdingDtoConverter.toBuyStockResponse(clientId, ticker, quantity);
-        } else {
-            // Already owns this ticker, add quantity
-            holdingsRepository.updateBuyHolding(quantity, clientId, ticker);
-            Integer newQty = currentQty + quantity;
-            return holdingDtoConverter.toBuyStockResponse(clientId, ticker, newQty);
-        }
+        return holdingDtoConverter.toBuyStockResponse(clientId, ticker, newQty);
     }
-
-
 
     /**
      * Sell stock logic - decrease quantity for client/ticker
@@ -130,9 +155,7 @@ public class HoldingsService {
     public SellStockResponse sellStock(Long clientId, String ticker, Integer quantity) {
         logger.info("Sell stock request: clientId={}, ticker={}, quantity={}", clientId, ticker, quantity);
         
-        Validate.validateClientId(clientId, () -> clientsRepository.findClientById(clientId) != null);
-        Validate.validateTicker(ticker);
-        Validate.validateQuantity(quantity);
+        validateHoldingsTransaction(clientId, ticker, quantity);
         Integer currentQty = holdingsRepository.getQuantityByClientAndTicker(clientId, ticker);
         
         if (currentQty == null || currentQty < quantity) {
@@ -144,8 +167,7 @@ public class HoldingsService {
             );
         }
         
-        holdingsRepository.updateSellHolding(quantity, clientId, ticker);
-        Integer newQty = currentQty - quantity;
+        Integer newQty = updateHoldings(clientId, ticker, quantity, false);
         return holdingDtoConverter.toSellStockResponse(clientId, ticker, newQty);
     }
 
@@ -154,16 +176,29 @@ public class HoldingsService {
     /**
      * Update holdings based on fulfilled order
      * Called by OrdersService when order status is set to FULFILLED
-     * If BUY: increases quantity
-     * If SELL: decreases quantity
-     * @param order the fulfilled order containing clientId, ticker, quantity, and order type
+     * Updates both holdings (shares/crypto) and client cash amount:
+     * 
+     * BUY order: Increases quantity, deducts cash (quantity * price)
+     * SELL order: Decreases quantity, adds cash (quantity * price)
+     * 
+     * @param order the fulfilled order containing clientId, ticker, quantity, order type, and execution price
      * @throws IllegalArgumentException if the order is invalid or contains invalid data
      */
     public void updateHoldingsForOrder(Order order) {
+        BigDecimal totalCost = new BigDecimal(order.getQuantity()).multiply(order.getPrice());
+        
         if (order.getOrderType() == Order.OrderType.BUY) {
             buyStock(order.getClientId(), order.getTicker(), order.getQuantity());
+            // Deduct cash for BUY order (negative change)
+            clientsService.updateCashAmount(order.getClientId(), totalCost.negate());
+            logger.info("BUY order executed: clientId={}, ticker={}, quantity={}, price={}, totalCost={}", 
+                        order.getClientId(), order.getTicker(), order.getQuantity(), order.getPrice(), totalCost);
         } else if (order.getOrderType() == Order.OrderType.SELL) {
             sellStock(order.getClientId(), order.getTicker(), order.getQuantity());
+            // Add cash for SELL order (positive change)
+            clientsService.updateCashAmount(order.getClientId(), totalCost);
+            logger.info("SELL order executed: clientId={}, ticker={}, quantity={}, price={}, totalProceeds={}", 
+                        order.getClientId(), order.getTicker(), order.getQuantity(), order.getPrice(), totalCost);
         }
     }
 }

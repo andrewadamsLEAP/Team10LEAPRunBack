@@ -13,8 +13,6 @@ import org.springframework.stereotype.Service;
 import com.example.repositories.MarketDataRepository;
 import com.example.generalServices.AlpacaClient;
 import com.example.mappers.MarketSymbolMapper;
-import com.example.generalServices.AlpacaClient.AlpacaForexResponse;
-import com.example.generalServices.AlpacaClient.AlpacaQuotesResponse;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;

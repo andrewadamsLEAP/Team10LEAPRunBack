@@ -10,6 +10,7 @@ import com.example.entities.Holding;
 import com.example.entities.Order;
 import com.example.repositories.ClientsRepository;
 import com.example.repositories.HoldingsRepository;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +30,7 @@ class HoldingsServiceTest {
     private HoldingsRepository holdingsRepository;
     private ClientsRepository clientsRepository;
     private HoldingDtoConverter holdingDtoConverter;
+    private ClientsService clientsService;
     private HoldingsService holdingsService;
 
     @BeforeEach
@@ -36,7 +38,8 @@ class HoldingsServiceTest {
         holdingsRepository = mock(HoldingsRepository.class);
         clientsRepository = mock(ClientsRepository.class);
         holdingDtoConverter = new HoldingDtoConverter();
-        holdingsService = new HoldingsService(holdingsRepository, clientsRepository, holdingDtoConverter);
+        clientsService = mock(ClientsService.class);
+        holdingsService = new HoldingsService(holdingsRepository, clientsRepository, holdingDtoConverter, clientsService);
     }
 
     @Test
@@ -226,9 +229,11 @@ class HoldingsServiceTest {
         buyOrder.setClientId(1L);
         buyOrder.setTicker("AAPL");
         buyOrder.setQuantity(100);
+        buyOrder.setPrice(new BigDecimal("150.00"));
 
         when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
         when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(null);
+        when(clientsService.updateCashAmount(1L, new BigDecimal("-15000.00"))).thenReturn(new BigDecimal("0.00"));
 
         holdingsService.updateHoldingsForOrder(buyOrder);
 
@@ -242,10 +247,12 @@ class HoldingsServiceTest {
         sellOrder.setClientId(1L);
         sellOrder.setTicker("AAPL");
         sellOrder.setQuantity(50);
+        sellOrder.setPrice(new BigDecimal("160.00"));
 
         when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
         when(holdingsRepository.getQuantityByClientAndTicker(1L, "AAPL")).thenReturn(100);
         when(holdingsRepository.updateSellHolding(50, 1L, "AAPL")).thenReturn(1);
+        when(clientsService.updateCashAmount(1L, new BigDecimal("8000.00"))).thenReturn(new BigDecimal("0.00"));
 
         holdingsService.updateHoldingsForOrder(sellOrder);
 

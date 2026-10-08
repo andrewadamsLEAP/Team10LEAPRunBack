@@ -42,16 +42,6 @@ class HoldingsControllerTest {
         verifyNoInteractions(holdingsService);
     }
 
-    @Test
-    void testServiceTestEndpointCallsService() {
-        when(holdingsService.test()).thenReturn("Test service works!");
-
-        String result = holdingsController.serviceTest();
-
-        assertEquals("Test service works!", result);
-        verify(holdingsService, times(1)).test();
-    }
-
     // ========== GET SPECIFIC HOLDING TESTS ==========
 
     @Test

@@ -21,6 +21,7 @@ import com.example.exceptions.Validate;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.function.Function;
 
 @Service 
 public class ClientsService {
@@ -87,25 +88,25 @@ public class ClientsService {
      * @return a LoginResponse containing the client's details if login is successful
      * @throws InvalidArgumentsException if the credentials are invalid
      */
-    public LoginResponse login(Long clientId, LoginRequest request) {
-        logger.info("Login attempt for client: {}", clientId);
+    public LoginResponse login(LoginRequest request) {
+        logger.info("Login attempt for username: {}", request.username());
         
         // TODO: Encode then compare passwords when we do the whole JwT node stuff
         LoginView loginClient;
         try{
-            loginClient = clientsRepository.findLoginClientById(clientId);
+            loginClient = clientsRepository.findLoginClientByUsername(request.username());
         } catch (Exception e) {
-            logger.error("Login failed: Error occurred while fetching client - {}", clientId, e);
+            logger.error("Login failed: Error occurred while fetching client - {}", request.username(), e);
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
 
         if (loginClient == null || !loginClient.password().equals(request.password())) {
-            logger.warn("Login failed: Invalid credentials for client - {}", clientId);
+            logger.warn("Login failed: Invalid credentials for username - {}", request.username());
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
 
-        logger.info("Login successful for client: {}", clientId);
-        return new LoginResponse(clientId, loginClient.username(), null, "Login successful");
+        logger.info("Login successful for username: {}", request.username());
+        return new LoginResponse(loginClient.userId(), loginClient.username(), null, "Login successful");
     }
 
     /**
@@ -113,12 +114,14 @@ public class ClientsService {
      *
      * @param clientId the ID of the client
      * @param request the change password request containing the current and new passwords
+     * @throws ClientNotFoundException if the client does not exist
      * @throws InvalidArgumentsException if the current password is incorrect or the new password is the same as the current password
      * @throws UpdateFailedException if the password could not be updated in the database
      */
     // TODO: Encode passwords and verify when we work on JwT stuff (& check if user = clientId)
     public void changePassword(Long clientId, ChangePasswordRequest request) {
-        LoginView client;
+        LoginView client = clientsRepository.findLoginClientById(clientId);
+        Validate.validateNotNull(client, "Client not found");
 
         try{
             client = clientsRepository.findLoginClientById(clientId);
@@ -145,11 +148,27 @@ public class ClientsService {
     }
 
     /**
+     * Generic method to retrieve client data by view type.
+     * Validates that the client exists and returns the typed view.
+     *
+     * @param clientId the ID of the client
+     * @param fetcher a function to fetch the client by the specific view
+     * @return the client object in the requested view format
+     * @throws ClientNotFoundException if the client does not exist
+     * @param <T> the type of client view (ClientProfileView, ClientAdminView, ClientReporterView)
+     */
+    private <T> T getClientByView(Long clientId, java.util.function.Function<ClientsRepository, T> fetcher) {
+        T client = fetcher.apply(clientsRepository);
+        Validate.validateNotNull(client, "Client not found");
+        return client;
+    }
+
+    /**
      * Retrieves the profile information for a specific client.
      *
      * @param clientId the ID of the client
      * @return a ClientProfileView containing the client's profile information
-     * @throws IllegalArgumentException if the client does not exist wtithin validate client
+     * @throws ClientNotFoundException if the client does not exist
      */
     public ClientProfileView getClientProfile(Long clientId) {
         Client client;
@@ -176,21 +195,10 @@ public class ClientsService {
      *
      * @param clientId the ID of the client
      * @return a ClientAdminView containing the client's data for admin purposes
-     * @throws IllegalArgumentException if the client does not exist within validate client
+     * @throws ClientNotFoundException if the client does not exist
      */
     public ClientAdminView getClientDataAdmin(Long clientId) {
-        
-        ClientAdminView client;
-        try{
-            client = clientsRepository.findClientByIdAdmin(clientId);
-            if (client == null) {
-                throw new ClientNotFoundException("Client not found");
-            }
-        }catch (Exception e) {  
-            throw new ClientNotFoundException("Client not found");  
-        }  
-
-        return client;
+        return getClientByView(clientId, repo -> repo.findClientByIdAdmin(clientId));
     }
 
     /**
@@ -198,27 +206,17 @@ public class ClientsService {
      *
      * @param clientId the ID of the client
      * @return a ClientReporterView containing the client's data for reporter purposes
-     * @throws IllegalArgumentException if the client does not exist within validate client
+     * @throws ClientNotFoundException if the client does not exist
      */
     public ClientReporterView getClientDataReporter(Long clientId) {
-        ClientReporterView client;
-        try{
-            client = clientsRepository.findClientByIdReporter(clientId);
-            if (client == null) {
-                throw new ClientNotFoundException("Client not found");
-            }
-        }catch (Exception e) {  
-            throw new ClientNotFoundException("Client not found");  
-        }  
-
-        return client;
+        return getClientByView(clientId, repo -> repo.findClientByIdReporter(clientId));
     }
 
     /**
      * Retrieves all client data for admin view.
      *
      * @return a list of ClientAdminView containing all clients' data for admin purposes
-     * @throws IllegalArgumentException if the client list is invalid within validate client list for admin
+     * @throws ClientNotFoundException if no clients are found
      */
     public List<ClientAdminView> getAllClientDataAdmin() {
         List<ClientAdminView> clients;
@@ -238,19 +236,11 @@ public class ClientsService {
      * Retrieves all client data for reporter view.
      *
      * @return a list of ClientReporterView containing all clients' data for reporter purposes
-     * @throws IllegalArgumentException if the client list is invalid within validate client list for reporter
+     * @throws ClientNotFoundException if no clients are found
      */ 
     public List<ClientReporterView> getAllClientDataReporter() {
-        List<ClientReporterView> clients;
-        try{
-            clients = clientsRepository.findClientsAsReporter();
-            if (clients == null || clients.isEmpty()) {
-                throw new ClientNotFoundException("Clients not found");
-            }
-        }catch (Exception e) {  
-            throw new ClientNotFoundException("Clients not found");  
-        }  
-
+        List<ClientReporterView> clients = clientsRepository.findClientsAsReporter();
+        Validate.validateListNotEmpty(clients, "No clients found");
         return clients;
     }
 
@@ -265,15 +255,8 @@ public class ClientsService {
      * @throws UpdateFailedException if the update fails
      */
     public BigDecimal updateCashAmount(Long clientId, BigDecimal change) {
-        Client client;
-        try{
-            client = clientsRepository.findClientById(clientId);
-            if (client == null) {
-                throw new ClientNotFoundException("Client not found");
-            }
-        }catch (Exception e) {
-            throw new ClientNotFoundException("Client not found");
-        }
+        Client client = clientsRepository.findClientById(clientId);
+        Validate.validateNotNull(client, "Client not found");
 
         BigDecimal currentBalance = client.getCashAmount();
 
@@ -311,6 +294,7 @@ public class ClientsService {
             throw new ClientNotFoundException("Client not found");
         }
 
+        Validate.validateNotNull(client, "Client not found");
 
         if (!request.hasUpdates()) {
             throw new InvalidArgumentsException("Invalid Profile Update", "No profile changes were provided");

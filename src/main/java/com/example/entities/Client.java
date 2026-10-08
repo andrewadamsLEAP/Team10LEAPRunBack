@@ -86,7 +86,6 @@ public class Client {
     }
 
     public BigDecimal getCashAmount() {
-        
         return cashAmount;
     }
 

@@ -37,9 +37,8 @@ public class ClientsController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
-            @RequestBody @Valid LoginRequest request,
-        @RequestParam Long clientId) {
-        return ResponseEntity.ok(clientsService.login(clientId, request));
+            @RequestBody @Valid LoginRequest request) {
+        return ResponseEntity.ok(clientsService.login(request));
     }
 
     @PatchMapping("/password")

@@ -56,14 +56,14 @@ class OrdersControllerTest {
         OrderHistoryView order = new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "FULFILLED", null, null, null, null);
         mockOrders.add(order);
 
-        when(ordersService.getFulfilledOrdersAsDto(clientId)).thenReturn(mockOrders);
+        when(ordersService.getFulfilledOrdersForClientAsDto(clientId)).thenReturn(mockOrders);
 
         List<OrderHistoryView> result = ordersController.getFulfilledOrders(clientId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals("FULFILLED", result.get(0).status());
-        verify(ordersService, times(1)).getFulfilledOrdersAsDto(clientId);
+        verify(ordersService, times(1)).getFulfilledOrdersForClientAsDto(clientId);
     }
 
     /**
@@ -129,7 +129,7 @@ class OrdersControllerTest {
      */
     @Test
     void placeBuyOrder_shouldPlaceOrderAndReturnResponse() {
-        PlaceOrderRequest request = new PlaceOrderRequest(1L, "AAPL", 100, new BigDecimal("150.00"));
+        PlaceOrderRequest request = new PlaceOrderRequest(1L, "AAPL", 100);
         OrderResponse mockResponse = new OrderResponse(
                 1L, "AAPL", 100, new BigDecimal("150.00"), "PENDING", null
         );
@@ -149,7 +149,7 @@ class OrdersControllerTest {
      */
     @Test
     void placeSellOrder_shouldPlaceOrderAndReturnResponse() {
-        PlaceOrderRequest request = new PlaceOrderRequest(1L, "MSFT", 50, new BigDecimal("200.00"));
+        PlaceOrderRequest request = new PlaceOrderRequest(1L, "MSFT", 50);
         OrderResponse mockResponse = new OrderResponse(
                 1L, "MSFT", 50, new BigDecimal("200.00"), "PENDING", null
         );
@@ -190,7 +190,7 @@ class OrdersControllerTest {
     void getFulfilledOrders_shouldReturnEmptyListWhenNoOrders() {
         Long clientId = 1L;
 
-        when(ordersService.getFulfilledOrdersAsDto(clientId)).thenReturn(new ArrayList<>());
+        when(ordersService.getFulfilledOrdersForClientAsDto(clientId)).thenReturn(new ArrayList<>());
 
         List<OrderHistoryView> result = ordersController.getFulfilledOrders(clientId);
 
@@ -221,7 +221,7 @@ class OrdersControllerTest {
         mockOrders.add(new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "FULFILLED", null, null, null, null));
         mockOrders.add(new OrderHistoryView(2L, "GOOGL", 50, new BigDecimal("100.00"), "FULFILLED", null, null, null, null));
 
-        when(ordersService.getFulfilledOrdersAsDto(clientId)).thenReturn(mockOrders);
+        when(ordersService.getFulfilledOrdersForClientAsDto(clientId)).thenReturn(mockOrders);
 
         List<OrderHistoryView> result = ordersController.getFulfilledOrders(clientId);
 

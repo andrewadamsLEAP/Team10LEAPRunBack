@@ -1,6 +1,4 @@
 package com.example.DTOs.employees;
-
-import java.math.BigDecimal;
 /**
  * DTO for representing client login information.
  * LoginView

@@ -25,6 +25,7 @@ import java.util.Map;
  * Kafka configuration for the trading application.
  * Configures the KafkaTemplate bean required by OrdersService and other components.
  * This configuration is only loaded for production (non-test) profiles.
+ * For local development without Kafka, LocalKafkaConfig provides a fallback bean.
  */
 @Configuration
 @EnableKafka
@@ -34,24 +35,11 @@ public class KafkaConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    @Value("${app.kafka.producer.acks}")
-    private String producerAcks;
-
-    @Value("${app.kafka.producer.retries}")
-    private int producerRetries;
-
-    @Value("${app.kafka.producer.retry-backoff-ms}")
-    private int retryBackoffMs;
-
-    @Value("${app.kafka.producer.compression-type}")
-    private String compressionType;
-
-    @Value("${app.kafka.consumer.group-id}")
+    @Value("${app.kafka.consumer.group-id:trading-execution-group}")
     private String consumerGroupId;
 
-    @Value("${app.kafka.consumer.auto-offset-reset}")
+    @Value("${app.kafka.consumer.auto-offset-reset:earliest}")
     private String autoOffsetReset;
-
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
@@ -93,10 +81,10 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configProps.put(ProducerConfig.ACKS_CONFIG, producerAcks);
-        configProps.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
-        configProps.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, retryBackoffMs);
-        configProps.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, compressionType);
+        configProps.put(ProducerConfig.ACKS_CONFIG, "all");
+        configProps.put(ProducerConfig.RETRIES_CONFIG, 3);
+        configProps.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, 1000);
+        configProps.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "gzip");
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 

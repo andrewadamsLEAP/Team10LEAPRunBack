@@ -1,23 +1,27 @@
 package com.example.services;
 
+import com.example.DTOs.orders.OrderResponse;
+import com.example.DTOs.orders.OrderHistoryView;
+import com.example.entities.Order;
+import com.example.entities.Instrument;
+import com.example.repositories.OrdersRepository;
+import com.example.exceptions.InvalidArgumentsException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import com.example.DTOs.orders.OrderHistoryView;
-import com.example.DTOs.orders.OrderResponse;
-import com.example.entities.Instrument;
-import com.example.entities.Order;
-import com.example.exceptions.InvalidArgumentsException;
-import com.example.repositories.OrdersRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class OrdersService {
@@ -29,8 +33,10 @@ public class OrdersService {
     private final OrderDtoConverter orderDtoConverter;
     private final ClientsService clientsService;
     private final InstrumentService instrumentService;
-    private final ApplicationEventPublisher applicationEventPublisher;
+    private final KafkaTemplate<String, String> kafkaTemplate;
+    private final String orderPendingTopic;
     private final MarketDataService marketDataService;
+    private final ObjectMapper objectMapper;
 
     public OrdersService(
             OrdersRepository ordersRepository,
@@ -39,16 +45,21 @@ public class OrdersService {
             OrderDtoConverter orderDtoConverter,
             ClientsService clientsService,
             InstrumentService instrumentService,
-            ApplicationEventPublisher applicationEventPublisher,
-            MarketDataService marketDataService) {
+            MarketDataService marketDataService,
+            KafkaTemplate<String, String> kafkaTemplate,
+            @Value("${app.kafka.topics.order-pending}") String orderPendingTopic,
+            ObjectMapper objectMapper
+        ) {
         this.ordersRepository = ordersRepository;
         this.marketHoursService = marketHoursService;
         this.holdingsService = holdingsService;
         this.orderDtoConverter = orderDtoConverter;
         this.clientsService = clientsService;
         this.instrumentService = instrumentService;
-        this.applicationEventPublisher = applicationEventPublisher;
+        this.kafkaTemplate = kafkaTemplate;
+        this.orderPendingTopic = orderPendingTopic;
         this.marketDataService = marketDataService;
+        this.objectMapper = objectMapper;
     }
 
     // =========================================================
@@ -85,11 +96,11 @@ public class OrdersService {
      * @return a list of fulfilled orders for the specified client
      * @throws IllegalArgumentException if clientId is invalid
      */
-    public List<Order> getFulfilledOrders(Long clientId) {
+    public List<Order> getFulfilledOrdersForClient(Long clientId) {
 
         validateId(clientId, "Client ID");
 
-        return ordersRepository.getFulfilledOrders(clientId);
+        return ordersRepository.getFulfilledOrdersForClient(clientId);
     }
 
     /**
@@ -176,11 +187,15 @@ public class OrdersService {
 
         // Fetch current market price (ask price for buys)
         BigDecimal currentPrice = fetchAskPrice(ticker);
-
-        logger.info("Place buy order: clientId={}, ticker={}, quantity={}, marketPrice={}",
-                clientId, ticker, quantity, currentPrice);
-
+        
+        logger.info("========================================");
+        logger.info("PLACING BUY ORDER");
+        logger.info("Client: {}, Ticker: {}, Quantity: {}, Market Price: {}", 
+                    clientId, ticker, quantity, currentPrice);
+        logger.info("========================================");
+        
         validateBuyOrder(clientId, ticker, quantity, currentPrice);
+        logger.debug("Buy order validation passed: clientId={}, ticker={}", clientId, ticker);
 
         Order order = new Order(
                 null,
@@ -192,12 +207,19 @@ public class OrdersService {
                 currentPrice,
                 OffsetDateTime.now());
 
+
+        logger.debug("Creating order in database: clientId={}, ticker={}, quantity={}, price={}", 
+                    clientId, ticker, quantity, currentPrice);
         Order createdOrder = ordersRepository.createOrder(order);
-
-        logger.info("Buy order created: orderId={}, clientId={}, ticker={}, price={}",
-                createdOrder.getOrderId(), clientId, ticker, currentPrice);
-
-        applicationEventPublisher.publishEvent(createdOrder);
+        logger.info("Buy order created in database: orderId={}, clientId={}, ticker={}, price={}", 
+                    createdOrder.getOrderId(), clientId, ticker, currentPrice);
+        
+        // Publish to Kafka for asynchronous execution
+        logger.info("Publishing order to Kafka for execution: orderId={}, ticker={}", 
+                   createdOrder.getOrderId(), ticker);
+        publishOrderAfterCommit(createdOrder);
+        logger.info("Buy order published to Kafka queue successfully");
+        logger.info("========================================");
         return createdOrder;
     }
 
@@ -229,11 +251,15 @@ public class OrdersService {
 
         // Fetch current market price (bid price for sells)
         BigDecimal currentPrice = fetchBidPrice(ticker);
-
-        logger.info("Place sell order: clientId={}, ticker={}, quantity={}, marketPrice={}",
-                clientId, ticker, quantity, currentPrice);
-
+        
+        logger.info("========================================");
+        logger.info("PLACING SELL ORDER");
+        logger.info("Client: {}, Ticker: {}, Quantity: {}, Market Price: {}", 
+                    clientId, ticker, quantity, currentPrice);
+        logger.info("========================================");
+        
         validateSellOrder(clientId, ticker, quantity, currentPrice);
+        logger.debug("Sell order validation passed: clientId={}, ticker={}", clientId, ticker);
 
         Order order = new Order(
                 null,
@@ -245,17 +271,59 @@ public class OrdersService {
                 currentPrice,
                 OffsetDateTime.now());
 
+        logger.debug("Creating order in database: clientId={}, ticker={}, quantity={}, price={}", 
+                    clientId, ticker, quantity, currentPrice);
         Order createdOrder = ordersRepository.createOrder(order);
-
-        logger.info("Sell order created: orderId={}, clientId={}, ticker={}, price={}",
-                createdOrder.getOrderId(), clientId, ticker, currentPrice);
-
-        applicationEventPublisher.publishEvent(createdOrder);
+        logger.info("Sell order created in database: orderId={}, clientId={}, ticker={}, price={}", 
+                    createdOrder.getOrderId(), clientId, ticker, currentPrice);
+        
+        // Publish to Kafka for asynchronous execution
+        logger.info("Publishing order to Kafka for execution: orderId={}, ticker={}", 
+                   createdOrder.getOrderId(), ticker);
+        publishOrderAfterCommit(createdOrder);
+        logger.info("Sell order published to Kafka queue successfully");
+        logger.info("========================================");
+        
         return createdOrder;
     }
 
     // =========================================================
-    // CANCEL ORDER
+    //                   PUBLISH ORDER HELPER
+    // =========================================================
+    public void publishOrderAfterCommit(Order order) {
+        logger.debug("publishOrderAfterCommit() called: orderId={}, ticker={}, type={}, quantity={}", 
+                     order.getOrderId(), order.getTicker(), order.getOrderType(), order.getQuantity());
+        
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            logger.error("publishOrderAfterCommit() failed: No active transaction for orderId={}", order.getOrderId());
+            throw new IllegalStateException("Order not actively in a transaction.");
+        }
+
+        logger.info("Registering transaction synchronization callback for orderId={}", order.getOrderId());
+        
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                logger.info("Transaction committed. Publishing order to Kafka: orderId={}, ticker={}, topic={}", 
+                           order.getOrderId(), order.getTicker(), orderPendingTopic);
+                try {
+                    String orderJson = objectMapper.writeValueAsString(order);
+                    logger.debug("Order serialized to JSON: orderId={}", order.getOrderId());
+                    kafkaTemplate.send(orderPendingTopic, order.getTicker(), orderJson);
+                    logger.info("Successfully published order to Kafka: orderId={}, ticker={}", 
+                               order.getOrderId(), order.getTicker());
+                } catch (Exception e) {
+                    logger.error("Failed to publish order to Kafka: orderId={}, ticker={}, error={}", 
+                                order.getOrderId(), order.getTicker(), e.getMessage(), e);
+                }
+            }
+        });
+        
+        logger.debug("publishOrderAfterCommit() completed: orderId={}", order.getOrderId());
+    }
+
+    // =========================================================
+    //                       CANCEL ORDER
     // =========================================================
 
     /**
@@ -319,6 +387,29 @@ public class OrdersService {
                     "Only pending orders can be executed.");
         }
 
+        // Fetch CURRENT market price at execution time (not the stale price from placement)
+        BigDecimal currentPrice;
+        if (order.getOrderType() == Order.OrderType.BUY) {
+            currentPrice = fetchAskPrice(order.getTicker());
+        } else {
+            currentPrice = fetchBidPrice(order.getTicker());
+        }
+        
+        // VALIDATION: Re-validate at execution time with current price
+        // This catches cases where price changed significantly since placement
+        if (order.getOrderType() == Order.OrderType.BUY) {
+            validateBuyOrderAtExecution(order.getClientId(), order.getTicker(), order.getQuantity(), currentPrice);
+        } else if (order.getOrderType() == Order.OrderType.SELL) {
+            validateSellOrderAtExecution(order.getClientId(), order.getTicker(), order.getQuantity());
+        }
+        
+        // Update order price to current market price before execution
+        ordersRepository.updateOrderPrice(orderId, currentPrice);
+        order.setPrice(currentPrice);
+        
+        logger.info("Executing order at current market price: orderId={}, ticker={}, type={}, staledPrice={}, currentPrice={}", 
+                    orderId, order.getTicker(), order.getOrderType(), order.getPrice(), currentPrice);
+
         int updated = ordersRepository.updateOrderStatus(
                 orderId,
                 Order.OrderStatus.FULFILLED);
@@ -330,8 +421,8 @@ public class OrdersService {
         }
 
         Order fulfilledOrder = getOrderById(orderId);
-
-        // Update holdings when order is fulfilled
+        
+        // Update holdings when order is fulfilled (also updates client cash based on order price)
         holdingsService.updateHoldingsForOrder(fulfilledOrder);
 
         return fulfilledOrder;
@@ -496,8 +587,92 @@ public class OrdersService {
     }
 
     /**
+     * Re-validates a BUY order at execution time using the CURRENT market price.
+     * This catches cases where price changed significantly since order placement.
+     * Cancels order instead of throwing exception to avoid failing the scheduler.
+     *
+     * @param clientId the ID of the client
+     * @param ticker the ticker symbol
+     * @param quantity the number of shares to buy
+     * @param currentPrice the CURRENT market price (not the placement price)
+     * @throws IllegalArgumentException if client cannot afford the order at current price
+     */
+    private void validateBuyOrderAtExecution(
+            Long clientId,
+            String ticker,
+            int quantity,
+            BigDecimal currentPrice) {
+
+        // Calculate cost at CURRENT price
+        BigDecimal orderCost = currentPrice.multiply(BigDecimal.valueOf(quantity));
+        BigDecimal clientCash = clientsService.getClientProfile(clientId).cashAmount();
+
+        // Account for OTHER pending buy orders (reserved cash)
+        List<Order> pendingBuyOrders = ordersRepository.getPendingBuyOrdersForClient(clientId);
+        BigDecimal reservedCash = BigDecimal.ZERO;
+        for (Order pendingOrder : pendingBuyOrders) {
+            reservedCash = reservedCash.add(
+                pendingOrder.getPrice().multiply(BigDecimal.valueOf(pendingOrder.getQuantity()))
+            );
+        }
+
+        BigDecimal totalNeeded = orderCost.add(reservedCash);
+
+        // If insufficient cash at current price, throw exception (order will be cancelled by scheduler)
+        if (clientCash.compareTo(totalNeeded) < 0) {
+            throw new IllegalArgumentException(
+                    "Insufficient cash at execution. Client has $" + clientCash +
+                    " but order costs $" + orderCost + " at current price (placed at $" + 
+                    (orderCost.divide(BigDecimal.valueOf(quantity), java.math.RoundingMode.HALF_UP)) + ")"
+            );
+        }
+    }
+
+    /**
+     * Re-validates a SELL order at execution time.
+     * Checks if client still has sufficient shares (accounts for pending orders).
+     * Cancels order instead of throwing exception to avoid failing the scheduler.
+     *
+     * @param clientId the ID of the client
+     * @param ticker the ticker symbol
+     * @param quantity the number of shares to sell
+     * @throws IllegalArgumentException if client no longer has sufficient holdings
+     */
+    private void validateSellOrderAtExecution(
+            Long clientId,
+            String ticker,
+            int quantity) {
+
+        // Account for pending sell orders (reserved shares)
+        List<Order> pendingSellOrders = ordersRepository.getPendingSellOrdersForClientAndTicker(clientId, ticker.toUpperCase());
+        int reservedShares = 0;
+        for (Order pendingOrder : pendingSellOrders) {
+            reservedShares += pendingOrder.getQuantity();
+        }
+
+        // Check if client still owns the shares
+        try {
+            com.example.DTOs.holdings.HoldingResponse holding = 
+                holdingsService.getHolding(clientId, ticker.toUpperCase());
+            
+            if (holding.quantity() - reservedShares < quantity) {
+                throw new IllegalArgumentException(
+                        "Insufficient holdings at execution. Client has " + holding.quantity() +
+                        " shares of " + ticker + " but " + reservedShares + " are reserved and trying to sell " + quantity
+                );
+            }
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "Client no longer owns any shares of " + ticker
+            );
+        }
+    }
+
+    /**
      * Validates that a ticker is in valid format.
-     * Valid ticker must be 1-10 alphabetic characters (case-insensitive).
+     * Valid ticker must be 1-10 characters: alphabetic, hyphens, or forward slashes (case-insensitive).
      *
      * @param ticker the ticker symbol to validate
      * @throws IllegalArgumentException if ticker is null, empty, or invalid format
@@ -510,7 +685,7 @@ public class OrdersService {
                     "Ticker cannot be empty.");
         }
 
-        if (!ticker.matches("[A-Za-z]+(-[A-Za-z]+)?")) {
+        if (!ticker.matches("[A-Za-z\\-/]{1,10}")) {
 
             throw new IllegalArgumentException(
                     "Invalid ticker: " + ticker);
@@ -618,8 +793,8 @@ public class OrdersService {
      * @return a list of OrderHistoryView DTOs for fulfilled orders
      * @throws IllegalArgumentException if clientId is invalid
      */
-    public List<OrderHistoryView> getFulfilledOrdersAsDto(Long clientId) {
-        List<Order> orders = getFulfilledOrders(clientId);
+    public List<OrderHistoryView> getFulfilledOrdersForClientAsDto(Long clientId) {
+        List<Order> orders = getFulfilledOrdersForClient(clientId);
         return orderDtoConverter.toOrderHistoryViews(orders);
     }
 

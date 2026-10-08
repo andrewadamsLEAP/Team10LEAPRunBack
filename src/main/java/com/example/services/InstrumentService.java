@@ -4,9 +4,6 @@ import org.springframework.stereotype.Service;
 import com.example.repositories.InstrumentRepository;
 import com.example.entities.Instrument;
 
-import com.example.entities.Instrument;
-import com.example.repositories.InstrumentRepository;
-
 import java.util.List;
 
 @Service
