@@ -43,7 +43,7 @@ public class Employee {
     }
 
      // Getters and Setters
-    public Long getClientId() {
+    public Long getEmployeeId() {
         return employeeId;
     }
 

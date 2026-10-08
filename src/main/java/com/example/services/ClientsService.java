@@ -9,6 +9,7 @@ import com.example.DTOs.clients.ClientReporterView;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.DTOs.clients.LoginResponse;
 import com.example.entities.Client;
+import com.example.exceptions.ClientNotFoundException;
 import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
 import com.example.repositories.ClientsRepository;
@@ -91,7 +92,13 @@ public class ClientsService {
         logger.info("Login attempt for username: {}", request.username());
         
         // TODO: Encode then compare passwords when we do the whole JwT node stuff
-        LoginView loginClient = clientsRepository.findLoginClientByUsername(request.username());
+        LoginView loginClient;
+        try{
+            loginClient = clientsRepository.findLoginClientByUsername(request.username());
+        } catch (Exception e) {
+            logger.error("Login failed: Error occurred while fetching client - {}", request.username(), e);
+            throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
+        }
 
         if (loginClient == null || !loginClient.password().equals(request.password())) {
             logger.warn("Login failed: Invalid credentials for username - {}", request.username());
@@ -116,6 +123,15 @@ public class ClientsService {
         LoginView client = clientsRepository.findLoginClientById(clientId);
         Validate.validateNotNull(client, "Client not found");
 
+        try{
+            client = clientsRepository.findLoginClientById(clientId);
+            if (client == null) {
+                throw new ClientNotFoundException("Client not found");
+            }
+        }catch (Exception e) {  
+                throw new ClientNotFoundException("Client not found");  
+            }  
+        
         if (!client.password().equals(request.currentPassword())) {
             throw new InvalidArgumentsException("Invalid Password Change", "Current password is incorrect");
         }
@@ -155,7 +171,15 @@ public class ClientsService {
      * @throws ClientNotFoundException if the client does not exist
      */
     public ClientProfileView getClientProfile(Long clientId) {
-        Client client = getClientByView(clientId, repo -> repo.findClientById(clientId));
+        Client client;
+        try{
+            client = clientsRepository.findClientById(clientId);
+            if (client == null) {
+                throw new ClientNotFoundException("Client not found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("Client not found");  
+        }  
 
         return new ClientProfileView(
                 client.getClientId(),
@@ -195,8 +219,16 @@ public class ClientsService {
      * @throws ClientNotFoundException if no clients are found
      */
     public List<ClientAdminView> getAllClientDataAdmin() {
-        List<ClientAdminView> clients = clientsRepository.findClientsAsAdmin();
-        Validate.validateListNotEmpty(clients, "No clients found");
+        List<ClientAdminView> clients;
+        try{
+            clients = clientsRepository.findClientsAsAdmin();
+            if (clients == null || clients.isEmpty()) {
+                throw new ClientNotFoundException("Clients not found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("Clients not found");  
+        }  
+
         return clients;
     }
 
@@ -252,7 +284,15 @@ public class ClientsService {
      * @throws UpdateFailedException if the update fails
      */
     public void updateProfile(Long clientId, ClientProfileUpdateRequest request) {
-        Client client = clientsRepository.findClientById(clientId);
+        Client client;
+        try{
+            client = clientsRepository.findClientById(clientId);
+            if (client == null) {
+                throw new ClientNotFoundException("Client not found");
+            }
+        }catch (Exception e) {
+            throw new ClientNotFoundException("Client not found");
+        }
 
         Validate.validateNotNull(client, "Client not found");
 

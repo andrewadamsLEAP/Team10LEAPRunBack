@@ -299,7 +299,7 @@ class ClientsControllerIntegrationTest {
     }
 
     private ChangePasswordRequest changePasswordRequest(String currentPassword, String newPassword) {
-        return new ChangePasswordRequest(currentPassword, newPassword);
+        return new ChangePasswordRequest("test@example.com", currentPassword, newPassword);
     }
 
     private ClientProfileUpdateRequest profileUpdateRequest(String username, String firstName, String lastName) {

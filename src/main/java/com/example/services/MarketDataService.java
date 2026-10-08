@@ -51,13 +51,13 @@ public class MarketDataService {
             MarketHoursService marketHoursService,
             Environment environment,
 
-            @Value("${alpaca.refresh-all:true}")
+            @Value("${alpaca.refresh-all}")
             boolean refreshAll,
 
-            @Value("${alpaca.refresh-forex:false}")
+            @Value("${alpaca.refresh-forex}")
             boolean refreshForex,
 
-            @Value("${alpaca.skip-outside-market-hours:false}")
+            @Value("${alpaca.skip-outside-market-hours}")
             boolean skipOutsideMarketHours) {
 
         this.marketDataRepository =

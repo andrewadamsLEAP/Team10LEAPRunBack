@@ -29,8 +29,8 @@ public class OrderConsumerService {
 
         this.ordersRepository = ordersRepository;
         this.holdingsService = holdingsService;
-        this.objectMapper = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
+        this.objectMapper = new com.fasterxml.jackson.databind.ObjectMapper()
+                .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
                 .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 

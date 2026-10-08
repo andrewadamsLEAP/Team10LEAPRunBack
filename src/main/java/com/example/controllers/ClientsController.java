@@ -41,10 +41,10 @@ public class ClientsController {
         return ResponseEntity.ok(clientsService.login(request));
     }
 
-    @PatchMapping("/password/{clientId}")
+    @PatchMapping("/password")
     public ResponseEntity<Void> changePassword( 
-            @PathVariable Long clientId,
-            @RequestBody @Valid ChangePasswordRequest request) {
+            @RequestBody @Valid ChangePasswordRequest request,
+            @RequestParam Long clientId) {
         clientsService.changePassword(clientId, request);
         return ResponseEntity.noContent().build();
     }
@@ -73,18 +73,5 @@ public class ClientsController {
     @GetMapping("/admin")
     public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
         return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
-    }
-
-    // Reporter endpoints - for reporting/analytics access
-    // TODO: When NestJS JWT is ready, add: @PreAuthorize("hasRole('REPORTER')")
-    @GetMapping("/reporter/{clientId}")
-    public ResponseEntity<ClientReporterView> getClientAsReporter(@PathVariable Long clientId) {
-        return ResponseEntity.ok(clientsService.getClientDataReporter(clientId));
-    }
-
-    // TODO: When NestJS JWT is ready, add: @PreAuthorize("hasRole('REPORTER')")
-    @GetMapping("/reporter")
-    public ResponseEntity<List<ClientReporterView>> getAllClientsAsReporter() {
-        return ResponseEntity.ok(clientsService.getAllClientDataReporter());
     }
 }

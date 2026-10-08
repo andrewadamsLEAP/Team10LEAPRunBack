@@ -87,7 +87,7 @@ class ClientsControllerIntegrationTest {
 
         LoginRequest request = loginRequest("loginuser", "password1");
 
-        mockMvc.perform(post("/api/v1/clients/login")
+        mockMvc.perform(post("/api/v1/clients/login?clientId=" + clientId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginJson(request)))
                 .andExpect(status().isOk())
@@ -108,7 +108,7 @@ class ClientsControllerIntegrationTest {
 
         LoginRequest request = loginRequest("loginfailuser", "wrongpass");
 
-        mockMvc.perform(post("/api/v1/clients/login")
+        mockMvc.perform(post("/api/v1/clients/login?clientId=" + clientId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(loginJson(request)))
                 .andExpect(status().isUnauthorized())
@@ -134,7 +134,7 @@ class ClientsControllerIntegrationTest {
 
         ChangePasswordRequest request = changePasswordRequest("password1", "newpass12");
 
-        mockMvc.perform(patch("/api/v1/clients/password/{clientId}", clientId)
+        mockMvc.perform(patch("/api/v1/clients/password?clientId=" + clientId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(changePasswordJson(request)))
                 .andExpect(status().isNoContent());
@@ -159,7 +159,7 @@ class ClientsControllerIntegrationTest {
 
         ChangePasswordRequest request = changePasswordRequest("wrongpass", "newpass12");
 
-        mockMvc.perform(patch("/api/v1/clients/password/{clientId}", clientId)
+        mockMvc.perform(patch("/api/v1/clients/password?clientId=" + clientId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(changePasswordJson(request)))
                 .andExpect(status().isBadRequest())
@@ -298,7 +298,7 @@ class ClientsControllerIntegrationTest {
     }
 
     private ChangePasswordRequest changePasswordRequest(String currentPassword, String newPassword) {
-        return new ChangePasswordRequest(currentPassword, newPassword);
+        return new ChangePasswordRequest("test@example.com", currentPassword, newPassword);
     }
 
     private ClientProfileUpdateRequest profileUpdateRequest(String username, String firstName, String lastName) {

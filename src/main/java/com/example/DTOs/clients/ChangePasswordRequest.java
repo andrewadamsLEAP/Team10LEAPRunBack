@@ -1,5 +1,6 @@
 package com.example.DTOs.clients;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -13,6 +14,11 @@ import jakarta.validation.constraints.Size;
  */
 
 public record ChangePasswordRequest(
+        @Email
+        @NotBlank
+        @Size(max = 255)
+        String email,
+
         @NotBlank
         @Size(min = 8, max = 30)
         String currentPassword,
