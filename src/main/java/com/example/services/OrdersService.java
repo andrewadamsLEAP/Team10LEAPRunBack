@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -32,9 +33,10 @@ public class OrdersService {
     private final OrderDtoConverter orderDtoConverter;
     private final ClientsService clientsService;
     private final InstrumentService instrumentService;
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaTemplate<String, String> kafkaTemplate;
     private final String orderPendingTopic;
     private final MarketDataService marketDataService;
+    private final ObjectMapper objectMapper;
 
     public OrdersService(
             OrdersRepository ordersRepository,
@@ -44,8 +46,9 @@ public class OrdersService {
             ClientsService clientsService,
             InstrumentService instrumentService,
             MarketDataService marketDataService,
-            KafkaTemplate<String, Object> kafkaTemplate,
-            @Value("${app.kafka.topics.order-pending}") String orderPendingTopic
+            KafkaTemplate<String, String> kafkaTemplate,
+            @Value("${app.kafka.topics.order-pending}") String orderPendingTopic,
+            ObjectMapper objectMapper
         ) {
         this.ordersRepository = ordersRepository;
         this.marketHoursService = marketHoursService;
@@ -56,6 +59,7 @@ public class OrdersService {
         this.kafkaTemplate = kafkaTemplate;
         this.orderPendingTopic = orderPendingTopic;
         this.marketDataService = marketDataService;
+        this.objectMapper = objectMapper;
     }
 
     // =========================================================
@@ -303,7 +307,9 @@ public class OrdersService {
                 logger.info("Transaction committed. Publishing order to Kafka: orderId={}, ticker={}, topic={}", 
                            order.getOrderId(), order.getTicker(), orderPendingTopic);
                 try {
-                    kafkaTemplate.send(orderPendingTopic, order.getTicker(), order);
+                    String orderJson = objectMapper.writeValueAsString(order);
+                    logger.debug("Order serialized to JSON: orderId={}", order.getOrderId());
+                    kafkaTemplate.send(orderPendingTopic, order.getTicker(), orderJson);
                     logger.info("Successfully published order to Kafka: orderId={}, ticker={}", 
                                order.getOrderId(), order.getTicker());
                 } catch (Exception e) {

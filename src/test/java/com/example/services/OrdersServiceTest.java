@@ -4,6 +4,7 @@ import com.example.DTOs.orders.OrderResponse;
 import com.example.entities.Order;
 import com.example.entities.Instrument;
 import com.example.repositories.OrdersRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -30,8 +31,9 @@ class OrdersServiceTest {
     private OrderDtoConverter orderDtoConverter;
     private ClientsService clientsService;
     private InstrumentService instrumentService;
-    private KafkaTemplate<String, Object> kafkaTemplate;
+    private KafkaTemplate<String, String> kafkaTemplate;
     private MarketDataService marketDataService;
+    private ObjectMapper objectMapper;
     private OrdersService ordersService;
 
     @BeforeEach
@@ -43,9 +45,17 @@ class OrdersServiceTest {
         clientsService = mock(ClientsService.class);
         instrumentService = mock(InstrumentService.class);
         @SuppressWarnings("unchecked")
-        KafkaTemplate<String, Object> tempKafka = mock(KafkaTemplate.class);
+        KafkaTemplate<String, String> tempKafka = mock(KafkaTemplate.class);
         kafkaTemplate = tempKafka;
         marketDataService = mock(MarketDataService.class);
+        objectMapper = mock(ObjectMapper.class);
+        
+        // Setup objectMapper to return a JSON string when writeValueAsString is called
+        try {
+            when(objectMapper.writeValueAsString(any(Order.class))).thenReturn("{\"orderId\":1,\"status\":\"PENDING\"}");
+        } catch (Exception e) {
+            // Handle checked exception from ObjectMapper
+        }
         
         ordersService = new OrdersService(
                 ordersRepository,
@@ -56,7 +66,8 @@ class OrdersServiceTest {
                 instrumentService,
                 marketDataService,
                 kafkaTemplate,
-                "order-pending-topic"
+                "order-pending-topic",
+                objectMapper
         );
     }
 
@@ -99,7 +110,7 @@ class OrdersServiceTest {
             verify(marketDataService).getLatestPrice(ticker.toUpperCase());
             verify(clientsService, times(2)).getClientProfile(clientId);
             verify(instrumentService).getInstrumentByTicker(ticker);
-            verify(kafkaTemplate).send(eq("order-pending-topic"), eq(ticker.toUpperCase()), any(Order.class));
+            verify(kafkaTemplate).send(eq("order-pending-topic"), eq(ticker.toUpperCase()), any(String.class));
         }
     }
 
@@ -259,7 +270,7 @@ class OrdersServiceTest {
             verify(marketDataService).getLatestPrice(ticker.toUpperCase());
             verify(clientsService).getClientProfile(clientId);
             verify(instrumentService).getInstrumentByTicker(ticker);
-            verify(kafkaTemplate).send(eq("order-pending-topic"), eq(ticker.toUpperCase()), any(Order.class));
+            verify(kafkaTemplate).send(eq("order-pending-topic"), eq(ticker.toUpperCase()), any(String.class));
         }
     }
 
