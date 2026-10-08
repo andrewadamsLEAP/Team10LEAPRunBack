@@ -31,8 +31,26 @@ import java.util.Map;
 @Profile("!test")  // Exclude from test profile - tests use KafkaTestConfig instead
 public class KafkaConfig {
 
-    @Value("${spring.kafka.bootstrap-servers:localhost:9092}")
+    @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
+
+    @Value("${app.kafka.producer.acks}")
+    private String producerAcks;
+
+    @Value("${app.kafka.producer.retries}")
+    private int producerRetries;
+
+    @Value("${app.kafka.producer.retry-backoff-ms}")
+    private int retryBackoffMs;
+
+    @Value("${app.kafka.producer.compression-type}")
+    private String compressionType;
+
+    @Value("${app.kafka.consumer.group-id}")
+    private String consumerGroupId;
+
+    @Value("${app.kafka.consumer.auto-offset-reset}")
+    private String autoOffsetReset;
 
     @Bean
     public ObjectMapper objectMapper() {
@@ -42,21 +60,21 @@ public class KafkaConfig {
     }
 
     /**
-     * Configure consumer factory with connection and deserialization settings
+     * Configures the consumer factory with connection and deserialization settings
      */
     @Bean
     public ConsumerFactory<String, String> consumerFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "trading-app-group");
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, consumerGroupId);
         props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, autoOffsetReset);
         return new DefaultKafkaConsumerFactory<>(props);
     }
 
     /**
-     * Configure Kafka listener container factory for consuming messages
+     * Configures the Kafka listener container factory for consuming messages
      */
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
@@ -67,7 +85,7 @@ public class KafkaConfig {
     }
 
     /**
-     * Configure producer factory with connection and serialization settings
+     * Configures the  producer factory with connection and serialization settings
      */
     @Bean
     public ProducerFactory<String, String> producerFactory() {
@@ -75,15 +93,15 @@ public class KafkaConfig {
         configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        configProps.put(ProducerConfig.ACKS_CONFIG, "all");
-        configProps.put(ProducerConfig.RETRIES_CONFIG, 3);
-        configProps.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, 1000);
-        configProps.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, "gzip");
+        configProps.put(ProducerConfig.ACKS_CONFIG, producerAcks);
+        configProps.put(ProducerConfig.RETRIES_CONFIG, producerRetries);
+        configProps.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, retryBackoffMs);
+        configProps.put(ProducerConfig.COMPRESSION_TYPE_CONFIG, compressionType);
         return new DefaultKafkaProducerFactory<>(configProps);
     }
 
     /**
-     * Configure KafkaTemplate for sending messages
+     * Configures KafkaTemplate for sending messages
      */
     @Bean
     public KafkaTemplate<String, String> kafkaTemplate() {

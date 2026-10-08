@@ -42,19 +42,19 @@ public AlpacaClient(
         @Value("${alpaca.forex-base-url:https://data.alpaca.markets/v1beta1/forex/latest/rates}")
         String forexBaseUrl,
 
-        @Value("${alpaca.api-key:}")
+        @Value("${alpaca.api-key}")
         String apiKey,
 
-        @Value("${alpaca.api-secret:}")
+        @Value("${alpaca.api-secret}")
         String apiSecret,
 
-        @Value("${alpaca.request-timeout-ms:5000}")
+        @Value("${alpaca.request-timeout-ms}")
         long requestTimeoutMs,
 
-        @Value("${alpaca.max-retries:2}")
+        @Value("${alpaca.max-retries}")
         int maxRetries,
 
-        @Value("${alpaca.retry-backoff-ms:2500}")
+        @Value("${alpaca.retry-backoff-ms}")
         long retryBackoffMs) {
 
     this.apiKey = apiKey;
