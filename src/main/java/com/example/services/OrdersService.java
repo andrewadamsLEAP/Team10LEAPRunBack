@@ -334,6 +334,21 @@ public class OrdersService {
         // Update holdings when order is fulfilled
         holdingsService.updateHoldingsForOrder(fulfilledOrder);
 
+        // Update client cash based on order type
+        BigDecimal transactionAmount = fulfilledOrder.getPrice()
+                .multiply(BigDecimal.valueOf(fulfilledOrder.getQuantity()));
+
+        if (fulfilledOrder.getOrderType() == Order.OrderType.BUY) {
+            // Subtract cash for buy orders (negative amount)
+            clientsService.updateCashAmount(fulfilledOrder.getClientId(), transactionAmount.negate());
+        } else if (fulfilledOrder.getOrderType() == Order.OrderType.SELL) {
+            // Add cash for sell orders (positive amount)
+            clientsService.updateCashAmount(fulfilledOrder.getClientId(), transactionAmount);
+        }
+
+        logger.info("Cash updated for order execution: orderId={}, orderType={}, amount={}",
+                orderId, fulfilledOrder.getOrderType(), transactionAmount);
+
         return fulfilledOrder;
     }
 

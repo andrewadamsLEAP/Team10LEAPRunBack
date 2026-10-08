@@ -16,16 +16,19 @@ class OrdersConsumerServiceTest {
 
     private OrdersRepository ordersRepository;
     private HoldingsService holdingsService;
+    private ClientsService clientsService;
     private OrderConsumerService orderConsumerService;
 
     @BeforeEach
     void setUp() {
         ordersRepository = mock(OrdersRepository.class);
         holdingsService = mock(HoldingsService.class);
+        clientsService = mock(ClientsService.class);
 
         orderConsumerService = new OrderConsumerService(
                 ordersRepository,
-                holdingsService
+                holdingsService,
+                clientsService
         );
     }
 
@@ -44,6 +47,7 @@ class OrdersConsumerServiceTest {
         assertEquals(Order.OrderStatus.FULFILLED, result.getOrderStatus());
         verify(ordersRepository).updateOrderStatus(1L, Order.OrderStatus.FULFILLED);
         verify(holdingsService).updateHoldingsForOrder(fulfilledOrder);
+        verify(clientsService).updateCashAmount(1L, new BigDecimal("150.00").multiply(BigDecimal.valueOf(10)).negate());
     }
 
     @Test

@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
+import java.math.BigDecimal;
+
 @Service
 @ConditionalOnProperty(name = "app.kafka.enabled", havingValue = "true")
 public class OrderConsumerService {
@@ -20,14 +22,17 @@ public class OrderConsumerService {
 
     private final OrdersRepository ordersRepository;
     private final HoldingsService holdingsService;
+    private final ClientsService clientsService;
     private final ObjectMapper objectMapper;
 
     public OrderConsumerService(
             OrdersRepository ordersRepository,
-            HoldingsService holdingsService) {
+            HoldingsService holdingsService,
+            ClientsService clientsService) {
 
         this.ordersRepository = ordersRepository;
         this.holdingsService = holdingsService;
+        this.clientsService = clientsService;
         this.objectMapper = new com.fasterxml.jackson.databind.ObjectMapper()
                 .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
                 .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
@@ -71,10 +76,26 @@ public class OrderConsumerService {
             );
         }
 
+        // Refetch the order from database to ensure enums are properly populated
         Order fulfilledOrder = getOrderById(orderId);
 
         // Update holdings when order is fulfilled
         holdingsService.updateHoldingsForOrder(fulfilledOrder);
+
+        // Update client cash based on order type
+        BigDecimal transactionAmount = fulfilledOrder.getPrice()
+                .multiply(BigDecimal.valueOf(fulfilledOrder.getQuantity()));
+
+        if (fulfilledOrder.getOrderType() == Order.OrderType.BUY) {
+            // Subtract cash for buy orders (negative amount)
+            clientsService.updateCashAmount(fulfilledOrder.getClientId(), transactionAmount.negate());
+        } else if (fulfilledOrder.getOrderType() == Order.OrderType.SELL) {
+            // Add cash for sell orders (positive amount)
+            clientsService.updateCashAmount(fulfilledOrder.getClientId(), transactionAmount);
+        }
+
+        logger.info("Cash updated for order execution via Kafka: orderId={}, orderType={}, amount={}",
+                orderId, fulfilledOrder.getOrderType(), transactionAmount);
 
         return fulfilledOrder;
     }
