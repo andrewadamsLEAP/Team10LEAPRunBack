@@ -56,7 +56,7 @@ public interface OrdersMapper {
         WHERE order_status = 'FULFILLED'
           AND client_id = #{clientId}
         """)
-    List<Order> getFulfilledOrders(
+    List<Order> getFulfilledOrdersForClient(
             @Param("clientId") Long clientId
     );
 

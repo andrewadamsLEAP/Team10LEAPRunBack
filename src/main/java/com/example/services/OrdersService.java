@@ -93,11 +93,11 @@ public class OrdersService {
      * @return a list of fulfilled orders for the specified client
      * @throws IllegalArgumentException if clientId is invalid
      */
-    public List<Order> getFulfilledOrders(Long clientId) {
+    public List<Order> getFulfilledOrdersForClient(Long clientId) {
 
         validateId(clientId, "Client ID");
 
-        return ordersRepository.getFulfilledOrders(clientId);
+        return ordersRepository.getFulfilledOrdersForClient(clientId);
     }
 
     /**
@@ -752,8 +752,8 @@ public class OrdersService {
      * @return a list of OrderHistoryView DTOs for fulfilled orders
      * @throws IllegalArgumentException if clientId is invalid
      */
-    public List<OrderHistoryView> getFulfilledOrdersAsDto(Long clientId) {
-        List<Order> orders = getFulfilledOrders(clientId);
+    public List<OrderHistoryView> getFulfilledOrdersForClientAsDto(Long clientId) {
+        List<Order> orders = getFulfilledOrdersForClient(clientId);
         return orderDtoConverter.toOrderHistoryViews(orders);
     }
 

@@ -57,7 +57,7 @@ public OrderResponse getOrderById(
 public List<OrderHistoryView> getFulfilledOrders(
         @PathVariable Long clientId) {
 
-    return ordersService.getFulfilledOrdersAsDto(clientId);
+    return ordersService.getFulfilledOrdersForClientAsDto(clientId);
 }
 
 

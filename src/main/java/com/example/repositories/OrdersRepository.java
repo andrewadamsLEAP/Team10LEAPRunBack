@@ -47,9 +47,9 @@ public class OrdersRepository {
      * @param clientId the ID of the client
      * @return a list of fulfilled orders for the specified client
      */
-    public List<Order> getFulfilledOrders(Long clientId) {
+    public List<Order> getFulfilledOrdersForClient(Long clientId) {
 
-        return ordersMapper.getFulfilledOrders(clientId);
+        return ordersMapper.getFulfilledOrdersForClient(clientId);
     }
 
 

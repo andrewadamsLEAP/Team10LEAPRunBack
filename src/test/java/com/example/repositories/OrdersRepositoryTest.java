@@ -57,14 +57,14 @@ class OrdersRepositoryTest {
         order.setOrderStatus(Order.OrderStatus.FULFILLED);
         mockOrders.add(order);
 
-        when(ordersMapper.getFulfilledOrders(clientId)).thenReturn(mockOrders);
+        when(ordersMapper.getFulfilledOrdersForClient(clientId)).thenReturn(mockOrders);
 
-        List<Order> result = ordersRepository.getFulfilledOrders(clientId);
+        List<Order> result = ordersRepository.getFulfilledOrdersForClient(clientId);
 
         assertNotNull(result);
         assertEquals(1, result.size());
         assertEquals(Order.OrderStatus.FULFILLED, result.get(0).getOrderStatus());
-        verify(ordersMapper, times(1)).getFulfilledOrders(clientId);
+        verify(ordersMapper, times(1)).getFulfilledOrdersForClient(clientId);
     }
 
     /**
@@ -184,9 +184,9 @@ class OrdersRepositoryTest {
     void getFulfilledOrders_shouldReturnEmptyListWhenNoOrders() {
         Long clientId = 1L;
 
-        when(ordersMapper.getFulfilledOrders(clientId)).thenReturn(new ArrayList<>());
+        when(ordersMapper.getFulfilledOrdersForClient(clientId)).thenReturn(new ArrayList<>());
 
-        List<Order> result = ordersRepository.getFulfilledOrders(clientId);
+        List<Order> result = ordersRepository.getFulfilledOrdersForClient(clientId);
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
