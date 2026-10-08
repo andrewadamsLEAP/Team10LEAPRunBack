@@ -30,8 +30,6 @@ public class OrderProducerService {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void produceOrder(Order order) {
-        logger.info("before try: {}", order.getOrderId());
-
         try {
             String orderJson = objectMapper.writeValueAsString(order);
             logger.info("succeeded to write value as string in mapper");
