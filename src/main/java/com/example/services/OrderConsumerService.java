@@ -3,16 +3,24 @@ package com.example.services;
 import com.example.entities.Order;
 import com.example.exceptions.InvalidArgumentsException;
 import com.example.repositories.OrdersRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
 @Service
+@ConditionalOnProperty(name = "app.kafka.enabled", havingValue = "true")
 public class OrderConsumerService {
+
+    private static final Logger logger = LoggerFactory.getLogger(OrderConsumerService.class);
 
     private final OrdersRepository ordersRepository;
     private final HoldingsService holdingsService;
+    private final ObjectMapper objectMapper;
 
     public OrderConsumerService(
             OrdersRepository ordersRepository,
@@ -20,14 +28,27 @@ public class OrderConsumerService {
 
         this.ordersRepository = ordersRepository;
         this.holdingsService = holdingsService;
+        this.objectMapper = new com.fasterxml.jackson.databind.ObjectMapper()
+                .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+                .disable(com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     // =========================================================
     //                    EXECUTE ORDER
     // =========================================================
 
-    @KafkaListener(topics = "${app.kafka.topics.order-pending}")
+    @KafkaListener(topics = "${app.kafka.topics.order-pending:order-pending-topic}", groupId = "trading-app-group")
     @Transactional
+    public void consumeOrder(String orderJson) {
+        try {
+            Order order = objectMapper.readValue(orderJson, Order.class);
+            logger.info("Consumed order from Kafka: {}", order.getOrderId());
+            executeOrder(order);
+        } catch (Exception e) {
+            logger.error("Failed to consume or execute order: {}", orderJson, e);
+        }
+    }
+
     public Order executeOrder(Order order) {
         Long orderId = order.getOrderId();
 
