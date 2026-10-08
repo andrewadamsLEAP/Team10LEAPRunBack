@@ -18,27 +18,8 @@ import java.util.List;
  * 
  * Responsibilities:
  * 1. Every 5 seconds: Poll database for PENDING orders and execute them with current market prices
- * 2. Every hour: Clean up stale orders (orders from before today) and mark them as CANCELLED
  * 
- * Market Hours Logic:
- * - STOCK orders: Only execute during market hours (9:30 AM - 4:00 PM ET, Mon-Fri)
- * - CRYPTO orders: Execute 24/7
- * 
- * Price Validation:
- * - Fetch current market price at execution time (not placement time)
- * - For BUY orders: Use current ask price (what sellers are asking)
- * - For SELL orders: Use current bid price (what buyers are bidding)
- * - Re-validate client has sufficient cash/holdings at current price
- * - If validation fails: Cancel order instead of error
- * 
- * Execution Flow:
- * 1. Check if order is still PENDING
- * 2. If STOCK: Check if market is open; cancel if closed
- * 3. Fetch current market price
- * 4. Update order.price to current price
- * 5. Re-validate cash/holdings at current price
- * 6. If valid: Execute order, update holdings, update cash, mark FULFILLED
- * 7. If invalid: Cancel order
+ * Note: Stale order cleanup is handled by CleanStaleOrdersService (runs every hour)
  */
 @Service
 @Profile("!test")
@@ -62,11 +43,12 @@ public class OrderExecutionScheduler {
     }
 
     /**
-     * Execute all pending orders every 5 seconds
-     * Runs asynchronously to prevent blocking market data refresh
+     * Execute pending orders every 5 seconds
+     * Checks market hours for STOCK orders, executes if valid
      */
-    @Scheduled(fixedDelay = 5000, initialDelay = 10000)
+    @Scheduled(fixedDelay = 5000, initialDelay = 1000)
     @Async
+    @Transactional
     public void executePendingOrders() {
         logger.debug("Starting execution of pending orders");
 
@@ -110,53 +92,6 @@ public class OrderExecutionScheduler {
 
         } catch (Exception e) {
             logger.error("Error in pending order execution scheduler", e);
-        }
-    }
-
-    /**
-     * Clean up stale orders every hour
-     * Cancels all PENDING orders from before today
-     * Prevents old orders from lingering in PENDING state
-     */
-    @Scheduled(fixedDelay = 3600000, initialDelay = 120000)  // 1 hour delay, 2 minute initial delay
-    @Async
-    @Transactional
-    public void cancelStaleOrders() {
-        logger.debug("Starting cleanup of stale pending orders");
-
-        try {
-            List<Order> allPendingOrders = ordersRepository.getPendingOrders();
-
-            if (allPendingOrders == null || allPendingOrders.isEmpty()) {
-                logger.debug("No pending orders to check for staleness");
-                return;
-            }
-
-            LocalDate today = LocalDate.now();
-            int staleCount = 0;
-
-            for (Order order : allPendingOrders) {
-                // Extract date from order_date (OffsetDateTime)
-                LocalDate orderDate = order.getOrderDate().toLocalDate();
-
-                // If order is from before today, cancel it
-                if (orderDate.isBefore(today)) {
-                    logger.info("Cancelling stale order {} placed on {}", order.getOrderId(), orderDate);
-                    try {
-                        ordersService.cancelOrder(order.getOrderId());
-                        staleCount++;
-                    } catch (Exception e) {
-                        logger.error("Error cancelling stale order {}", order.getOrderId(), e);
-                    }
-                }
-            }
-
-            if (staleCount > 0) {
-                logger.info("Stale order cleanup complete. Cancelled {} orders", staleCount);
-            }
-
-        } catch (Exception e) {
-            logger.error("Error in stale order cleanup scheduler", e);
         }
     }
 

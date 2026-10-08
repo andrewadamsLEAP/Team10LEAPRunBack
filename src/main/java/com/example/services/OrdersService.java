@@ -184,10 +184,14 @@ public class OrdersService {
         // Fetch current market price (ask price for buys)
         BigDecimal currentPrice = fetchAskPrice(ticker);
         
-        logger.info("Place buy order: clientId={}, ticker={}, quantity={}, marketPrice={}", 
+        logger.info("========================================");
+        logger.info("PLACING BUY ORDER");
+        logger.info("Client: {}, Ticker: {}, Quantity: {}, Market Price: {}", 
                     clientId, ticker, quantity, currentPrice);
+        logger.info("========================================");
         
         validateBuyOrder(clientId, ticker, quantity, currentPrice);
+        logger.debug("Buy order validation passed: clientId={}, ticker={}", clientId, ticker);
 
         Order order = new Order(
                 null,
@@ -200,9 +204,19 @@ public class OrdersService {
                 OffsetDateTime.now()
         );
 
+
+        logger.debug("Creating order in database: clientId={}, ticker={}, quantity={}, price={}", 
+                    clientId, ticker, quantity, currentPrice);
         Order createdOrder = ordersRepository.createOrder(order);
-        logger.info("Buy order created: orderId={}, clientId={}, ticker={}, price={}", 
+        logger.info("Buy order created in database: orderId={}, clientId={}, ticker={}, price={}", 
                     createdOrder.getOrderId(), clientId, ticker, currentPrice);
+        
+        // Publish to Kafka for asynchronous execution
+        logger.info("Publishing order to Kafka for execution: orderId={}, ticker={}", 
+                   createdOrder.getOrderId(), ticker);
+        publishOrderAfterCommit(createdOrder);
+        logger.info("Buy order published to Kafka queue successfully");
+        logger.info("========================================");
         return createdOrder;
     }
 
@@ -232,10 +246,14 @@ public class OrdersService {
         // Fetch current market price (bid price for sells)
         BigDecimal currentPrice = fetchBidPrice(ticker);
         
-        logger.info("Place sell order: clientId={}, ticker={}, quantity={}, marketPrice={}", 
+        logger.info("========================================");
+        logger.info("PLACING SELL ORDER");
+        logger.info("Client: {}, Ticker: {}, Quantity: {}, Market Price: {}", 
                     clientId, ticker, quantity, currentPrice);
+        logger.info("========================================");
         
         validateSellOrder(clientId, ticker, quantity, currentPrice);
+        logger.debug("Sell order validation passed: clientId={}, ticker={}", clientId, ticker);
 
         Order order = new Order(
                 null,
@@ -248,9 +266,19 @@ public class OrdersService {
                 OffsetDateTime.now()
         );
 
+        logger.debug("Creating order in database: clientId={}, ticker={}, quantity={}, price={}", 
+                    clientId, ticker, quantity, currentPrice);
         Order createdOrder = ordersRepository.createOrder(order);
-        logger.info("Sell order created: orderId={}, clientId={}, ticker={}, price={}", 
+        logger.info("Sell order created in database: orderId={}, clientId={}, ticker={}, price={}", 
                     createdOrder.getOrderId(), clientId, ticker, currentPrice);
+        
+        // Publish to Kafka for asynchronous execution
+        logger.info("Publishing order to Kafka for execution: orderId={}, ticker={}", 
+                   createdOrder.getOrderId(), ticker);
+        publishOrderAfterCommit(createdOrder);
+        logger.info("Sell order published to Kafka queue successfully");
+        logger.info("========================================");
+        
         return createdOrder;
     }
 
@@ -258,16 +286,33 @@ public class OrdersService {
     //                   PUBLISH ORDER HELPER
     // =========================================================
     public void publishOrderAfterCommit(Order order) {
+        logger.debug("publishOrderAfterCommit() called: orderId={}, ticker={}, type={}, quantity={}", 
+                     order.getOrderId(), order.getTicker(), order.getOrderType(), order.getQuantity());
+        
         if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            logger.error("publishOrderAfterCommit() failed: No active transaction for orderId={}", order.getOrderId());
             throw new IllegalStateException("Order not actively in a transaction.");
         }
 
+        logger.info("Registering transaction synchronization callback for orderId={}", order.getOrderId());
+        
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCommit() {
-                kafkaTemplate.send(orderPendingTopic, order.getTicker(), order);
+                logger.info("Transaction committed. Publishing order to Kafka: orderId={}, ticker={}, topic={}", 
+                           order.getOrderId(), order.getTicker(), orderPendingTopic);
+                try {
+                    kafkaTemplate.send(orderPendingTopic, order.getTicker(), order);
+                    logger.info("Successfully published order to Kafka: orderId={}, ticker={}", 
+                               order.getOrderId(), order.getTicker());
+                } catch (Exception e) {
+                    logger.error("Failed to publish order to Kafka: orderId={}, ticker={}, error={}", 
+                                order.getOrderId(), order.getTicker(), e.getMessage(), e);
+                }
             }
         });
+        
+        logger.debug("publishOrderAfterCommit() completed: orderId={}", order.getOrderId());
     }
 
     // =========================================================

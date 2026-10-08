@@ -5,9 +5,11 @@ import com.example.entities.Order;
 import com.example.entities.Instrument;
 import com.example.repositories.OrdersRepository;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
@@ -55,17 +57,7 @@ class OrdersServiceTest {
                 marketDataService,
                 kafkaTemplate,
                 "order-pending-topic"
-                
         );
-
-        TransactionSynchronizationManager.initSynchronization();
-    }
-
-    @AfterEach
-    void tearDown() {
-        if (TransactionSynchronizationManager.isSynchronizationActive()) {
-            TransactionSynchronizationManager.clearSynchronization();
-        }
     }
 
     // ========== PLACE BUY ORDER TESTS ==========
@@ -78,27 +70,37 @@ class OrdersServiceTest {
         BigDecimal askPrice = new BigDecimal("150.00");
         BigDecimal cashAmount = new BigDecimal("5000.00");
 
-        when(marketDataService.getLatestPrice(ticker.toUpperCase())).thenReturn(
-                List.of(testPriceData(ticker, askPrice, new BigDecimal("149.00")))
-        );
-        when(marketHoursService.isUsMarketHours()).thenReturn(true);
-        when(clientsService.getClientProfile(clientId)).thenReturn(
-                new com.example.DTOs.clients.ClientProfileView(clientId, "user@test.com", "testuser", "Test", "User", cashAmount)
-        );
-        when(instrumentService.getInstrumentByTicker(ticker)).thenReturn(instrument(ticker, "STOCK"));
-        when(ordersRepository.getPendingBuyOrdersForClient(clientId)).thenReturn(Collections.emptyList());
-        when(ordersRepository.createOrder(any(Order.class))).thenReturn(
-                order(1L, clientId, ticker, Order.OrderType.BUY, quantity, askPrice)
-        );
+        try (MockedStatic<TransactionSynchronizationManager> mockedTsm = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            mockedTsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any(TransactionSynchronization.class))).thenAnswer(invocation -> {
+                TransactionSynchronization sync = invocation.getArgument(0);
+                sync.afterCommit();
+                return null;
+            });
 
-        Order result = ordersService.placeBuyOrder(clientId, ticker, quantity);
+            when(marketDataService.getLatestPrice(ticker.toUpperCase())).thenReturn(
+                    List.of(testPriceData(ticker, askPrice, new BigDecimal("149.00")))
+            );
+            when(marketHoursService.isUsMarketHours()).thenReturn(true);
+            when(clientsService.getClientProfile(clientId)).thenReturn(
+                    new com.example.DTOs.clients.ClientProfileView(clientId, "user@test.com", "testuser", "Test", "User", cashAmount)
+            );
+            when(instrumentService.getInstrumentByTicker(ticker)).thenReturn(instrument(ticker, "STOCK"));
+            when(ordersRepository.getPendingBuyOrdersForClient(clientId)).thenReturn(Collections.emptyList());
+            when(ordersRepository.createOrder(any(Order.class))).thenReturn(
+                    order(1L, clientId, ticker, Order.OrderType.BUY, quantity, askPrice)
+            );
 
-        assertNotNull(result);
-        assertEquals(Order.OrderType.BUY, result.getOrderType());
-        assertEquals(ticker.toUpperCase(), result.getTicker());
-        verify(marketDataService).getLatestPrice(ticker.toUpperCase());
-        verify(clientsService, times(2)).getClientProfile(clientId);
-        verify(instrumentService).getInstrumentByTicker(ticker);
+            Order result = ordersService.placeBuyOrder(clientId, ticker, quantity);
+
+            assertNotNull(result);
+            assertEquals(Order.OrderType.BUY, result.getOrderType());
+            assertEquals(ticker.toUpperCase(), result.getTicker());
+            verify(marketDataService).getLatestPrice(ticker.toUpperCase());
+            verify(clientsService, times(2)).getClientProfile(clientId);
+            verify(instrumentService).getInstrumentByTicker(ticker);
+            verify(kafkaTemplate).send(eq("order-pending-topic"), eq(ticker.toUpperCase()), any(Order.class));
+        }
     }
 
     @Test
@@ -225,30 +227,40 @@ class OrdersServiceTest {
         int quantity = 5;
         BigDecimal bidPrice = new BigDecimal("160.00");
 
-        when(marketDataService.getLatestPrice(ticker.toUpperCase())).thenReturn(
-                List.of(testPriceData(ticker, new BigDecimal("161.00"), bidPrice))
-        );
-        when(marketHoursService.isUsMarketHours()).thenReturn(true);
-        when(clientsService.getClientProfile(clientId)).thenReturn(
-                new com.example.DTOs.clients.ClientProfileView(clientId, "user@test.com", "testuser", "Test", "User", new BigDecimal("5000.00"))
-        );
-        when(instrumentService.getInstrumentByTicker(ticker)).thenReturn(instrument(ticker, "STOCK"));
-        when(ordersRepository.getPendingSellOrdersForClientAndTicker(clientId, ticker.toUpperCase()))
-                .thenReturn(Collections.emptyList());
-        when(holdingsService.getHolding(clientId, ticker.toUpperCase())).thenReturn(
-                new com.example.DTOs.holdings.HoldingResponse(clientId, ticker, 10)
-        );
-        when(ordersRepository.createOrder(any(Order.class))).thenReturn(
-                order(2L, clientId, ticker, Order.OrderType.SELL, quantity, bidPrice)
-        );
+        try (MockedStatic<TransactionSynchronizationManager> mockedTsm = mockStatic(TransactionSynchronizationManager.class)) {
+            mockedTsm.when(TransactionSynchronizationManager::isSynchronizationActive).thenReturn(true);
+            mockedTsm.when(() -> TransactionSynchronizationManager.registerSynchronization(any(TransactionSynchronization.class))).thenAnswer(invocation -> {
+                TransactionSynchronization sync = invocation.getArgument(0);
+                sync.afterCommit();
+                return null;
+            });
 
-        Order result = ordersService.placeSellOrder(clientId, ticker, quantity);
+            when(marketDataService.getLatestPrice(ticker.toUpperCase())).thenReturn(
+                    List.of(testPriceData(ticker, new BigDecimal("161.00"), bidPrice))
+            );
+            when(marketHoursService.isUsMarketHours()).thenReturn(true);
+            when(clientsService.getClientProfile(clientId)).thenReturn(
+                    new com.example.DTOs.clients.ClientProfileView(clientId, "user@test.com", "testuser", "Test", "User", new BigDecimal("5000.00"))
+            );
+            when(instrumentService.getInstrumentByTicker(ticker)).thenReturn(instrument(ticker, "STOCK"));
+            when(ordersRepository.getPendingSellOrdersForClientAndTicker(clientId, ticker.toUpperCase()))
+                    .thenReturn(Collections.emptyList());
+            when(holdingsService.getHolding(clientId, ticker.toUpperCase())).thenReturn(
+                    new com.example.DTOs.holdings.HoldingResponse(clientId, ticker, 10)
+            );
+            when(ordersRepository.createOrder(any(Order.class))).thenReturn(
+                    order(2L, clientId, ticker, Order.OrderType.SELL, quantity, bidPrice)
+            );
 
-        assertNotNull(result);
-        assertEquals(Order.OrderType.SELL, result.getOrderType());
-        verify(marketDataService).getLatestPrice(ticker.toUpperCase());
-        verify(clientsService).getClientProfile(clientId);
-        verify(instrumentService).getInstrumentByTicker(ticker);
+            Order result = ordersService.placeSellOrder(clientId, ticker, quantity);
+
+            assertNotNull(result);
+            assertEquals(Order.OrderType.SELL, result.getOrderType());
+            verify(marketDataService).getLatestPrice(ticker.toUpperCase());
+            verify(clientsService).getClientProfile(clientId);
+            verify(instrumentService).getInstrumentByTicker(ticker);
+            verify(kafkaTemplate).send(eq("order-pending-topic"), eq(ticker.toUpperCase()), any(Order.class));
+        }
     }
 
     @Test

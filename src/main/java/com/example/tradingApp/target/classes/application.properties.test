@@ -1,0 +1,56 @@
+# PostgreSQL runtime configuration.
+# Override these with environment variables when needed.
+
+spring.datasource.url=${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:port/db}
+spring.datasource.username=${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:teamuser}}
+spring.datasource.password=${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+
+# ============================================================
+# Alpaca  and Finnhub configuration
+# ============================================================
+
+alpaca.api-key=${ALPACA_API_KEY:}
+alpaca.api-secret=${ALPACA_API_SECRET:}
+finnhub.api-key=$(FUNNHUB_API_KEY:)
+
+
+# ============================================================
+# Alpaca data endpoints
+# ============================================================
+
+alpaca.stocks-base-url=https://data.alpaca.markets/v2/stocks
+
+alpaca.crypto-base-url=https://data.alpaca.markets/v1beta3/crypto/us
+
+alpaca.forex-base-url=https://data.alpaca.markets/v1beta1/forex/rates
+
+
+# ============================================================
+# Finnhub data endpoints
+# ============================================================
+
+finnhub.finnhub-base-url=https://finnhub.io/api/v1
+
+# ============================================================
+# Refresh configuration
+# ============================================================
+
+alpaca.refresh-all=true
+
+alpaca.refresh-stocks=true
+
+alpaca.refresh-crypto=true
+
+alpaca.refresh-forex=false
+
+alpaca.refresh-delay-ms=2000
+
+alpaca.max-retries=2
+
+alpaca.retry-backoff-ms=2500
+
+alpaca.request-timeout-ms=5000
+
+alpaca.skip-outside-market-hours=true
