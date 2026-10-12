@@ -225,10 +225,10 @@ public class ClientsService {
         try{
             clients = clientsRepository.findClientsAsAdmin();
             if (clients == null || clients.isEmpty()) {
-                throw new ClientNotFoundException("Clients not found");
+                throw new ClientNotFoundException("No clients found");
             }
         }catch (Exception e) {  
-            throw new ClientNotFoundException("Clients not found");  
+            throw new ClientNotFoundException("No clients found");  
         }  
 
         return clients;
@@ -245,10 +245,10 @@ public class ClientsService {
         try{
             clients = clientsRepository.findClientsAsReporter();
             if (clients == null || clients.isEmpty()) {
-                throw new ClientNotFoundException("Clients not found");
+                throw new ClientNotFoundException("No clients found");
             }
         }catch (Exception e) {  
-            throw new ClientNotFoundException("Clients not found");  
+            throw new ClientNotFoundException("No clients found");  
         }  
 
         return clients;

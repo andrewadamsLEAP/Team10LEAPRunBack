@@ -53,7 +53,7 @@ class OrdersControllerTest {
     void getFulfilledOrders_shouldReturnFulfilledOrdersForClient() {
         Long clientId = 1L;
         List<OrderHistoryView> mockOrders = new ArrayList<>();
-        OrderHistoryView order = new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "FULFILLED", null, null, null, null);
+        OrderHistoryView order = new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "BUY", "FULFILLED", null, null, null, null);
         mockOrders.add(order);
 
         when(ordersService.getFulfilledOrdersAsDto(clientId)).thenReturn(mockOrders);
@@ -72,7 +72,7 @@ class OrdersControllerTest {
     @Test
     void getCancelledOrders_shouldReturnAllCancelledOrders() {
         List<OrderHistoryView> mockOrders = new ArrayList<>();
-        OrderHistoryView order = new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "CANCELLED", null, null, null, null);
+        OrderHistoryView order = new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "BUY", "CANCELLED", null, null, null, null);
         mockOrders.add(order);
 
         when(ordersService.getCancelledOrdersAsDto()).thenReturn(mockOrders);
@@ -92,7 +92,7 @@ class OrdersControllerTest {
     void getPendingSellOrdersForTicker_shouldReturnSellOrdersForTicker() {
         String ticker = "AAPL";
         List<OrderHistoryView> mockOrders = new ArrayList<>();
-        OrderHistoryView order = new OrderHistoryView(1L, ticker, 50, new BigDecimal("150.00"), "PENDING", null, null, null, null);
+        OrderHistoryView order = new OrderHistoryView(1L, ticker, 50, new BigDecimal("150.00"), "SELL", "PENDING", null, null, null, null);
         mockOrders.add(order);
 
         when(ordersService.getPendingSellOrdersForTickerAsDto(ticker)).thenReturn(mockOrders);
@@ -112,7 +112,7 @@ class OrdersControllerTest {
     void getPendingBuyOrdersForTicker_shouldReturnBuyOrdersForTicker() {
         String ticker = "GOOGL";
         List<OrderHistoryView> mockOrders = new ArrayList<>();
-        OrderHistoryView order = new OrderHistoryView(1L, ticker, 75, new BigDecimal("100.00"), "PENDING", null, null, null, null);
+        OrderHistoryView order = new OrderHistoryView(1L, ticker, 75, new BigDecimal("100.00"), "BUY", "PENDING", null, null, null, null);
         mockOrders.add(order);
 
         when(ordersService.getPendingBuyOrdersForTickerAsDto(ticker)).thenReturn(mockOrders);
@@ -218,8 +218,8 @@ class OrdersControllerTest {
     void getFulfilledOrders_shouldReturnMultipleOrdersForClient() {
         Long clientId = 1L;
         List<OrderHistoryView> mockOrders = new ArrayList<>();
-        mockOrders.add(new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "FULFILLED", null, null, null, null));
-        mockOrders.add(new OrderHistoryView(2L, "GOOGL", 50, new BigDecimal("100.00"), "FULFILLED", null, null, null, null));
+        mockOrders.add(new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "BUY", "FULFILLED", null, null, null, null));
+        mockOrders.add(new OrderHistoryView(2L, "GOOGL", 50, new BigDecimal("100.00"), "BUY", "FULFILLED", null, null, null, null));
 
         when(ordersService.getFulfilledOrdersAsDto(clientId)).thenReturn(mockOrders);
 

@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
  * @param ticker
  * @param quantity
  * @param price
+ * @param orderType
  * @param status
  * @param createdAt
  * @param executedPrice
@@ -20,6 +21,7 @@ public record OrderHistoryView(
         String ticker,
         Integer quantity,
         BigDecimal price,
+        String orderType,
         String status,
         LocalDateTime createdAt,
         BigDecimal executedPrice,
