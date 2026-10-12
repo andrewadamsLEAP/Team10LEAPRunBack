@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.services.ClientsService;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -59,20 +60,8 @@ public class ClientsController {
     }
 
     @GetMapping("/profile/{clientId}")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ClientProfileView> viewProfile(@PathVariable Long clientId) {
         return ResponseEntity.ok(clientsService.getClientProfile(clientId));
-    }
-
-    // Admin endpoints - for administrative access
-    // TODO: When NestJS JWT is ready, add: @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/admin/{clientId}")
-    public ResponseEntity<ClientAdminView> getClientAsAdmin(@PathVariable Long clientId) {
-        return ResponseEntity.ok(clientsService.getClientDataAdmin(clientId));
-    }
-
-    // TODO: When NestJS JWT is ready, add: @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/admin")
-    public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
-        return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
     }
 }

@@ -23,6 +23,10 @@ services:
       retries: 10
     networks:
       - app-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
   app:
     build:
@@ -43,6 +47,13 @@ services:
         condition: service_healthy
     networks:
       - app-network
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 
 networks:
   app-network:
+    driver: overlay
+
+  

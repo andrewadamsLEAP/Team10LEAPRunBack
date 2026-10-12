@@ -1,15 +1,10 @@
 package com.example.services;
 
-import com.example.DTOs.clients.LoginResponse;
-
-import java.util.List;
-
 import org.springframework.stereotype.Service;
 
 import com.example.DTOs.clients.ChangePasswordRequest;
-import com.example.DTOs.clients.ClientProfileView;
-import com.example.DTOs.clients.ClientReporterView;
 import com.example.DTOs.employees.EmployeeProfileView;
+import com.example.authUtils.JwtUtil;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.DTOs.clients.LoginView;
 import com.example.entities.*;
@@ -17,31 +12,36 @@ import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
 import com.example.exceptions.Validate;
 import com.example.repositories.EmployeeRepository;
+import com.example.DTOs.clients.LoginResponse;
+
 @Service 
 public class EmployeeService {
     private final EmployeeRepository employeeRepository;
+    private final JwtUtil jwtUtil;
 
-    public EmployeeService(EmployeeRepository employeeRepository)
+    public EmployeeService(EmployeeRepository employeeRepository, JwtUtil jwtUtil)
     {
         this.employeeRepository = employeeRepository;
+        this.jwtUtil = jwtUtil;
     }
 
     
     public LoginResponse login(LoginRequest request) {
         // TODO: Encode then compare passwords when we do the whole JwT node stuff
-        LoginView loginEmployee = employeeRepository.findLoginEmployeeByUsername(request.username());
-
+        LoginView loginEmployee = Validate.validateUser(employeeRepository.findLoginEmployeeByUsername(request.username()), "employee");
+        
         if (loginEmployee == null || !loginEmployee.password().equals(request.password())) {
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
-
-        return new LoginResponse(loginEmployee.userId(), loginEmployee.username(), null, "Login successful");
+       
+        String jwt = jwtUtil.generateToken(loginEmployee.username(), loginEmployee.userId());
+        return new LoginResponse(loginEmployee.userId(), loginEmployee.username(), jwt, "Login successful");
     }
 
-     public void changePassword(Long employeeId, ChangePasswordRequest request) {
-        LoginView employee = employeeRepository.findLoginEmployeeById(employeeId);
 
-       // Validate.validateClient(employee);
+
+    public void changePassword(Long employeeId, ChangePasswordRequest request) {
+        LoginView employee = Validate.validateUser(employeeRepository.findLoginEmployeeById(employeeId), "employee");
 
         if (!employee.password().equals(request.currentPassword())) {
             throw new InvalidArgumentsException("Invalid Password Change", "Current password is incorrect");
@@ -58,10 +58,10 @@ public class EmployeeService {
         }
     }
 
-       public EmployeeProfileView getEmployeeProfile(Long employeeId) {
-        Employee employee = employeeRepository.findEmployeeById(employeeId);
 
-      //  Validate.validateEmployee(employee);
+
+    public EmployeeProfileView getEmployeeProfile(Long employeeId) {
+        Employee employee = Validate.validateUser(employeeRepository.findEmployeeById(employeeId), "employee");
 
         return new EmployeeProfileView(
                 employee.getEmployeeId(),
