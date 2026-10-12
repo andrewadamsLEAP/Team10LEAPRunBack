@@ -12,6 +12,7 @@ import com.example.DTOs.clients.ClientReporterView;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.DTOs.clients.LoginResponse;
 import com.example.entities.Client;
+import com.example.exceptions.ClientNotFoundException;
 import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
 import com.example.repositories.ClientsRepository;
@@ -207,8 +208,15 @@ public class ClientsService {
      * @throws IllegalArgumentException if the client list is invalid within validate client list for admin
      */
     public List<ClientAdminView> getAllClientDataAdmin() {
-        
-        List<ClientAdminView> clients = Validate.validateUserList(clientsRepository.findClientsAsAdmin(), "clients");
+        List<ClientAdminView> clients;
+        try{
+            clients = clientsRepository.findClientsAsAdmin();
+            if (clients == null || clients.isEmpty()) {
+                throw new ClientNotFoundException("No clients found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("No clients found");  
+        }  
 
         return clients;
     }
@@ -223,8 +231,15 @@ public class ClientsService {
      * @throws IllegalArgumentException if the client list is invalid within validate client list for reporter
      */ 
     public List<ClientReporterView> getAllClientDataReporter() {
-
-        List<ClientReporterView> clients = Validate.validateUserList(clientsRepository.findClientsAsReporter(), "clients");
+        List<ClientReporterView> clients;
+        try{
+            clients = clientsRepository.findClientsAsReporter();
+            if (clients == null || clients.isEmpty()) {
+                throw new ClientNotFoundException("No clients found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("No clients found");  
+        }  
 
         return clients;
     }

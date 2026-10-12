@@ -48,25 +48,25 @@ public class EmployeeController {
 
     // Reporter endpoints - for reporting/analytics access
     @GetMapping("/reporter/{clientId}")
-    @PreAuthorize("hasRole('EMPLOYEE_REPORTER')")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ClientReporterView> getClientAsReporter(@PathVariable Long clientId) {
         return ResponseEntity.ok(clientsService.getClientDataReporter(clientId));
     }
 
     @GetMapping("/reporter")
-    @PreAuthorize("hasRole('EMPLOYEE_REPORTER')")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<List<ClientReporterView>> getAllClientsAsReporter() {
         return ResponseEntity.ok(clientsService.getAllClientDataReporter());
     }
 
     @GetMapping("/admin/{clientId}")
-    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ClientAdminView> getClientAsAdmin(@PathVariable Long clientId) {
         return ResponseEntity.ok(clientsService.getClientDataAdmin(clientId));
     }
 
     @GetMapping("/admin")
-    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
         return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
     }

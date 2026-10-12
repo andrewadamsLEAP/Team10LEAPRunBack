@@ -6,9 +6,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.List;
@@ -38,6 +40,12 @@ public class JwtInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         logger.debug("Processing request: {} {}", request.getMethod(), request.getRequestURI());
+
+        // Only enforce JWT on endpoints explicitly marked as secured.
+        if (!isJwtRequired(handler)) {
+            logger.debug("Skipping JWT auth for public endpoint: {} {}", request.getMethod(), request.getRequestURI());
+            return true;
+        }
         
         try {
             String authHeader = request.getHeader("Authorization");
@@ -99,5 +107,31 @@ public class JwtInterceptor implements HandlerInterceptor {
         // Always clean up the context after request processing
         ClientIdContextHolder.clear();
         logger.debug("Cleared clientId context after request");
+    }
+
+    private boolean isJwtRequired(Object handler) {
+        if (!(handler instanceof HandlerMethod handlerMethod)) {
+            return false;
+        }
+
+        PreAuthorize methodAnnotation = handlerMethod.getMethodAnnotation(PreAuthorize.class);
+        if (methodAnnotation != null) {
+            return !isPermitAllExpression(methodAnnotation.value());
+        }
+
+        PreAuthorize classAnnotation = handlerMethod.getBeanType().getAnnotation(PreAuthorize.class);
+        if (classAnnotation != null) {
+            return !isPermitAllExpression(classAnnotation.value());
+        }
+
+        // No method/class security annotation: treat as public route.
+        return false;
+    }
+
+    private boolean isPermitAllExpression(String expression) {
+        if (expression == null) {
+            return false;
+        }
+        return "permitAll()".equals(expression.replace(" ", ""));
     }
 }

@@ -60,7 +60,7 @@ public class ClientsController {
     }
 
     @GetMapping("/profile/{clientId}")
-    @PreAuthorize("hasRole('CLIENT')")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ClientProfileView> viewProfile(@PathVariable Long clientId) {
         return ResponseEntity.ok(clientsService.getClientProfile(clientId));
     }

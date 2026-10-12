@@ -3,7 +3,7 @@ package com.example.exceptions;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -33,9 +33,12 @@ public class GlobalExceptionHandler {
         return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex) {
-        return buildProblem(HttpStatus.FORBIDDEN, "Access denied: insufficient permissions");
+    @ExceptionHandler(DataAccessException.class)
+    public ResponseEntity<ProblemDetail> handleDataAccess(DataAccessException ex) {
+        return buildProblem(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Database operation failed. The transactions table schema may be out of sync with the application mapper."
+        );
     }
 
     private ResponseEntity<ProblemDetail> buildProblem(HttpStatus status, String detail) {
