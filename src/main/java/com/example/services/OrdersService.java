@@ -1,7 +1,10 @@
 package com.example.services;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +25,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 public class OrdersService {
     private static final Logger logger = LoggerFactory.getLogger(OrdersService.class);
+    private static final ZoneId US_EASTERN = ZoneId.of("America/New_York");
 
     private final OrdersRepository ordersRepository;
     private final MarketHoursService marketHoursService;
@@ -128,8 +132,12 @@ public class OrdersService {
 
         validateTicker(ticker);
 
-        return ordersRepository.getPendingSellOrdersForTicker(
-                ticker.toUpperCase());
+        String normalizedTicker = ticker.toUpperCase();
+
+        List<Order> pendingOrders = ordersRepository.getPendingSellOrdersForTicker(
+            normalizedTicker);
+
+        return cancelExpiredStockPendingOrders(normalizedTicker, pendingOrders);
     }
 
     /**
@@ -144,8 +152,58 @@ public class OrdersService {
 
         validateTicker(ticker);
 
-        return ordersRepository.getPendingBuyOrdersForTicker(
-                ticker.toUpperCase());
+        String normalizedTicker = ticker.toUpperCase();
+
+        List<Order> pendingOrders = ordersRepository.getPendingBuyOrdersForTicker(
+                normalizedTicker);
+
+        return cancelExpiredStockPendingOrders(normalizedTicker, pendingOrders);
+    }
+
+    private List<Order> cancelExpiredStockPendingOrders(
+            String ticker,
+            List<Order> pendingOrders) {
+
+        if (pendingOrders == null || pendingOrders.isEmpty()) {
+            return pendingOrders;
+        }
+
+        Instrument instrument;
+        try {
+            instrument = instrumentService.getInstrumentByTicker(ticker);
+        } catch (IllegalArgumentException ex) {
+            logger.warn("Skipping stale pending-order cancellation: unknown ticker={}", ticker);
+            return pendingOrders;
+        }
+
+        if (!"STOCK".equalsIgnoreCase(instrument.getAssetType())) {
+            return pendingOrders;
+        }
+
+        LocalDate easternToday = OffsetDateTime.now(US_EASTERN).toLocalDate();
+        List<Order> activePendingOrders = new ArrayList<>();
+
+        for (Order order : pendingOrders) {
+            if (order.getOrderDate() == null || order.getOrderId() == null) {
+                activePendingOrders.add(order);
+                continue;
+            }
+
+            LocalDate orderDateEastern = order.getOrderDate()
+                    .atZoneSameInstant(US_EASTERN)
+                    .toLocalDate();
+
+            if (orderDateEastern.isBefore(easternToday)) {
+                ordersRepository.updateOrderStatus(order.getOrderId(), Order.OrderStatus.CANCELLED);
+                logger.info("Auto-cancelled stale pending stock order: orderId={}, ticker={}",
+                        order.getOrderId(), ticker);
+                continue;
+            }
+
+            activePendingOrders.add(order);
+        }
+
+        return activePendingOrders;
     }
 
     // =========================================================
@@ -333,6 +391,21 @@ public class OrdersService {
 
         // Update holdings when order is fulfilled
         holdingsService.updateHoldingsForOrder(fulfilledOrder);
+
+        // Update client cash based on order type
+        BigDecimal transactionAmount = fulfilledOrder.getPrice()
+                .multiply(BigDecimal.valueOf(fulfilledOrder.getQuantity()));
+
+        if (fulfilledOrder.getOrderType() == Order.OrderType.BUY) {
+            // Subtract cash for buy orders (negative amount)
+            clientsService.updateCashAmount(fulfilledOrder.getClientId(), transactionAmount.negate());
+        } else if (fulfilledOrder.getOrderType() == Order.OrderType.SELL) {
+            // Add cash for sell orders (positive amount)
+            clientsService.updateCashAmount(fulfilledOrder.getClientId(), transactionAmount);
+        }
+
+        logger.info("Cash updated for order execution: orderId={}, orderType={}, amount={}",
+                orderId, fulfilledOrder.getOrderType(), transactionAmount);
 
         return fulfilledOrder;
     }

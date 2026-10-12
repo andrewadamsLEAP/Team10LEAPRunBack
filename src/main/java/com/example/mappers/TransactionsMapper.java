@@ -14,12 +14,12 @@ public interface TransactionsMapper {
         SELECT
             transaction_id,
             client_id,
-            type,
+            UPPER(ttype) AS type,
             amount,
-            timestamp
+            created_at AS timestamp
         FROM transactions
         WHERE client_id = #{clientId}
-        ORDER BY timestamp DESC
+        ORDER BY created_at DESC
         """)
     List<Transaction> getTransactions(
             @Param("clientId") Long clientId
@@ -48,13 +48,13 @@ public interface TransactionsMapper {
     @Insert("""
         INSERT INTO transactions (
             client_id,
-            type,
+            ttype,
             amount,
-            timestamp
+            created_at
         )
         VALUES (
             #{clientId},
-            #{type},
+            LOWER(#{type}),
             #{amount},
             #{timestamp}
         )
