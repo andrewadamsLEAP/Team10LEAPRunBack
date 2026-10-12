@@ -5,6 +5,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.kafka.core.KafkaTemplate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+
 @TestConfiguration
 public class KafkaTestConfig {
 
@@ -12,5 +15,12 @@ public class KafkaTestConfig {
     @SuppressWarnings({"rawtypes", "unchecked"})
     public KafkaTemplate kafkaTemplate() {
         return Mockito.mock(KafkaTemplate.class);
+    }
+
+    @Bean
+    public ObjectMapper objectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
+        return mapper;
     }
 }

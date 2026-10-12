@@ -324,6 +324,7 @@ class ClientsControllerIntegrationTest {
 
     private String changePasswordJson(ChangePasswordRequest request) {
         return "{" +
+                                quotedField("email", request.email()) + "," +
                 quotedField("currentPassword", request.currentPassword()) + "," +
                 quotedField("newPassword", request.newPassword()) +
                 "}";
