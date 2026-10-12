@@ -1,7 +1,7 @@
 package com.example.config;
 
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -21,11 +21,7 @@ import com.example.authUtils.JwtInterceptor;
  * - EMPLOYEE_REPORTER role: Access /reporter endpoints
  */
 @Configuration
-@EnableGlobalMethodSecurity(
-    prePostEnabled = true,
-    securedEnabled = true,
-    jsr250Enabled = true
-)
+@EnableMethodSecurity(prePostEnabled = true)
 public class AuthConfig implements WebMvcConfigurer {
     
     private final JwtInterceptor jwtInterceptor;
