@@ -27,9 +27,7 @@ public class ClientsController {
         this.clientsService = clientsService;
     }
 
-    // Check on this, might need tochange this to have all users be able to sign up
-    // Maybe not :o)
-    // TODO: When NestJS JWT is ready, add: @PreAuthorize("permitAll()")
+    // TODO: Check all endpoints for proper authorization and validation
     @PostMapping("/sign-up")
     public ResponseEntity<LoginResponse> signup(
             @RequestBody @Valid Client request) {
@@ -44,6 +42,7 @@ public class ClientsController {
     }
 
     @PatchMapping("/password")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<Void> changePassword( 
             @RequestBody @Valid ChangePasswordRequest request,
             @RequestParam Long clientId) {
@@ -52,6 +51,7 @@ public class ClientsController {
     }
 
     @PatchMapping("/profile/{clientId}")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<Void> updateProfile( 
             @PathVariable Long clientId,
             @RequestBody @Valid ClientProfileUpdateRequest request) {
@@ -60,7 +60,7 @@ public class ClientsController {
     }
 
     @GetMapping("/profile/{clientId}")
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ClientProfileView> viewProfile(@PathVariable Long clientId) {
         return ResponseEntity.ok(clientsService.getClientProfile(clientId));
     }

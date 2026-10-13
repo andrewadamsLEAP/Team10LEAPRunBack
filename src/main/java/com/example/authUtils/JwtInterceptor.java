@@ -88,7 +88,9 @@ public class JwtInterceptor implements HandlerInterceptor {
                 SecurityContextHolder.getContext().setAuthentication(auth);
                 logger.info("Request authenticated with clientId: {}, role: {}", clientId, role);
             } else {
-                logger.warn("Token does not contain role claim");
+                logger.warn("JWT rejected for {} {}: token does not contain role claim",
+                        request.getMethod(), request.getRequestURI());
+                throw new UnauthorizedException("Token does not contain role claim");
             }
             
             return true;
