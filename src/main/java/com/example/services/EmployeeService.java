@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 
 import com.example.DTOs.clients.ChangePasswordRequest;
 import com.example.DTOs.employees.EmployeeProfileView;
+import com.example.DTOs.employees.EmployeeLoginView;
 import com.example.authUtils.JwtUtil;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.DTOs.clients.LoginView;
@@ -27,15 +28,24 @@ public class EmployeeService {
 
     
     public LoginResponse login(LoginRequest request) {
-        // TODO: Encode then compare passwords when we do the whole JwT node stuff
-        LoginView loginEmployee = Validate.validateUser(employeeRepository.findLoginEmployeeByUsername(request.username()), "employee");
+        EmployeeLoginView loginEmployee = Validate.validateUser(
+            employeeRepository.findLoginEmployeeByIdentifier(request.username()), "employee");
         
         if (loginEmployee == null || !loginEmployee.password().equals(request.password())) {
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
        
-        String jwt = jwtUtil.generateToken(loginEmployee.username(), loginEmployee.userId());
+        String role = normalizeRole(loginEmployee.role());
+        String jwt = jwtUtil.generateToken(loginEmployee.username(), loginEmployee.userId(), null, role);
         return new LoginResponse(loginEmployee.userId(), loginEmployee.username(), jwt, "Login successful");
+    }
+
+    private String normalizeRole(String role) {
+        return switch (role) {
+            case "ADMIN", "EMPLOYEE_ADMIN" -> "EMPLOYEE_ADMIN";
+            case "REPORTER", "EMPLOYEE_REPORTER" -> "EMPLOYEE_REPORTER";
+            default -> throw new InvalidArgumentsException("Invalid Role", "Unsupported employee role");
+        };
     }
 
 
