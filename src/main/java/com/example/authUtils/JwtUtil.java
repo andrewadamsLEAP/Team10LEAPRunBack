@@ -42,7 +42,11 @@ public class JwtUtil {
      * @return the JWT token string
      */
     public String generateToken(String username, Long clientId) {
-        logger.info("Generating JWT token for username: {}, clientId: {}", username, clientId);
+        return generateToken(username, clientId, clientId, "CLIENT");
+    }
+
+    public String generateToken(String username, Long userId, Long clientId, String role) {
+        logger.info("Generating JWT token for username: {}, userId: {}, role: {}", username, userId, role);
         
         SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
         Date now = new Date();
@@ -50,7 +54,9 @@ public class JwtUtil {
         
         return Jwts.builder()
                 .setSubject(username)
+                .claim("userId", userId)
                 .claim("clientId", clientId)
+                .claim("role", role)
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
                 .signWith(key, SignatureAlgorithm.HS256)

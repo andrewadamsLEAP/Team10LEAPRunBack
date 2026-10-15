@@ -67,17 +67,14 @@ public class JwtInterceptor implements HandlerInterceptor {
             // Extract clientId from token payload
             Long clientId = jwtUtil.getClientIdFromToken(token);
             
-            if (clientId == null) {
-                logger.warn("Token does not contain clientId");
-                throw new UnauthorizedException("Token does not contain clientId");
-            }
-            
-            // Store clientId in thread-local context for access in services
-            ClientIdContextHolder.setClientId(clientId);
-            
             // Extract role and set up Spring Security context with role authorities
             String role = jwtUtil.getRoleFromToken(token);
             String username = jwtUtil.getUsernameFromToken(token);
+
+            // Only client-scoped operations need a client ID. Employee tokens do not have one.
+            if (clientId != null) {
+                ClientIdContextHolder.setClientId(clientId);
+            }
             
             if (role != null) {
                 List<SimpleGrantedAuthority> authorities = List.of(

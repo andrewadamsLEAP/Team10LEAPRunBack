@@ -1,6 +1,7 @@
 package com.example.repositories;
 
 import com.example.DTOs.clients.LoginView;
+import com.example.DTOs.employees.EmployeeLoginView;
 import com.example.entities.Employee;
 import com.example.mappers.EmployeeMapper;
 import org.springframework.stereotype.Repository;
@@ -27,6 +28,10 @@ public class EmployeeRepository {
 
     public LoginView findLoginEmployeeByUsername(String username) {
         return employeeMapper.findLoginEmployeeByUsername(username);
+    }
+
+    public EmployeeLoginView findLoginEmployeeByIdentifier(String identifier) {
+        return employeeMapper.findLoginEmployeeByIdentifier(identifier);
     }
 
     public LoginView findLoginEmployeeById(Long employeeId) {

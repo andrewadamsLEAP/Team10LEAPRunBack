@@ -1,6 +1,7 @@
 package com.example.mappers;
 
 import com.example.DTOs.clients.LoginView;
+import com.example.DTOs.employees.EmployeeLoginView;
 import com.example.entities.Employee;
 import org.apache.ibatis.annotations.*;
 
@@ -42,6 +43,16 @@ public interface EmployeeMapper {
         WHERE username = #{username}
         """)
     LoginView findLoginEmployeeByUsername(@Param("username") String username);
+
+    @Select("""
+        SELECT employee_id AS userId,
+               username,
+               password,
+               role
+        FROM employees
+        WHERE username = #{identifier} OR email = #{identifier}
+        """)
+    EmployeeLoginView findLoginEmployeeByIdentifier(@Param("identifier") String identifier);
 
     @Select("""
         SELECT employee_id AS userId,
