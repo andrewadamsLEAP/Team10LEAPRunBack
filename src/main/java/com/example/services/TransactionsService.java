@@ -32,6 +32,10 @@ public class TransactionsService {
         return transactionsRepository.getTransactions(clientId);
     }
 
+    public List<Transaction> getAllTransactions() {
+        return transactionsRepository.getAllTransactions();
+    }
+
     @Transactional
     public Transaction deposit(
             Long clientId,

@@ -50,10 +50,23 @@ public class JwtUtil {
     public boolean validateToken(String token) {
         try {
             SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-            Jwts.parserBuilder()
+            Claims claims = Jwts.parserBuilder()
                     .setSigningKey(key)
                     .build()
-                    .parseClaimsJws(token);
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            String tokenUse = claims.get("token_use", String.class);
+            if (tokenUse != null && !"access".equalsIgnoreCase(tokenUse)) {
+                logger.warn("JWT rejected because token_use is not access: {}", tokenUse);
+                return false;
+            }
+
+            if (claims.getSubject() == null || getUsername(claims) == null) {
+                logger.warn("JWT rejected because sub or username is missing");
+                return false;
+            }
+
             logger.debug("JWT token validated successfully");
             return true;
         } catch (SecurityException e) {
@@ -78,8 +91,7 @@ public class JwtUtil {
      */
     public String getUsernameFromToken(String token) {
         Claims claims = getClaimsFromToken(token);
-        String username = claims.get("username", String.class);
-        return username != null ? username : claims.getSubject();
+        return getUsername(claims);
     }
     
     /**
@@ -113,6 +125,10 @@ public class JwtUtil {
         return userId != null ? userId : parseLong(claims.getSubject());
     }
 
+    public String getActorTypeFromToken(String token) {
+        return getClaimsFromToken(token).get("actorType", String.class);
+    }
+
     /**
      * Extract role from JWT token
      * Role is set by NestJS during token generation
@@ -136,7 +152,7 @@ public class JwtUtil {
         return switch (role.toUpperCase()) {
             case "ADMIN", "MANAGER", "EMPLOYEE_ADMIN" -> "EMPLOYEE_ADMIN";
             case "REPORTER", "EMPLOYEE_REPORTER" -> "EMPLOYEE_REPORTER";
-            default -> role.toUpperCase();
+            default -> null;
         };
     }
     
@@ -161,6 +177,11 @@ public class JwtUtil {
             return number.longValue();
         }
         return parseLong(value == null ? null : value.toString());
+    }
+
+    private String getUsername(Claims claims) {
+        String username = claims.get("username", String.class);
+        return username != null ? username : claims.getSubject();
     }
 
     private Long parseLong(String value) {

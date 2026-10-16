@@ -40,6 +40,12 @@ public OrdersController(OrdersService ordersService) {
     this.ordersService = ordersService;
 }
 
+@GetMapping("/admin/all")
+@PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+public List<OrderHistoryView> getAllOrdersForAdmin() {
+    return ordersService.getAllOrdersAsDto();
+}
+
 // =========================================================
 // Get order by ID
 // =========================================================

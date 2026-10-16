@@ -68,10 +68,21 @@ public class JwtInterceptor implements HandlerInterceptor {
             // only for client tokens; employee tokens do not populate this context.
             Long clientId = jwtUtil.getClientIdFromToken(token);
             Long userId = jwtUtil.getUserIdFromToken(token);
+
+            if (userId == null || userId <= 0) {
+                throw new UnauthorizedException("Token does not contain a valid subject ID");
+            }
             
             // Extract role and set up Spring Security context with role authorities
             String role = jwtUtil.getRoleFromToken(token);
             String username = jwtUtil.getUsernameFromToken(token);
+            String actorType = jwtUtil.getActorTypeFromToken(token);
+
+            if (actorType == null
+                    || (!"client".equalsIgnoreCase(actorType)
+                    && !"employee".equalsIgnoreCase(actorType))) {
+                throw new UnauthorizedException("Token does not contain a valid actorType claim");
+            }
 
             // Only client-scoped operations need a client ID. Employee tokens do not have one.
             if (clientId != null) {
