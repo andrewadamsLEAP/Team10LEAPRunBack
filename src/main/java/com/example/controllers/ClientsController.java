@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.services.ClientsService;
+import com.example.authUtils.ClientIdContextHolder;
 import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
@@ -46,6 +47,7 @@ public class ClientsController {
     public ResponseEntity<Void> changePassword( 
             @RequestBody @Valid ChangePasswordRequest request,
             @RequestParam Long clientId) {
+        ClientIdContextHolder.requireClient(clientId);
         clientsService.changePassword(clientId, request);
         return ResponseEntity.noContent().build();
     }
@@ -55,6 +57,7 @@ public class ClientsController {
     public ResponseEntity<Void> updateProfile( 
             @PathVariable Long clientId,
             @RequestBody @Valid ClientProfileUpdateRequest request) {
+        ClientIdContextHolder.requireClient(clientId);
         clientsService.updateProfile(clientId, request);
         return ResponseEntity.noContent().build();
     }
@@ -62,6 +65,7 @@ public class ClientsController {
     @GetMapping("/profile/{clientId}")
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ClientProfileView> viewProfile(@PathVariable Long clientId) {
+        ClientIdContextHolder.requireClient(clientId);
         return ResponseEntity.ok(clientsService.getClientProfile(clientId));
     }
 }

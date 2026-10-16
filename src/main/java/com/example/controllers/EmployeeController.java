@@ -41,6 +41,7 @@ public class EmployeeController {
     }
 
     @PatchMapping("/password/{employeeId}")
+    @PreAuthorize("hasAnyRole('EMPLOYEE_ADMIN', 'EMPLOYEE_REPORTER')")
     public ResponseEntity<Void> changePassword(@PathVariable Long employeeId, @RequestBody @Valid ChangePasswordRequest request) {
         employeeService.changePassword(employeeId, request);
         return ResponseEntity.noContent().build();

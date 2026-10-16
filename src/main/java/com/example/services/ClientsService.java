@@ -119,7 +119,7 @@ public class ClientsService {
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
 
-        String jwt = jwtUtil.generateToken(loginClient.username(), clientId);
+        String jwt = jwtUtil.generateToken();
         
         logger.info("Login successful for client: {}", clientId);
         return new LoginResponse(clientId, loginClient.username(), jwt, "Login successful");

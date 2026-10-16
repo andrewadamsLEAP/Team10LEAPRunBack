@@ -34,7 +34,7 @@ public class EmployeeService {
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
        
-        String jwt = jwtUtil.generateToken(loginEmployee.username(), loginEmployee.userId());
+        String jwt = jwtUtil.generateToken();
         return new LoginResponse(loginEmployee.userId(), loginEmployee.username(), jwt, "Login successful");
     }
 

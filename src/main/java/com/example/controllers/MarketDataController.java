@@ -1,6 +1,7 @@
 package com.example.controllers;
 
 import com.example.services.MarketDataService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -31,6 +32,7 @@ public class MarketDataController {
      * the database up to date.
      */
     @GetMapping("/market-data/prices")
+    @PreAuthorize("isAuthenticated()")
     public List<Map<String, Object>> getLatestPrices() {
         return marketDataService.getLatestPrices();
     }
@@ -43,6 +45,7 @@ public class MarketDataController {
      * symbols that require refreshing.
      */
     @GetMapping("/market-data/refresh")
+    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
     public List<Map<String, Object>> refreshMarketData() {
         marketDataService.refreshMarketData();
         return marketDataService.getLatestPrices();
@@ -53,6 +56,7 @@ public class MarketDataController {
      * instruments table.
      */
     @GetMapping("/market-data/tickers")
+    @PreAuthorize("isAuthenticated()")
     public List<String> getTickers() {
         return marketDataService.getTickers();
     }
@@ -61,6 +65,7 @@ public class MarketDataController {
      * Returns the status of the most recent market-data refresh.
      */
     @GetMapping("/market-data/refresh/status")
+    @PreAuthorize("isAuthenticated()")
     public MarketDataService.RefreshStatus getRefreshStatus() {
         return marketDataService.getRefreshStatus();
     }
@@ -75,6 +80,7 @@ public class MarketDataController {
      * GET /api/trading/market-data/prices/BTC/USD
      */
     @GetMapping("/market-data/prices/{ticker}")
+    @PreAuthorize("isAuthenticated()")
     public List<Map<String, Object>> getLatestPrice(
             @PathVariable String ticker) {
 
@@ -96,6 +102,7 @@ public class MarketDataController {
      *     &to=2026-09-17T23:59:59Z
      */
     @GetMapping("/market-data/prices/{ticker}/history")
+    @PreAuthorize("isAuthenticated()")
     public List<Map<String, Object>> getPriceHistory(
             @PathVariable String ticker,
             @RequestParam(required = false) OffsetDateTime from,
