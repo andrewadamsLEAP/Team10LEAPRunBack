@@ -66,7 +66,7 @@ public interface ClientsMapper {
     @Select("""
             SELECT client_id
             FROM clients
-            WHERE email = #{email}
+            WHERE LOWER(email) = LOWER(#{email})
             """)
     Long findClientIdByEmail(@Param("email") String email);
 

@@ -16,13 +16,13 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.util.List;
 
 /**
- * Interceptor that extracts and validates clientId from JWT bearer tokens.
+ * Interceptor that extracts and validates identity and role from JWT bearer tokens.
  * 
  * Flow:
  * 1. Extract JWT token from Authorization header
  * 2. Validate JWT signature
- * 3. Extract clientId from token payload
- * 4. Store clientId in ClientIdContextHolder for access in services
+ * 3. Extract the user ID and role from the token payload
+ * 4. Store clientId in ClientIdContextHolder for client requests
  * 5. After request completes, clear the context
  * 
  * The JWT is expected in the format: Authorization: Bearer <token>
@@ -64,8 +64,10 @@ public class JwtInterceptor implements HandlerInterceptor {
                 throw new UnauthorizedException("Invalid or expired token");
             }
             
-            // Extract clientId from token payload
+            // NestJS stores the authenticated record ID in sub. It is a clientId
+            // only for client tokens; employee tokens do not populate this context.
             Long clientId = jwtUtil.getClientIdFromToken(token);
+            Long userId = jwtUtil.getUserIdFromToken(token);
             
             // Extract role and set up Spring Security context with role authorities
             String role = jwtUtil.getRoleFromToken(token);
@@ -83,7 +85,8 @@ public class JwtInterceptor implements HandlerInterceptor {
                 UsernamePasswordAuthenticationToken auth = 
                     new UsernamePasswordAuthenticationToken(username, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(auth);
-                logger.info("Request authenticated with clientId: {}, role: {}", clientId, role);
+                logger.info("Request authenticated with userId: {}, clientId: {}, role: {}",
+                    userId, clientId, role);
             } else {
                 logger.warn("JWT rejected for {} {}: token does not contain role claim",
                         request.getMethod(), request.getRequestURI());

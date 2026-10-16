@@ -18,9 +18,10 @@ import java.util.Date;
  * This utility validates signatures and extracts claims.
  * 
  * The JWT token contains (set by NestJS):
- * - subject (username)
- * - clientId (custom claim)
- * - role (CLIENT, EMPLOYEE_ADMIN, or EMPLOYEE_REPORTER)
+ * - sub (client or employee ID)
+ * - username
+ * - actorType (client or employee)
+ * - role (for employee tokens)
  * - issuedAt
  * - expiresAt
  */
@@ -45,6 +46,7 @@ public class JwtUtil {
         return generateToken(username, clientId, clientId, "CLIENT");
     }
 
+    // Delete this method once NestJS authentication service is ready
     public String generateToken(String username, Long userId, Long clientId, String role) {
         logger.info("Generating JWT token for username: {}, userId: {}, role: {}", username, userId, role);
         
@@ -99,7 +101,9 @@ public class JwtUtil {
      * @return the username (subject)
      */
     public String getUsernameFromToken(String token) {
-        return getClaimsFromToken(token).getSubject();
+        Claims claims = getClaimsFromToken(token);
+        String username = claims.get("username", String.class);
+        return username != null ? username : claims.getSubject();
     }
     
     /**
@@ -110,7 +114,27 @@ public class JwtUtil {
      * @return the clientId
      */
     public Long getClientIdFromToken(String token) {
-        return getClaimsFromToken(token).get("clientId", Long.class);
+        Claims claims = getClaimsFromToken(token);
+        Long clientId = getLongClaim(claims, "clientId");
+        if (clientId != null) {
+            return clientId;
+        }
+
+        if ("client".equalsIgnoreCase(claims.get("actorType", String.class))) {
+            return parseLong(claims.getSubject());
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract the authenticated database record ID from the NestJS subject claim.
+     * For clients this is the clientId; for employees this is the employeeId.
+     */
+    public Long getUserIdFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        Long userId = getLongClaim(claims, "userId");
+        return userId != null ? userId : parseLong(claims.getSubject());
     }
 
     /**
@@ -121,7 +145,23 @@ public class JwtUtil {
      * @return the role (CLIENT, EMPLOYEE_ADMIN, or EMPLOYEE_REPORTER)
      */
     public String getRoleFromToken(String token) {
-        return getClaimsFromToken(token).get("role", String.class);
+        Claims claims = getClaimsFromToken(token);
+        String actorType = claims.get("actorType", String.class);
+        String role = claims.get("role", String.class);
+
+        if ("client".equalsIgnoreCase(actorType)) {
+            return "CLIENT";
+        }
+
+        if (role == null) {
+            return null;
+        }
+
+        return switch (role.toUpperCase()) {
+            case "ADMIN", "MANAGER", "EMPLOYEE_ADMIN" -> "EMPLOYEE_ADMIN";
+            case "REPORTER", "EMPLOYEE_REPORTER" -> "EMPLOYEE_REPORTER";
+            default -> role.toUpperCase();
+        };
     }
     
     /**
@@ -137,5 +177,24 @@ public class JwtUtil {
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
+    }
+
+    private Long getLongClaim(Claims claims, String claimName) {
+        Object value = claims.get(claimName);
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        return parseLong(value == null ? null : value.toString());
+    }
+
+    private Long parseLong(String value) {
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Long.valueOf(value);
+        } catch (NumberFormatException exception) {
+            return null;
+        }
     }
 }

@@ -24,7 +24,7 @@ public interface EmployeeMapper {
     @Select("""
         SELECT employee_id
         FROM employees
-        WHERE email = #{email}
+        WHERE LOWER(email) = LOWER(#{email})
         """)
     Long findEmployeeIdByEmail(@Param("email") String email);
 
