@@ -41,8 +41,8 @@ public class MarketDataController {
      * Manually triggers a market-data refresh and then returns
      * the latest stored quotes.
      *
-     * The service performs one batched Alpaca request for the
-     * symbols that require refreshing.
+    * The service batches requests by provider and only refreshes
+    * instruments configured in the database.
      */
     @GetMapping("/market-data/refresh")
     @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")

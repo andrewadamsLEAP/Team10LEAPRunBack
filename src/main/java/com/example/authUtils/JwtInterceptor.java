@@ -32,7 +32,7 @@ public class JwtInterceptor implements HandlerInterceptor {
     private static final Logger logger = LoggerFactory.getLogger(JwtInterceptor.class);
     private static final String BEARER_PREFIX = "Bearer ";
     private final JwtUtil jwtUtil;
-    
+
     public JwtInterceptor(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
@@ -55,8 +55,10 @@ public class JwtInterceptor implements HandlerInterceptor {
                 throw new UnauthorizedException("Missing or invalid Authorization header");
             }
             
-            // Extract token from "Bearer <token>"
-            String token = authHeader.substring(BEARER_PREFIX.length());
+            String token = authHeader.substring(BEARER_PREFIX.length()).trim();
+            if (token.isEmpty()) {
+                throw new UnauthorizedException("Missing or invalid Authorization header");
+            }
             
             // Validate JWT signature
             if (!jwtUtil.validateToken(token)) {
@@ -119,6 +121,7 @@ public class JwtInterceptor implements HandlerInterceptor {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         // Always clean up the context after request processing
         ClientIdContextHolder.clear();
+        SecurityContextHolder.clearContext();
         logger.debug("Cleared clientId context after request");
     }
 

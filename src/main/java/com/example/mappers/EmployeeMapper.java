@@ -38,11 +38,12 @@ public interface EmployeeMapper {
     @Select("""
         SELECT employee_id AS userId,
                username,
-               password
+               password,
+               role
         FROM employees
         WHERE username = #{username}
         """)
-    LoginView findLoginEmployeeByUsername(@Param("username") String username);
+    EmployeeLoginView findLoginEmployeeByUsername(@Param("username") String username);
 
     @Select("""
         SELECT employee_id AS userId,

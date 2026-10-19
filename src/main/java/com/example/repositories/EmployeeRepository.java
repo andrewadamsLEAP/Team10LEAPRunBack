@@ -26,7 +26,7 @@ public class EmployeeRepository {
         return employeeMapper.findEmployeeIdByUsername(username);
     }
 
-    public LoginView findLoginEmployeeByUsername(String username) {
+    public EmployeeLoginView findLoginEmployeeByUsername(String username) {
         return employeeMapper.findLoginEmployeeByUsername(username);
     }
 

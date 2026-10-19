@@ -34,13 +34,13 @@ public class AuthService {
         }
 
         if (client != null && client.password().equals(request.password())) {
-            String token = jwtUtil.generateToken();
+            String token = jwtUtil.generateToken(client.userId(), client.username(), "client", "CLIENT");
             return new AuthLoginResponse(client.userId(), client.username(), "CLIENT", token, "Login successful");
         }
 
         if (employee != null && employee.password().equals(request.password())) {
             String role = normalizeEmployeeRole(employee.role());
-            String token = jwtUtil.generateToken();
+            String token = jwtUtil.generateToken(employee.userId(), employee.username(), "employee", role);
             return new AuthLoginResponse(employee.userId(), employee.username(), role, token, "Login successful");
         }
 

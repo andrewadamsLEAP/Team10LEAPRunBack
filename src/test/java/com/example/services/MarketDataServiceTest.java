@@ -2,6 +2,7 @@ package com.example.services;
 
 import com.example.repositories.MarketDataRepository;
 import com.example.generalServices.AlpacaClient;
+import com.example.generalServices.FrankfurterClient;
 import com.example.mappers.MarketSymbolMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +30,9 @@ class MarketDataServiceTest {
     private AlpacaClient alpacaClient;
 
     @Mock
+    private FrankfurterClient frankfurterClient;
+
+    @Mock
     private MarketSymbolMapper marketSymbolMapper;
 
     @Mock
@@ -45,11 +49,12 @@ class MarketDataServiceTest {
         marketDataService = new MarketDataService(
                 marketDataRepository,
                 alpacaClient,
+                frankfurterClient,
                 marketSymbolMapper,
                 marketHoursService,
                 environment,
                 true,  // refreshAll
-                false, // refreshForex
+                true,  // refreshForex
                 false  // skipOutsideMarketHours
         );
     }
@@ -145,6 +150,39 @@ class MarketDataServiceTest {
     @Test
     void refreshMarketData_shouldNotThrowException() {
         assertDoesNotThrow(() -> marketDataService.refreshMarketData());
+    }
+
+    @Test
+    void refreshMarketData_shouldPersistTrackedFrankfurterForexRate() {
+        MarketDataService.Instrument instrument = new MarketDataService.Instrument();
+        instrument.setTicker("EUR-USD");
+        instrument.setAssetType("FOREX");
+
+        when(marketDataRepository.findInstruments()).thenReturn(List.of(instrument));
+        when(marketSymbolMapper.toFrankfurterBase("EUR-USD")).thenReturn("EUR");
+        when(marketSymbolMapper.toFrankfurterQuote("EUR-USD")).thenReturn("USD");
+        when(frankfurterClient.getRates("EUR", List.of("USD")))
+                .thenReturn(List.of(new FrankfurterClient.FrankfurterRate(
+                        java.time.LocalDate.of(2026, 10, 19),
+                        "EUR",
+                        "USD",
+                        new java.math.BigDecimal("1.1238"))));
+
+        marketDataService.refreshMarketData();
+
+        verify(frankfurterClient).getRates("EUR", List.of("USD"));
+    verify(marketDataRepository).saveQuote(
+                eq("EUR-USD"),
+                eq(new java.math.BigDecimal("1.1238")),
+                eq(java.math.BigDecimal.ZERO),
+                eq("FRANKFURT"),
+                eq(new java.math.BigDecimal("1.1238")),
+                eq(java.math.BigDecimal.ZERO),
+                eq("FRANKFURT"),
+                isNull(),
+                eq(java.time.LocalDate.of(2026, 10, 19)
+                        .atStartOfDay()
+                        .atOffset(java.time.ZoneOffset.UTC)));
     }
 
     /**

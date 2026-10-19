@@ -9,8 +9,6 @@ package com.example.DTOs.clients;
  * @param message
  */
 
-// TODO:
-// eventually the token will store things like clientId and username I just dont know how that works
 public record LoginResponse( 
         Long userId,
         String username,
