@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.example.services.ClientsService;
+import com.example.authUtils.ClientIdContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.util.List;
 
@@ -26,9 +28,7 @@ public class ClientsController {
         this.clientsService = clientsService;
     }
 
-    // Check on this, might need tochange this to have all users be able to sign up
-    // Maybe not :o)
-    // TODO: When NestJS JWT is ready, add: @PreAuthorize("permitAll()")
+    // TODO: Check all endpoints for proper authorization and validation
     @PostMapping("/sign-up")
     public ResponseEntity<LoginResponse> signup(
             @RequestBody @Valid Client request) {
@@ -43,36 +43,29 @@ public class ClientsController {
     }
 
     @PatchMapping("/password")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<Void> changePassword( 
             @RequestBody @Valid ChangePasswordRequest request,
             @RequestParam Long clientId) {
+        ClientIdContextHolder.requireClient(clientId);
         clientsService.changePassword(clientId, request);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/profile/{clientId}")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<Void> updateProfile( 
             @PathVariable Long clientId,
             @RequestBody @Valid ClientProfileUpdateRequest request) {
+        ClientIdContextHolder.requireClient(clientId);
         clientsService.updateProfile(clientId, request);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/profile/{clientId}")
+    @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<ClientProfileView> viewProfile(@PathVariable Long clientId) {
+        ClientIdContextHolder.requireClient(clientId);
         return ResponseEntity.ok(clientsService.getClientProfile(clientId));
-    }
-
-    // Admin endpoints - for administrative access
-    // TODO: When NestJS JWT is ready, add: @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/admin/{clientId}")
-    public ResponseEntity<ClientAdminView> getClientAsAdmin(@PathVariable Long clientId) {
-        return ResponseEntity.ok(clientsService.getClientDataAdmin(clientId));
-    }
-
-    // TODO: When NestJS JWT is ready, add: @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/admin")
-    public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
-        return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
     }
 }

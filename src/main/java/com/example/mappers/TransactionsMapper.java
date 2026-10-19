@@ -18,6 +18,18 @@ public interface TransactionsMapper {
             amount,
             created_at AS timestamp
         FROM transactions
+        ORDER BY created_at DESC, transaction_id DESC
+        """)
+    List<Transaction> getAllTransactions();
+
+    @Select("""
+        SELECT
+            transaction_id,
+            client_id,
+            UPPER(ttype) AS type,
+            amount,
+            created_at AS timestamp
+        FROM transactions
         WHERE client_id = #{clientId}
         ORDER BY created_at DESC
         """)

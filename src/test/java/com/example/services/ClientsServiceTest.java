@@ -3,16 +3,18 @@ package com.example.services;
 import com.example.DTOs.clients.ChangePasswordRequest;
 import com.example.DTOs.clients.ClientAdminView;
 import com.example.DTOs.clients.LoginView;
+import com.example.authUtils.JwtUtil;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientProfileView;
 import com.example.DTOs.clients.ClientReporterView;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.DTOs.clients.LoginResponse;
 import com.example.entities.Client;
-import com.example.exceptions.ClientNotFoundException;
+import com.example.exceptions.UserNotFoundException;
 import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
 import com.example.repositories.ClientsRepository;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,12 +31,14 @@ import static org.mockito.Mockito.when;
 class ClientsServiceTest {
 
     private ClientsRepository clientsRepository;
+    private JwtUtil jwtUtil;
     private ClientsService clientsService;
 
     @BeforeEach
     void setUp() {
         clientsRepository = mock(ClientsRepository.class);
-        clientsService = new ClientsService(clientsRepository);
+        jwtUtil = mock(JwtUtil.class);
+        clientsService = new ClientsService(clientsRepository, jwtUtil);
     }
 
     @Test
@@ -107,6 +111,7 @@ class ClientsServiceTest {
         LoginRequest request = loginRequest("loginuser", "password1");
         when(clientsRepository.findLoginClientById(3L))
                 .thenReturn(loginClientView(3L, "loginuser", "password1"));
+        when(jwtUtil.generateToken()).thenReturn("mock-jwt-token");
 
         LoginResponse response = clientsService.login(3L, request);
 
@@ -116,13 +121,13 @@ class ClientsServiceTest {
     }
 
     @Test
-    void loginThrowsInvalidCredentialsWhenClientDoesNotExist() {
+    void loginThrowsClientNotFoundWhenClientDoesNotExist() {
         LoginRequest request = loginRequest("missing", "password1");
         when(clientsRepository.findLoginClientById(99L)).thenReturn(null);
 
-        InvalidArgumentsException exception = assertThrows(InvalidArgumentsException.class, () -> clientsService.login(99L, request));
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> clientsService.login(99L, request));
 
-        assertEquals("Invalid Credentials: Invalid username or password", exception.getMessage());
+        assertEquals("client not found!", exception.getMessage());
     }
 
     @Test
@@ -153,9 +158,9 @@ class ClientsServiceTest {
         ChangePasswordRequest request = changePasswordRequest("password1", "newpass12");
         when(clientsRepository.findLoginClientById(4L)).thenReturn(null);
 
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> clientsService.changePassword(4L, request));
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> clientsService.changePassword(4L, request));
 
-        assertEquals("Client not found", exception.getMessage());
+        assertEquals("client not found!", exception.getMessage());
     }
 
     @Test
@@ -209,9 +214,9 @@ class ClientsServiceTest {
     void getClientProfileThrowsWhenClientDoesNotExist() {
         when(clientsRepository.findClientById(7L)).thenReturn(null);
 
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> clientsService.getClientProfile(7L));
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> clientsService.getClientProfile(7L));
 
-        assertEquals("Client not found", exception.getMessage());
+        assertEquals("client not found!", exception.getMessage());
     }
 
     @Test
@@ -228,9 +233,9 @@ class ClientsServiceTest {
     void getClientDataAdminThrowsWhenClientDoesNotExist() {
         when(clientsRepository.findClientByIdAdmin(9L)).thenReturn(null);
 
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> clientsService.getClientDataAdmin(9L));
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> clientsService.getClientDataAdmin(9L));
 
-        assertEquals("Client not found", exception.getMessage());
+        assertEquals("client not found!", exception.getMessage());
     }
 
     @Test
@@ -247,9 +252,9 @@ class ClientsServiceTest {
     void getClientDataReporterThrowsWhenClientDoesNotExist() {
         when(clientsRepository.findClientByIdReporter(10L)).thenReturn(null);
 
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> clientsService.getClientDataReporter(10L));
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> clientsService.getClientDataReporter(10L));
 
-        assertEquals("Client not found", exception.getMessage());
+        assertEquals("client not found!", exception.getMessage());
     }
 
     @Test
@@ -266,9 +271,9 @@ class ClientsServiceTest {
     void getAllClientDataAdminThrowsWhenListIsEmpty() {
         when(clientsRepository.findClientsAsAdmin()).thenReturn(List.of());
 
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> clientsService.getAllClientDataAdmin());
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> clientsService.getAllClientDataAdmin());
 
-        assertEquals("No clients found", exception.getMessage());
+        assertEquals("clients list not found", exception.getMessage());
     }
 
     @Test
@@ -285,9 +290,9 @@ class ClientsServiceTest {
     void getAllClientDataReporterThrowsWhenListIsEmpty() {
         when(clientsRepository.findClientsAsReporter()).thenReturn(List.of());
 
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> clientsService.getAllClientDataReporter());
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> clientsService.getAllClientDataReporter());
 
-        assertEquals("No clients found", exception.getMessage());
+        assertEquals("clients list not found", exception.getMessage());
     }
 
     @Test
@@ -305,9 +310,9 @@ class ClientsServiceTest {
     void updateCashAmountThrowsWhenClientDoesNotExist() {
         when(clientsRepository.findClientById(11L)).thenReturn(null);
 
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> clientsService.updateCashAmount(11L, BigDecimal.ONE));
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> clientsService.updateCashAmount(11L, BigDecimal.ONE));
 
-        assertEquals("Client not found", exception.getMessage());
+        assertEquals("client not found!", exception.getMessage());
     }
 
     @Test
@@ -364,9 +369,9 @@ class ClientsServiceTest {
         ClientProfileUpdateRequest request = profileUpdateRequest("updateduser", "Updated", "Name");
         when(clientsRepository.findClientById(12L)).thenReturn(null);
 
-        ClientNotFoundException exception = assertThrows(ClientNotFoundException.class, () -> clientsService.updateProfile(12L, request));
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class, () -> clientsService.updateProfile(12L, request));
 
-        assertEquals("Client not found", exception.getMessage());
+        assertEquals("client not found!", exception.getMessage());
     }
 
     @Test

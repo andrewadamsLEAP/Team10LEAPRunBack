@@ -19,6 +19,7 @@ import com.example.DTOs.clients.LoginResponse;
 import com.example.entities.Employee;
 import com.example.services.ClientsService;
 import com.example.services.EmployeeService;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import jakarta.validation.Valid;
 
@@ -40,6 +41,7 @@ public class EmployeeController {
     }
 
     @PatchMapping("/password/{employeeId}")
+    @PreAuthorize("hasAnyRole('EMPLOYEE_ADMIN', 'EMPLOYEE_REPORTER')")
     public ResponseEntity<Void> changePassword(@PathVariable Long employeeId, @RequestBody @Valid ChangePasswordRequest request) {
         employeeService.changePassword(employeeId, request);
         return ResponseEntity.noContent().build();
@@ -47,13 +49,35 @@ public class EmployeeController {
 
     // Reporter endpoints - for reporting/analytics access
     @GetMapping("/reporter/{clientId}")
+    @PreAuthorize("hasRole('EMPLOYEE_REPORTER')")
     public ResponseEntity<ClientReporterView> getClientAsReporter(@PathVariable Long clientId) {
         return ResponseEntity.ok(clientsService.getClientDataReporter(clientId));
     }
 
     @GetMapping("/reporter")
+    @PreAuthorize("hasRole('EMPLOYEE_REPORTER')")
     public ResponseEntity<List<ClientReporterView>> getAllClientsAsReporter() {
         return ResponseEntity.ok(clientsService.getAllClientDataReporter());
+    }
+
+    // Admin endpoints - for administrative access
+    @GetMapping("/admin/{clientId}")
+    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+    public ResponseEntity<ClientAdminView> getClientAsAdmin(@PathVariable Long clientId) {
+        return ResponseEntity.ok(clientsService.getClientDataAdmin(clientId));
+    }
+
+    @GetMapping("/admin")
+    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+    public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
+        return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
+    }
+
+    // Returns reporter employee accounts without exposing password data.
+    @GetMapping("/admin/reporters")
+    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+    public ResponseEntity<List<EmployeeProfileView>> getAllReportersAsAdmin() {
+        return ResponseEntity.ok(employeeService.getAllReporters());
     }
 }
 

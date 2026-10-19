@@ -25,7 +25,7 @@ public class Validate {
             throw new InvalidArgumentsException("Invalid Client ID","Client ID cannot be null or less than or equal to zero: " + clientId);
         }
         if (!clientExists.get()) {
-            throw new ClientNotFoundException(clientId);
+            throw new UserNotFoundException(clientId);
         }
     }
 
@@ -42,12 +42,25 @@ public class Validate {
 
     }
 
-    public static void validateClient(LoginView client) {
+    public static <T> T validateUser(T object, String user) {
+        if (object == null) {
+            throw new UserNotFoundException(user + " not found!");        
+        }
+        return object;
+    }
+
+    public static <T> List<T> validateUserList(List<T> list, String userType) {
+        if (list == null || list.isEmpty()) {
+            throw new UserNotFoundException(userType + " list not found");        
+        }
+        return list;
+    }
+
+    /*public static void validateClient(LoginView client) {
         if (client == null) {
             throw new ClientNotFoundException("Client not found");        
         }
     }
-    /*
    public void validateClient(Long clientId, String function) {
         if (function == "changePassword") {
             try {

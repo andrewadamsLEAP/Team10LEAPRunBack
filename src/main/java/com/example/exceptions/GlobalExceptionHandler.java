@@ -4,14 +4,21 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataAccessException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
-    @ExceptionHandler(ClientNotFoundException.class)
-    public ResponseEntity<ProblemDetail> handleClientNotFound(ClientNotFoundException ex) {
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleUserNotFound(UserNotFoundException ex) {
         return buildProblem(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
@@ -39,6 +46,20 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Database operation failed. The transactions table schema may be out of sync with the application mapper."
         );
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex, ServletWebRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String principal = authentication == null ? "anonymous" : authentication.getName();
+        String authorities = authentication == null ? "none" : authentication.getAuthorities().toString();
+        String path = request.getRequest().getRequestURI();
+
+        logger.warn("Access denied for principal '{}' on {}. Granted authorities: {}. Reason: {}",
+                principal, path, authorities, ex.getMessage());
+
+        return buildProblem(HttpStatus.FORBIDDEN,
+                "Access denied. The authenticated user does not have the required role for this endpoint.");
     }
 
     private ResponseEntity<ProblemDetail> buildProblem(HttpStatus status, String detail) {

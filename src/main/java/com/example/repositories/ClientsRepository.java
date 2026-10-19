@@ -43,6 +43,10 @@ public class ClientsRepository {
         return clientsMapper.findLoginClientByUsername(username);
     }
 
+    public LoginView findLoginClientByIdentifier(String identifier) {
+        return clientsMapper.findLoginClientByIdentifier(identifier);
+    }
+
     public LoginView findLoginClientById(Long clientId) {
         return clientsMapper.findLoginClientById(clientId);
     }
