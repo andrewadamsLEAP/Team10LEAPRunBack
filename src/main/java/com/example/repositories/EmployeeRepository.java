@@ -2,9 +2,12 @@ package com.example.repositories;
 
 import com.example.DTOs.clients.LoginView;
 import com.example.DTOs.employees.EmployeeLoginView;
+import com.example.DTOs.employees.EmployeeProfileView;
 import com.example.entities.Employee;
 import com.example.mappers.EmployeeMapper;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
 
 @Repository
 public class EmployeeRepository {
@@ -16,6 +19,13 @@ public class EmployeeRepository {
 
     public Employee findEmployeeById(Long id) {
         return employeeMapper.findById(id);
+    }
+
+    /**
+     * Retrieves reporter accounts for the admin-facing employee endpoint.
+     */
+    public List<EmployeeProfileView> findAllReporters() {
+        return employeeMapper.findAllReporters();
     }
 
     public Long findEmployeeIdByEmail(String email) {

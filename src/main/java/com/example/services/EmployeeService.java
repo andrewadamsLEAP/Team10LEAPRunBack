@@ -15,6 +15,8 @@ import com.example.repositories.EmployeeRepository;
 import com.example.DTOs.clients.LoginResponse;
 import com.example.DTOs.employees.EmployeeLoginView;
 
+import java.util.List;
+
 @Service 
 public class EmployeeService {
     private final EmployeeRepository employeeRepository;
@@ -80,6 +82,13 @@ public class EmployeeService {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getRole());
+    }
+
+    /**
+     * Returns the reporter accounts visible to an authenticated administrator.
+     */
+    public List<EmployeeProfileView> getAllReporters() {
+        return employeeRepository.findAllReporters();
     }
    
 

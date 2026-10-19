@@ -72,6 +72,13 @@ public class EmployeeController {
     public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
         return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
     }
+
+    // Returns reporter employee accounts without exposing password data.
+    @GetMapping("/admin/reporters")
+    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+    public ResponseEntity<List<EmployeeProfileView>> getAllReportersAsAdmin() {
+        return ResponseEntity.ok(employeeService.getAllReporters());
+    }
 }
 
 

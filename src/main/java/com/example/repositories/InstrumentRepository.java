@@ -20,4 +20,17 @@ public class InstrumentRepository {
     public Instrument findByTicker(String ticker) {
         return instrumentMapper.findByTicker(ticker);
     }
+
+    /**
+     * Persists the latest daily statistics for an existing instrument.
+     */
+    public int updateMarketStats(
+            String ticker,
+            Double previousClose,
+            Double open,
+            Integer volume,
+            Double avgVolume) {
+        return instrumentMapper.updateMarketStats(
+                ticker, previousClose, open, volume, avgVolume);
+    }
 }
