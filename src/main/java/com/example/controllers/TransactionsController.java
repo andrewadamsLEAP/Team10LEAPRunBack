@@ -27,7 +27,6 @@ public class TransactionsController {
     }
 
     @GetMapping("/transactions")
-    @PreAuthorize("hasRole('CLIENT')")
     public List<Transaction> getTransactions(
             @RequestParam Long clientId) {
         ClientIdContextHolder.requireClient(clientId);
