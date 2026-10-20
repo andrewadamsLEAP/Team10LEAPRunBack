@@ -27,40 +27,33 @@ public class TransactionsController {
     }
 
     @GetMapping("/transactions")
-    public List<Transaction> getTransactions(
-            @RequestParam Long clientId) {
-        ClientIdContextHolder.requireClient(clientId);
-
+    @PreAuthorize("hasRole('CLIENT')")
+    public List<Transaction> getTransactions() {
+        Long clientId = ClientIdContextHolder.requireClientId();
         return transactionsService.getTransactions(clientId);
     }
 
     @PostMapping("/transactions/deposit")
     @PreAuthorize("hasRole('CLIENT')")
     public Transaction deposit(
-            @RequestParam Long clientId,
             @RequestParam BigDecimal amount) {
-        ClientIdContextHolder.requireClient(clientId);
-
+        Long clientId = ClientIdContextHolder.requireClientId();
         return transactionsService.deposit(clientId, amount);
     }
 
     @PostMapping("/transactions/withdrawal")
     @PreAuthorize("hasRole('CLIENT')")
     public Transaction withdrawal(
-            @RequestParam Long clientId,
             @RequestParam BigDecimal amount) {
-        ClientIdContextHolder.requireClient(clientId);
-
+        Long clientId = ClientIdContextHolder.requireClientId();
         return transactionsService.withdrawal(clientId, amount);
     }
 
     @PostMapping("/transactions/purchase")
     @PreAuthorize("hasRole('CLIENT')")
     public Transaction purchase(
-            @RequestParam Long clientId,
             @RequestParam BigDecimal amount) {
-        ClientIdContextHolder.requireClient(clientId);
-
+        Long clientId = ClientIdContextHolder.requireClientId();
         return transactionsService.purchase(clientId, amount);
     }
 }

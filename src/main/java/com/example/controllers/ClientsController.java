@@ -1,21 +1,17 @@
 package com.example.controllers;
 
-import com.example.DTOs.clients.ChangePasswordRequest;
-import com.example.DTOs.clients.ClientAdminView;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientProfileView;
-import com.example.DTOs.clients.ClientReporterView;
-import com.example.DTOs.clients.LoginRequest;
-import com.example.DTOs.clients.LoginResponse;
-import com.example.entities.Client;
-import jakarta.validation.Valid;
-
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import com.example.services.ClientsService;
 import com.example.authUtils.ClientIdContextHolder;
+import com.example.services.ClientsService;
+import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -28,44 +24,18 @@ public class ClientsController {
         this.clientsService = clientsService;
     }
 
-    // TODO: Check all endpoints for proper authorization and validation
-    @PostMapping("/sign-up")
-    public ResponseEntity<LoginResponse> signup(
-            @RequestBody @Valid Client request) {
-        return ResponseEntity.ok(clientsService.signup(request));
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(
-            @RequestBody @Valid LoginRequest request,
-        @RequestParam Long clientId) {
-        return ResponseEntity.ok(clientsService.login(clientId, request));
-    }
-
-    @PatchMapping("/password")
+    @PatchMapping("/profile")
     @PreAuthorize("hasRole('CLIENT')")
-    public ResponseEntity<Void> changePassword( 
-            @RequestBody @Valid ChangePasswordRequest request,
-            @RequestParam Long clientId) {
-        ClientIdContextHolder.requireClient(clientId);
-        clientsService.changePassword(clientId, request);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/profile/{clientId}")
-    @PreAuthorize("hasRole('CLIENT')")
-    public ResponseEntity<Void> updateProfile( 
-            @PathVariable Long clientId,
+    public ResponseEntity<Void> updateProfile(
             @RequestBody @Valid ClientProfileUpdateRequest request) {
-        ClientIdContextHolder.requireClient(clientId);
-        clientsService.updateProfile(clientId, request);
+        clientsService.updateProfile(ClientIdContextHolder.requireClientId(), request);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/profile/{clientId}")
+    @GetMapping("/profile")
     @PreAuthorize("hasRole('CLIENT')")
-    public ResponseEntity<ClientProfileView> viewProfile(@PathVariable Long clientId) {
-        ClientIdContextHolder.requireClient(clientId);
-        return ResponseEntity.ok(clientsService.getClientProfile(clientId));
+    public ResponseEntity<ClientProfileView> viewProfile() {
+        return ResponseEntity.ok(clientsService.getClientProfile(
+                ClientIdContextHolder.requireClientId()));
     }
 }

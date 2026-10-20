@@ -3,25 +3,17 @@ package com.example.controllers;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.DTOs.clients.ChangePasswordRequest;
 import com.example.DTOs.clients.ClientAdminView;
 import com.example.DTOs.employees.*;
 import com.example.DTOs.clients.ClientReporterView;
-import com.example.DTOs.clients.LoginRequest;
-import com.example.DTOs.clients.LoginResponse;
-import com.example.entities.Employee;
 import com.example.services.ClientsService;
 import com.example.services.EmployeeService;
 import org.springframework.security.access.prepost.PreAuthorize;
 
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1/employees")
@@ -33,18 +25,6 @@ public class EmployeeController {
     public EmployeeController(EmployeeService employeeService, ClientsService clientsService) {
         this.employeeService = employeeService;
         this.clientsService = clientsService;
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request) {
-        return ResponseEntity.ok(employeeService.login(request));
-    }
-
-    @PatchMapping("/password/{employeeId}")
-    @PreAuthorize("hasAnyRole('EMPLOYEE_ADMIN', 'EMPLOYEE_REPORTER')")
-    public ResponseEntity<Void> changePassword(@PathVariable Long employeeId, @RequestBody @Valid ChangePasswordRequest request) {
-        employeeService.changePassword(employeeId, request);
-        return ResponseEntity.noContent().build();
     }
 
     // Reporter endpoints - for reporting/analytics access
@@ -71,6 +51,13 @@ public class EmployeeController {
     @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
     public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
         return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
+    }
+
+    // Returns reporter employee accounts without exposing password data.
+    @GetMapping("/admin/reporters")
+    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+    public ResponseEntity<List<EmployeeProfileView>> getAllReportersAsAdmin() {
+        return ResponseEntity.ok(employeeService.getAllReporters());
     }
 }
 

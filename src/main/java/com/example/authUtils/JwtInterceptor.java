@@ -6,11 +6,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.util.List;
@@ -32,7 +30,7 @@ public class JwtInterceptor implements HandlerInterceptor {
     private static final Logger logger = LoggerFactory.getLogger(JwtInterceptor.class);
     private static final String BEARER_PREFIX = "Bearer ";
     private final JwtUtil jwtUtil;
-    
+
     public JwtInterceptor(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
@@ -41,12 +39,6 @@ public class JwtInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         logger.debug("Processing request: {} {}", request.getMethod(), request.getRequestURI());
 
-        // Only enforce JWT on endpoints explicitly marked as secured.
-        if (!isJwtRequired(handler)) {
-            logger.debug("Skipping JWT auth for public endpoint: {} {}", request.getMethod(), request.getRequestURI());
-            return true;
-        }
-        
         try {
             String authHeader = request.getHeader("Authorization");
             
@@ -55,8 +47,10 @@ public class JwtInterceptor implements HandlerInterceptor {
                 throw new UnauthorizedException("Missing or invalid Authorization header");
             }
             
-            // Extract token from "Bearer <token>"
-            String token = authHeader.substring(BEARER_PREFIX.length());
+            String token = authHeader.substring(BEARER_PREFIX.length()).trim();
+            if (token.isEmpty()) {
+                throw new UnauthorizedException("Missing or invalid Authorization header");
+            }
             
             // Validate JWT signature
             if (!jwtUtil.validateToken(token)) {
@@ -64,19 +58,16 @@ public class JwtInterceptor implements HandlerInterceptor {
                 throw new UnauthorizedException("Invalid or expired token");
             }
             
-            // NestJS stores the authenticated record ID in sub. It is a clientId
-            // only for client tokens; employee tokens do not populate this context.
-            Long clientId = jwtUtil.getClientIdFromToken(token);
             Long userId = jwtUtil.getUserIdFromToken(token);
 
             if (userId == null || userId <= 0) {
                 throw new UnauthorizedException("Token does not contain a valid subject ID");
             }
             
-            // Extract role and set up Spring Security context with role authorities
             String role = jwtUtil.getRoleFromToken(token);
             String username = jwtUtil.getUsernameFromToken(token);
             String actorType = jwtUtil.getActorTypeFromToken(token);
+            String tokenUse = jwtUtil.getTokenUseFromToken(token);
 
             if (actorType == null
                     || (!"client".equalsIgnoreCase(actorType)
@@ -84,25 +75,37 @@ public class JwtInterceptor implements HandlerInterceptor {
                 throw new UnauthorizedException("Token does not contain a valid actorType claim");
             }
 
-            // Only client-scoped operations need a client ID. Employee tokens do not have one.
-            if (clientId != null) {
-                ClientIdContextHolder.setClientId(clientId);
+            if (!"access".equalsIgnoreCase(tokenUse)) {
+                throw new UnauthorizedException("Token is not an access token");
             }
-            
-            if (role != null) {
-                List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority("ROLE_" + role)
-                );
-                UsernamePasswordAuthenticationToken auth = 
-                    new UsernamePasswordAuthenticationToken(username, null, authorities);
-                SecurityContextHolder.getContext().setAuthentication(auth);
-                logger.info("Request authenticated with userId: {}, clientId: {}, role: {}",
-                    userId, clientId, role);
+
+            String authority;
+            if ("client".equalsIgnoreCase(actorType)) {
+                ClientIdContextHolder.setClientId(userId);
+                authority = "CLIENT";
             } else {
-                logger.warn("JWT rejected for {} {}: token does not contain role claim",
-                        request.getMethod(), request.getRequestURI());
-                throw new UnauthorizedException("Token does not contain role claim");
+                if (role == null || role.isBlank()) {
+                    throw new UnauthorizedException("Employee token does not contain a role claim");
+                }
+                authority = normalizeEmployeeRole(role);
             }
+
+            AuthenticatedUser authenticatedUser = new AuthenticatedUser(
+                    userId,
+                    username,
+                    actorType,
+                    role,
+                    jwtUtil.getTokenIdFromToken(token),
+                    jwtUtil.getSessionIdFromToken(token));
+            AuthContextHolder.set(authenticatedUser);
+
+            List<SimpleGrantedAuthority> authorities = List.of(
+                    new SimpleGrantedAuthority("ROLE_" + authority));
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(authenticatedUser, null, authorities);
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+            logger.info("Request authenticated with userId: {}, actorType: {}, authority: {}",
+                    userId, actorType, authority);
             
             return true;
             
@@ -119,32 +122,16 @@ public class JwtInterceptor implements HandlerInterceptor {
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         // Always clean up the context after request processing
         ClientIdContextHolder.clear();
+        AuthContextHolder.clear();
+        SecurityContextHolder.clearContext();
         logger.debug("Cleared clientId context after request");
     }
 
-    private boolean isJwtRequired(Object handler) {
-        if (!(handler instanceof HandlerMethod handlerMethod)) {
-            return false;
-        }
-
-        PreAuthorize methodAnnotation = handlerMethod.getMethodAnnotation(PreAuthorize.class);
-        if (methodAnnotation != null) {
-            return !isPermitAllExpression(methodAnnotation.value());
-        }
-
-        PreAuthorize classAnnotation = handlerMethod.getBeanType().getAnnotation(PreAuthorize.class);
-        if (classAnnotation != null) {
-            return !isPermitAllExpression(classAnnotation.value());
-        }
-
-        // No method/class security annotation: treat as public route.
-        return false;
-    }
-
-    private boolean isPermitAllExpression(String expression) {
-        if (expression == null) {
-            return false;
-        }
-        return "permitAll()".equals(expression.replace(" ", ""));
+    private String normalizeEmployeeRole(String role) throws UnauthorizedException {
+        return switch (role.toLowerCase()) {
+            case "admin", "employee_admin" -> "EMPLOYEE_ADMIN";
+            case "reporter", "employee_reporter" -> "EMPLOYEE_REPORTER";
+            default -> throw new UnauthorizedException("Unsupported employee role");
+        };
     }
 }

@@ -2,8 +2,11 @@ package com.example.mappers;
 
 import com.example.DTOs.clients.LoginView;
 import com.example.DTOs.employees.EmployeeLoginView;
+import com.example.DTOs.employees.EmployeeProfileView;
 import com.example.entities.Employee;
 import org.apache.ibatis.annotations.*;
+
+import java.util.List;
 
 @Mapper
 public interface EmployeeMapper {
@@ -20,6 +23,23 @@ public interface EmployeeMapper {
         WHERE employee_id = #{employeeId}
         """)
     Employee findById(@Param("employeeId") Long employeeId);
+
+    /**
+     * Finds all employees whose stored role identifies them as reporters.
+     * The projection intentionally excludes password data.
+     */
+    @Select("""
+        SELECT employee_id AS employeeId,
+               email,
+               username,
+               first_name AS firstName,
+               last_name AS lastName,
+               role
+        FROM employees
+        WHERE UPPER(role) IN ('REPORTER', 'EMPLOYEE_REPORTER')
+        ORDER BY employee_id
+        """)
+    List<EmployeeProfileView> findAllReporters();
 
     @Select("""
         SELECT employee_id
@@ -38,11 +58,12 @@ public interface EmployeeMapper {
     @Select("""
         SELECT employee_id AS userId,
                username,
-               password
+               password,
+               role
         FROM employees
         WHERE username = #{username}
         """)
-    LoginView findLoginEmployeeByUsername(@Param("username") String username);
+    EmployeeLoginView findLoginEmployeeByUsername(@Param("username") String username);
 
     @Select("""
         SELECT employee_id AS userId,

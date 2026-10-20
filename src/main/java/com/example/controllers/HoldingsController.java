@@ -44,34 +44,31 @@ public class HoldingsController {
 
     //Get specific holding (entire holding) for a client and ticker
     // Example: GET /api/v1/holdings/1/AAPL
-    @GetMapping("/{clientId}/{ticker}")
+    @GetMapping("/{ticker}")
     @PreAuthorize("hasRole('CLIENT')")
     public HoldingResponse getHolding(
-            @PathVariable Long clientId,
             @PathVariable String ticker) {
-        ClientIdContextHolder.requireClient(clientId);
+        Long clientId = ClientIdContextHolder.requireClientId();
         return holdingsService.getHolding(clientId, ticker);
     }
 
    
     // Get all holdings for a specific client
     // Example: GET /api/v1/holdings/client/1
-    @GetMapping("/client/{clientId}")
+    @GetMapping
     @PreAuthorize("hasRole('CLIENT')")
-    public java.util.List<HoldingResponse> getClientHoldings(
-            @PathVariable Long clientId) {
-        ClientIdContextHolder.requireClient(clientId);
+    public java.util.List<HoldingResponse> getClientHoldings() {
+        Long clientId = ClientIdContextHolder.requireClientId();
         return holdingsService.getAllClientHoldings(clientId);
     }
 
     // Get only quantity of a specific ticker for a client
-    // Example: GET /api/v1/holdings/quantity?clientId=1&ticker=AAPL
+    // Example: GET /api/v1/holdings/quantity?ticker=AAPL
     @GetMapping("/quantity")
     @PreAuthorize("hasRole('CLIENT')")
     public QuantityResponse getQuantity(
-            @RequestParam Long clientId,
             @RequestParam String ticker) {
-        ClientIdContextHolder.requireClient(clientId);
+        Long clientId = ClientIdContextHolder.requireClientId();
         return holdingsService.getQuantity(clientId, ticker);
     }
 
