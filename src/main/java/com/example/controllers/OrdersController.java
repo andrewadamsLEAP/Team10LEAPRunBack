@@ -63,12 +63,10 @@ public OrderResponse getOrderById(
 // Get fulfilled orders for client
 // =========================================================
 
-@GetMapping("/client/{clientId}/fulfilled")
+@GetMapping("/client/fulfilled")
 @PreAuthorize("hasRole('CLIENT')")
-public List<OrderHistoryView> getFulfilledOrders(
-        @PathVariable Long clientId) {
-    ClientIdContextHolder.requireClient(clientId);
-
+public List<OrderHistoryView> getFulfilledOrders() {
+    Long clientId = ClientIdContextHolder.requireClientId();
     return ordersService.getFulfilledOrdersAsDto(clientId);
 }
 
@@ -88,12 +86,10 @@ public List<OrderHistoryView> getCancelledOrders() {
 // Get cancelled orders for client
 // =========================================================
 
-@GetMapping("/client/{clientId}/cancelled")
+@GetMapping("/client/cancelled")
 @PreAuthorize("hasRole('CLIENT')")
-public List<OrderHistoryView> getCancelledOrdersForClient(
-        @PathVariable Long clientId) {
-    ClientIdContextHolder.requireClient(clientId);
-
+public List<OrderHistoryView> getCancelledOrdersForClient() {
+    Long clientId = ClientIdContextHolder.requireClientId();
     return ordersService.getCancelledOrdersForClientAsDto(clientId);
 }
 
@@ -134,9 +130,9 @@ public List<OrderHistoryView> getPendingBuyOrdersForTicker(
 @PreAuthorize("hasRole('CLIENT')")
 public OrderResponse placeBuyOrder(
         @Valid @RequestBody PlaceOrderRequest request) {
-    ClientIdContextHolder.requireClient(request.clientId());
+    Long clientId = ClientIdContextHolder.requireClientId();
     return ordersService.placeBuyOrderAsDto(
-            request.clientId(),
+        clientId,
             request.ticker(),
             request.quantity()
     );
@@ -151,9 +147,9 @@ public OrderResponse placeBuyOrder(
 @PreAuthorize("hasRole('CLIENT')")
 public OrderResponse placeSellOrder(
         @Valid @RequestBody PlaceOrderRequest request) {
-    ClientIdContextHolder.requireClient(request.clientId());
+    Long clientId = ClientIdContextHolder.requireClientId();
     return ordersService.placeSellOrderAsDto(
-            request.clientId(),
+        clientId,
             request.ticker(),
             request.quantity()
     );

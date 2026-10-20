@@ -3,8 +3,10 @@ package com.example.controllers;
 import com.example.DTOs.clients.ClientAdminView;
 import com.example.DTOs.clients.ClientProfileView;
 import com.example.DTOs.clients.ClientReporterView;
+import com.example.authUtils.ClientIdContextHolder;
 import com.example.services.ClientsService;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -31,7 +33,13 @@ class ClientsControllerTest {
 
     @BeforeEach
     void setUp() {
+        ClientIdContextHolder.setClientId(1L);
         clientsController = new ClientsController(clientsService);
+    }
+
+    @AfterEach
+    void clearContext() {
+        ClientIdContextHolder.clear();
     }
 
     // ========== PROFILE VIEW TESTS ==========
@@ -43,7 +51,7 @@ class ClientsControllerTest {
 
         when(clientsService.getClientProfile(clientId)).thenReturn(expected);
 
-        ClientProfileView result = clientsController.viewProfile(clientId).getBody();
+        ClientProfileView result = clientsController.viewProfile().getBody();
 
         assertNotNull(result);
         assertEquals(clientId, result.clientId());
