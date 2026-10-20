@@ -12,12 +12,15 @@ import org.springframework.stereotype.Service;
 
 import com.example.repositories.MarketDataRepository;
 import com.example.generalServices.AlpacaClient;
+import com.example.generalServices.FrankfurterClient;
 import com.example.mappers.MarketSymbolMapper;
-import com.example.generalServices.AlpacaClient.AlpacaForexResponse;
+import com.example.services.InstrumentService;
 import com.example.generalServices.AlpacaClient.AlpacaQuotesResponse;
 
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,8 @@ public class MarketDataService {
 
     private final MarketDataRepository marketDataRepository;
     private final AlpacaClient alpacaClient;
+        private final InstrumentService instrumentService;
+        private final FrankfurterClient frankfurterClient;
     private final MarketSymbolMapper marketSymbolMapper;
     private final MarketHoursService marketHoursService;
     private final Environment environment;
@@ -45,10 +50,13 @@ public class MarketDataService {
 
     private int lastSuccessfulTickerCount;
     private int lastFailedTickerCount;
+        private LocalDate lastStockStatsRefreshDate;
 
     public MarketDataService(
             MarketDataRepository marketDataRepository,
             AlpacaClient alpacaClient,
+            InstrumentService instrumentService,
+            FrankfurterClient frankfurterClient,
             MarketSymbolMapper marketSymbolMapper,
             MarketHoursService marketHoursService,
             Environment environment,
@@ -67,6 +75,12 @@ public class MarketDataService {
 
         this.alpacaClient =
                 alpacaClient;
+
+        this.instrumentService =
+                instrumentService;
+
+        this.frankfurterClient =
+                frankfurterClient;
 
         this.marketSymbolMapper =
                 marketSymbolMapper;
@@ -107,22 +121,6 @@ public class MarketDataService {
          */
         if (environment.acceptsProfiles(
                 Profiles.of("test"))) {
-
-            return;
-        }
-
-        if (!alpacaClient.isApiKeyConfigured()) {
-
-            logger.warn(
-                    "ALPACA_API_KEY is not configured");
-
-            return;
-        }
-
-        if (!alpacaClient.isApiSecretConfigured()) {
-
-            logger.warn(
-                    "ALPACA_API_SECRET is not configured");
 
             return;
         }
@@ -188,8 +186,6 @@ public class MarketDataService {
         lastSuccessfulTickerCount = 0;
 
         lastFailedTickerCount = 0;
-
-        alpacaClient.validateCredentials();
 
         List<Instrument> instruments =
                 marketDataRepository.findInstruments();
@@ -284,6 +280,12 @@ public class MarketDataService {
 
                 refreshStocks(
                         stockSymbols);
+
+                                LocalDate today = OffsetDateTime.now(ZoneOffset.UTC).toLocalDate();
+                                if (!today.equals(lastStockStatsRefreshDate)
+                                                && refreshStockInstrumentStats(stockSymbols)) {
+                                        lastStockStatsRefreshDate = today;
+                                }
             }
         }
 
@@ -391,6 +393,64 @@ public class MarketDataService {
         }
     }
 
+        // =========================================================
+        // Stock Instrument Statistics
+        //
+        // Daily bars populate the four mutable statistics stored on
+        // instruments. Ticker and asset type remain unchanged.
+        // =========================================================
+
+        private boolean refreshStockInstrumentStats(List<String> symbols) {
+                try {
+                        AlpacaClient.AlpacaBarsResponse response =
+                                        alpacaClient.getDailyStockBars(symbols);
+
+                        if (response == null || response.bars() == null) {
+                                return false;
+                        }
+
+                        response.bars().forEach((ticker, bars) -> {
+                                if (bars == null || bars.isEmpty()) {
+                                        logger.warn("No daily bars returned for stock {}", ticker);
+                                        return;
+                                }
+
+                                AlpacaClient.AlpacaBar latest = bars.get(bars.size() - 1);
+                                AlpacaClient.AlpacaBar previous = bars.size() > 1
+                                                ? bars.get(bars.size() - 2)
+                                                : latest;
+
+                                // Average the returned daily volumes instead of deriving volume from quotes.
+                                double averageVolume = bars.stream()
+                                                .map(AlpacaClient.AlpacaBar::volume)
+                                                .filter(java.util.Objects::nonNull)
+                                                .mapToDouble(java.math.BigDecimal::doubleValue)
+                                                .average()
+                                                .orElse(0.0);
+
+                                int volume = latest.volume() == null
+                                                ? 0
+                                                : latest.volume().intValue();
+
+                                // The previous bar is the previous trading session, not necessarily yesterday.
+                                int updatedRows = instrumentService.updateMarketStats(
+                                                ticker,
+                                                previous.close() == null ? 0.0 : previous.close().doubleValue(),
+                                                latest.open() == null ? 0.0 : latest.open().doubleValue(),
+                                                volume,
+                                                averageVolume);
+
+                                if (updatedRows != 1) {
+                                        logger.warn("Daily bars returned for unknown stock ticker {}", ticker);
+                                }
+                        });
+                        return !response.bars().isEmpty();
+                } catch (Exception exception) {
+                        logger.error("Unable to refresh stock instrument statistics", exception);
+                        return false;
+                }
+        }
+
     // =========================================================
     // Crypto Refresh
     // =========================================================
@@ -477,63 +537,54 @@ public class MarketDataService {
 
         try {
 
-            /*
-             * Forex is different from stocks and crypto.
-             *
-             * Alpaca expects:
-             *
-             * currency_pairs=EUR/USD,USD/JPY
-             *
-             * rather than:
-             *
-             * symbols=EUR/USD,USD/JPY
-             */
-            String currencyPairs =
-                    marketSymbolMapper
-                            .toAlpacaForexSymbols(
-                                    symbols);
+            Map<String, List<String>> quotesByBase = symbols.stream()
+                    .map(symbol -> new String[] {
+                            marketSymbolMapper.toFrankfurterBase(symbol),
+                            marketSymbolMapper.toFrankfurterQuote(symbol)
+                    })
+                    .collect(java.util.stream.Collectors.groupingBy(
+                            pair -> pair[0],
+                            java.util.LinkedHashMap::new,
+                            java.util.stream.Collectors.mapping(
+                                    pair -> pair[1],
+                                    java.util.stream.Collectors.toList())));
 
-            logger.info(
-                    "Requesting forex rates for {} symbols: {}",
-                    symbols.size(),
-                    currencyPairs);
-
-            /*
-             * Forex returns AlpacaForexResponse,
-             * NOT AlpacaQuotesResponse.
-             */
-            AlpacaClient.AlpacaForexResponse response =
-                    alpacaClient.getForexRates(
-                            currencyPairs);
-
-            if (response != null && response.rates() != null) {
-                logger.info("Forex rates received:");
-                response.rates().forEach((ticker, rate) -> {
+            quotesByBase.forEach((base, quotes) -> {
+                logger.info("Requesting Frankfurter rates for base {} and quotes {}", base, quotes);
+                List<FrankfurterClient.FrankfurterRate> response =
+                        frankfurterClient.getRates(base, quotes);
+                response.forEach(rate -> {
                     logger.info(
-                            "  {} - Ask: {}, Bid: {} @ {}",
-                            ticker,
-                            rate.askPrice(),
-                            rate.bidPrice(),
-                            rate.quoteTimestamp());
+                            "  {}/{} - Rate: {} @ {}",
+                            rate.base(), rate.quote(), rate.rate(), rate.date());
                     try {
-                        String databaseTicker = marketSymbolMapper.toDatabaseForexSymbol(ticker);
+                        String normalizedPair = rate.base() + rate.quote();
+                        String databaseTicker = symbols.stream()
+                                .filter(symbol -> symbol.replace("-", "")
+                                        .replace("/", "")
+                                        .equalsIgnoreCase(normalizedPair))
+                                .findFirst()
+                                .orElse(normalizedPair);
+                        OffsetDateTime quoteTimestamp = rate.date()
+                                .atStartOfDay()
+                                .atOffset(ZoneOffset.UTC);
                         marketDataRepository.saveQuote(
                                 databaseTicker,
-                                rate.askPrice(),
+                                rate.rate(),
+                                BigDecimal.ZERO,
+                                "FRANKFURT",
+                                rate.rate(),
+                                BigDecimal.ZERO,
+                                "FRANKFURT",
                                 null,
-                                rate.askExchange(),
-                                rate.bidPrice(),
-                                null,
-                                rate.bidExchange(),
-                                null,
-                                rate.quoteTimestamp());
+                                quoteTimestamp);
                         lastSuccessfulTickerCount++;
                     } catch (Exception ex) {
                         lastFailedTickerCount++;
-                        logger.error("Failed to save quote for ticker: {}", ticker, ex);
+                        logger.error("Failed to save forex rate for {}/{}", rate.base(), rate.quote(), ex);
                     }
                 });
-            }
+            });
 
         } catch (Exception exception) {
 

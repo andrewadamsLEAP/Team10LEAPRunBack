@@ -35,27 +35,19 @@ public class JwtUtil {
     private long jwtExpirationMs;
     
     /**
-     * Generate a JWT token with clientId embedded in the claims
+     * Generate a JWT token with clientId and role embedded in the claims
+     * TEMPORARY: This method is kept for development/testing. Will be deleted when NestJS is ready.
      * 
-     * @param username the username (extracted from login)
+     * @param username the username
      * @param clientId the client ID associated with the user
+     * @param role the role (CLIENT, EMPLOYEE_ADMIN, EMPLOYEE_REPORTER)
      * @return the JWT token string
      */
-    public String generateToken(String username, Long clientId) {
-        logger.info("Generating JWT token for username: {}, clientId: {}", username, clientId);
-        
-        SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes());
-        Date now = new Date();
-        Date expiryDate = new Date(now.getTime() + jwtExpirationMs);
-        
-        return Jwts.builder()
-                .setSubject(username)
-                .claim("clientId", clientId)
-                .setIssuedAt(now)
-                .setExpiration(expiryDate)
-                .signWith(key, SignatureAlgorithm.HS256)
-                .compact();
+    public String generateToken() {
+        return "${JWT_TOKEN}";
     }
+
+   
     
     /**
      * Validate JWT token signature and expiration

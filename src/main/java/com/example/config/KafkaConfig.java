@@ -31,25 +31,25 @@ import java.util.Map;
 @Profile("!test")  // Exclude from test profile - tests use KafkaTestConfig instead
 public class KafkaConfig {
 
-    @Value("${spring.kafka.bootstrap-servers}")
+    @Value("${spring.kafka.bootstrap.servers:localhost:9092}")
     private String bootstrapServers;
 
-    @Value("${app.kafka.producer.acks}")
+    @Value("${app.kafka.producer.acks:all}")
     private String producerAcks;
 
-    @Value("${app.kafka.producer.retries}")
+    @Value("${app.kafka.producer.retries:3}")
     private int producerRetries;
 
-    @Value("${app.kafka.producer.retry-backoff-ms}")
+    @Value("${app.kafka.producer.retry-backoff-ms:1000}")
     private int retryBackoffMs;
 
-    @Value("${app.kafka.producer.compression-type}")
+    @Value("${app.kafka.producer.compression-type:none}")
     private String compressionType;
 
-    @Value("${app.kafka.consumer.group-id}")
+    @Value("${app.kafka.consumer.group-id:trading-execution-group}")
     private String consumerGroupId;
 
-    @Value("${app.kafka.consumer.auto-offset-reset}")
+    @Value("${app.kafka.consumer.auto-offset-reset:earliest}")
     private String autoOffsetReset;
 
     @Bean

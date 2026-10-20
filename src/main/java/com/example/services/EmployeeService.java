@@ -13,6 +13,9 @@ import com.example.exceptions.UpdateFailedException;
 import com.example.exceptions.Validate;
 import com.example.repositories.EmployeeRepository;
 import com.example.DTOs.clients.LoginResponse;
+import com.example.DTOs.employees.EmployeeLoginView;
+
+import java.util.List;
 
 @Service 
 public class EmployeeService {
@@ -28,14 +31,23 @@ public class EmployeeService {
     
     public LoginResponse login(LoginRequest request) {
         // TODO: Encode then compare passwords when we do the whole JwT node stuff
-        LoginView loginEmployee = Validate.validateUser(employeeRepository.findLoginEmployeeByUsername(request.username()), "employee");
+        EmployeeLoginView loginEmployee = employeeRepository.findLoginEmployeeByIdentifier(request.username());
         
         if (loginEmployee == null || !loginEmployee.password().equals(request.password())) {
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
        
-        String jwt = jwtUtil.generateToken(loginEmployee.username(), loginEmployee.userId());
+        String role = normalizeEmployeeRole(loginEmployee.role());
+        String jwt = jwtUtil.generateToken(loginEmployee.userId(), loginEmployee.username(), "employee", role);
         return new LoginResponse(loginEmployee.userId(), loginEmployee.username(), jwt, "Login successful");
+    }
+
+    private String normalizeEmployeeRole(String role) {
+        return switch (role) {
+            case "ADMIN", "EMPLOYEE_ADMIN" -> "EMPLOYEE_ADMIN";
+            case "REPORTER", "EMPLOYEE_REPORTER" -> "EMPLOYEE_REPORTER";
+            default -> throw new InvalidArgumentsException("Invalid Role", "Unsupported employee role");
+        };
     }
 
 
@@ -70,6 +82,13 @@ public class EmployeeService {
                 employee.getFirstName(),
                 employee.getLastName(),
                 employee.getRole());
+    }
+
+    /**
+     * Returns the reporter accounts visible to an authenticated administrator.
+     */
+    public List<EmployeeProfileView> getAllReporters() {
+        return employeeRepository.findAllReporters();
     }
    
 

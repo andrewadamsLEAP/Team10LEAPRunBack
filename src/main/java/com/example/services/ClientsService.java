@@ -12,9 +12,12 @@ import com.example.DTOs.clients.ClientReporterView;
 import com.example.DTOs.clients.LoginRequest;
 import com.example.DTOs.clients.LoginResponse;
 import com.example.entities.Client;
+import com.example.exceptions.ClientNotFoundException;
 import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UpdateFailedException;
 import com.example.repositories.ClientsRepository;
+import com.example.repositories.EmployeeRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,11 +30,18 @@ import java.util.List;
 public class ClientsService {
     private static final Logger logger = LoggerFactory.getLogger(ClientsService.class);
     private final ClientsRepository clientsRepository;
+    private final EmployeeRepository employeeRepository;
     private final JwtUtil jwtUtil;
 
-    public ClientsService(ClientsRepository clientsRepository, JwtUtil jwtUtil) {
+    @Autowired
+    public ClientsService(ClientsRepository clientsRepository, EmployeeRepository employeeRepository, JwtUtil jwtUtil) {
         this.clientsRepository = clientsRepository;
+        this.employeeRepository = employeeRepository;
         this.jwtUtil = jwtUtil;
+    }
+
+    public ClientsService(ClientsRepository clientsRepository, JwtUtil jwtUtil) {
+        this(clientsRepository, null, jwtUtil);
     }
 
 
@@ -49,9 +59,13 @@ public class ClientsService {
         logger.info("Signup attempt for email: {}", request.getEmail());
         
         Long existingEmailClientId = clientsRepository.findClientIdByEmail(request.getEmail());
+        Long existingEmailEmployeeId = employeeRepository == null
+            ? null
+            : employeeRepository.findEmployeeIdByEmail(request.getEmail());
 
-        // Check if the email already exists in the database
-        if (existingEmailClientId != null) {
+        // Clients and employees share the application login namespace. Admins and reporters
+        // are employee records, so this also prevents collisions with those accounts.
+        if (existingEmailClientId != null || existingEmailEmployeeId != null) {
             logger.warn("Signup failed: Email already in use - {}", request.getEmail());
             throw new InvalidArgumentsException("Invalid Email", "Email is already in use");
         }
@@ -105,7 +119,7 @@ public class ClientsService {
             throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
         }
 
-        String jwt = jwtUtil.generateToken(loginClient.username(), clientId);
+        String jwt = jwtUtil.generateToken(clientId, loginClient.username(), "client", "CLIENT");
         
         logger.info("Login successful for client: {}", clientId);
         return new LoginResponse(clientId, loginClient.username(), jwt, "Login successful");
@@ -207,8 +221,15 @@ public class ClientsService {
      * @throws IllegalArgumentException if the client list is invalid within validate client list for admin
      */
     public List<ClientAdminView> getAllClientDataAdmin() {
-        
-        List<ClientAdminView> clients = Validate.validateUserList(clientsRepository.findClientsAsAdmin(), "clients");
+        List<ClientAdminView> clients;
+        try{
+            clients = clientsRepository.findClientsAsAdmin();
+            if (clients == null || clients.isEmpty()) {
+                throw new ClientNotFoundException("No clients found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("No clients found");  
+        }  
 
         return clients;
     }
@@ -223,8 +244,15 @@ public class ClientsService {
      * @throws IllegalArgumentException if the client list is invalid within validate client list for reporter
      */ 
     public List<ClientReporterView> getAllClientDataReporter() {
-
-        List<ClientReporterView> clients = Validate.validateUserList(clientsRepository.findClientsAsReporter(), "clients");
+        List<ClientReporterView> clients;
+        try{
+            clients = clientsRepository.findClientsAsReporter();
+            if (clients == null || clients.isEmpty()) {
+                throw new ClientNotFoundException("No clients found");
+            }
+        }catch (Exception e) {  
+            throw new ClientNotFoundException("No clients found");  
+        }  
 
         return clients;
     }

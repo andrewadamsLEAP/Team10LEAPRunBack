@@ -69,4 +69,17 @@ public class InstrumentService {
         String normalizedTicker = ticker.toUpperCase().trim();
         return instrumentRepository.findByTicker(normalizedTicker) != null;
     }
+
+    /**
+     * Updates daily market statistics without changing the instrument ticker or type.
+     */
+    public int updateMarketStats(
+            String ticker,
+            Double previousClose,
+            Double open,
+            Integer volume,
+            Double avgVolume) {
+        return instrumentRepository.updateMarketStats(
+                ticker, previousClose, open, volume, avgVolume);
+    }
 }

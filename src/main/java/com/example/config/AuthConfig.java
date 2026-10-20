@@ -21,7 +21,11 @@ import com.example.authUtils.JwtInterceptor;
  * - EMPLOYEE_REPORTER role: Access /reporter endpoints
  */
 @Configuration
-@EnableMethodSecurity(prePostEnabled = true)
+@EnableMethodSecurity(
+    prePostEnabled = true,
+    securedEnabled = true,
+    jsr250Enabled = true
+)
 public class AuthConfig implements WebMvcConfigurer {
     
     private final JwtInterceptor jwtInterceptor;

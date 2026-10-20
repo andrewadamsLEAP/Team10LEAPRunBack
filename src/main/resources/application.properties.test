@@ -1,3 +1,7 @@
+jwt.secret=${JWT_SECRET:change-this-development-secret-key-32-bytes}
+jwt.expiration=${JWT_EXPIRATION:3600000}
+auth.local-token.enabled=true
+frankfurter.base-url=${FRANKFURTER_BASE_URL:https://api.frankfurter.dev/v2/rates}
 # PostgreSQL runtime configuration.
 # Override these with environment variables when needed.
 

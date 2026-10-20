@@ -1,6 +1,8 @@
 package com.example.controllers;
 
 import com.example.services.OrdersService;
+import com.example.authUtils.ClientIdContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.example.DTOs.orders.PlaceOrderRequest;
 import com.example.DTOs.orders.OrderResponse;
 import com.example.DTOs.orders.OrderHistoryView;
@@ -38,13 +40,21 @@ public OrdersController(OrdersService ordersService) {
     this.ordersService = ordersService;
 }
 
+@GetMapping("/admin/all")
+@PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+public List<OrderHistoryView> getAllOrdersForAdmin() {
+    return ordersService.getAllOrdersAsDto();
+}
+
 // =========================================================
 // Get order by ID
 // =========================================================
 
 @GetMapping("/{orderId}")
+@PreAuthorize("hasRole('CLIENT')")
 public OrderResponse getOrderById(
         @PathVariable Long orderId) {
+    ClientIdContextHolder.requireClient(ordersService.getOrderById(orderId).getClientId());
     return ordersService.getOrderByIdAsDto(orderId);
 }
 
@@ -54,8 +64,10 @@ public OrderResponse getOrderById(
 // =========================================================
 
 @GetMapping("/client/{clientId}/fulfilled")
+@PreAuthorize("hasRole('CLIENT')")
 public List<OrderHistoryView> getFulfilledOrders(
         @PathVariable Long clientId) {
+    ClientIdContextHolder.requireClient(clientId);
 
     return ordersService.getFulfilledOrdersAsDto(clientId);
 }
@@ -66,6 +78,7 @@ public List<OrderHistoryView> getFulfilledOrders(
 // =========================================================
 
 @GetMapping("/cancelled")
+@PreAuthorize("hasAnyRole('EMPLOYEE_ADMIN', 'EMPLOYEE_REPORTER')")
 public List<OrderHistoryView> getCancelledOrders() {
 
     return ordersService.getCancelledOrdersAsDto();
@@ -76,8 +89,10 @@ public List<OrderHistoryView> getCancelledOrders() {
 // =========================================================
 
 @GetMapping("/client/{clientId}/cancelled")
+@PreAuthorize("hasRole('CLIENT')")
 public List<OrderHistoryView> getCancelledOrdersForClient(
         @PathVariable Long clientId) {
+    ClientIdContextHolder.requireClient(clientId);
 
     return ordersService.getCancelledOrdersForClientAsDto(clientId);
 }
@@ -88,6 +103,7 @@ public List<OrderHistoryView> getCancelledOrdersForClient(
 // =========================================================
 
 @GetMapping("/sell/{ticker}")
+@PreAuthorize("hasAnyRole('EMPLOYEE_ADMIN', 'EMPLOYEE_REPORTER')")
 public List<OrderHistoryView> getPendingSellOrdersForTicker(
         @PathVariable String ticker) {
 
@@ -101,6 +117,7 @@ public List<OrderHistoryView> getPendingSellOrdersForTicker(
 // =========================================================
 
 @GetMapping("/buy/{ticker}")
+@PreAuthorize("hasAnyRole('EMPLOYEE_ADMIN', 'EMPLOYEE_REPORTER')")
 public List<OrderHistoryView> getPendingBuyOrdersForTicker(
         @PathVariable String ticker) {
 
@@ -114,8 +131,10 @@ public List<OrderHistoryView> getPendingBuyOrdersForTicker(
 // =========================================================
 
 @PostMapping("/buy")
+@PreAuthorize("hasRole('CLIENT')")
 public OrderResponse placeBuyOrder(
         @Valid @RequestBody PlaceOrderRequest request) {
+    ClientIdContextHolder.requireClient(request.clientId());
     return ordersService.placeBuyOrderAsDto(
             request.clientId(),
             request.ticker(),
@@ -129,8 +148,10 @@ public OrderResponse placeBuyOrder(
 // =========================================================
 
 @PostMapping("/sell")
+@PreAuthorize("hasRole('CLIENT')")
 public OrderResponse placeSellOrder(
         @Valid @RequestBody PlaceOrderRequest request) {
+    ClientIdContextHolder.requireClient(request.clientId());
     return ordersService.placeSellOrderAsDto(
             request.clientId(),
             request.ticker(),
@@ -144,8 +165,10 @@ public OrderResponse placeSellOrder(
 // =========================================================
 
 @PostMapping("/cancel/{orderId}")
+@PreAuthorize("hasRole('CLIENT')")
 public OrderResponse cancelOrder(
         @PathVariable Long orderId) {
+    ClientIdContextHolder.requireClient(ordersService.getOrderById(orderId).getClientId());
     return ordersService.cancelOrderAsDto(orderId);
 }
 

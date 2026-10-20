@@ -13,6 +13,9 @@ import java.math.BigDecimal;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -178,6 +181,78 @@ public AlpacaQuotesResponse getCryptoQuotes(
             cryptoClient,
             "/latest/quotes",
             symbols);
+}
+
+// =========================================================
+// Daily Stock Bars
+//
+// The latest bar supplies the current open and volume. The
+// preceding bar supplies the previous trading day's close.
+// =========================================================
+
+/**
+ * Retrieves up to 30 recent daily bars for the supplied stock symbols.
+ *
+ * @param symbols stock tickers already configured in the instruments table
+ * @return Alpaca daily bars grouped by ticker
+ */
+public AlpacaBarsResponse getDailyStockBars(List<String> symbols) {
+        if (symbols == null || symbols.isEmpty()) {
+                return new AlpacaBarsResponse(Map.of(), null);
+        }
+
+        OffsetDateTime end = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime start = end.minus(45, ChronoUnit.DAYS);
+        String symbolParameter = String.join(",", symbols);
+        Map<String, List<AlpacaBar>> allBars = new LinkedHashMap<>();
+        String pageToken = null;
+
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                        String requestPageToken = pageToken;
+                        AlpacaBarsResponse page = stocksClient.get()
+                                        .uri(uriBuilder -> uriBuilder
+                                                        .path("/bars")
+                                                        .queryParam("symbols", symbolParameter)
+                                                        .queryParam("timeframe", "1Day")
+                                                        .queryParam("start", start.toString())
+                                                        .queryParam("end", end.toString())
+                                                        .queryParam("limit", 30)
+                                                        .queryParam("adjustment", "raw")
+                                                        .queryParam("feed", "iex")
+                                                        .queryParam("sort", "asc")
+                                                        .queryParamIfPresent("page_token", java.util.Optional.ofNullable(requestPageToken))
+                                                        .build())
+                                        .header("APCA-API-KEY-ID", apiKey)
+                                        .header("APCA-API-SECRET-KEY", apiSecret)
+                                        .retrieve()
+                                        .body(AlpacaBarsResponse.class);
+
+                        if (page == null || page.bars() == null) {
+                                break;
+                        }
+
+                        page.bars().forEach((ticker, bars) ->
+                                allBars.computeIfAbsent(ticker, ignored -> new java.util.ArrayList<>())
+                                        .addAll(bars));
+                        pageToken = page.nextPageToken();
+
+                        if (pageToken == null || pageToken.isBlank()) {
+                                break;
+                        }
+                        attempt = -1;
+                } catch (RestClientException exception) {
+                        if (attempt == maxRetries) {
+                                logger.error("Alpaca daily bars request failed after {} retries", maxRetries, exception);
+                                throw exception;
+                        }
+                        logger.warn("Alpaca daily bars request failed. Retrying {}/{}: {}",
+                                        attempt + 1, maxRetries, exception.getMessage());
+                        sleepBeforeRetry();
+                }
+        }
+
+        return new AlpacaBarsResponse(allBars, null);
 }
 
 // =========================================================
@@ -403,6 +478,26 @@ public record AlpacaForexRate(
 
         @JsonProperty("t")
         OffsetDateTime quoteTimestamp) {
+}
+
+/** Response envelope returned by Alpaca's multi-symbol bars endpoint. */
+public record AlpacaBarsResponse(
+        @JsonProperty("bars")
+        Map<String, List<AlpacaBar>> bars,
+        @JsonProperty("next_page_token")
+        String nextPageToken) {
+}
+
+/** Daily OHLCV values returned for one stock trading session. */
+public record AlpacaBar(
+        @JsonProperty("o")
+        BigDecimal open,
+        @JsonProperty("c")
+        BigDecimal close,
+        @JsonProperty("v")
+        BigDecimal volume,
+        @JsonProperty("t")
+        OffsetDateTime timestamp) {
 }
 
 }

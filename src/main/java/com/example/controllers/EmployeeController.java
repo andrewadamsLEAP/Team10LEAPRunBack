@@ -41,6 +41,7 @@ public class EmployeeController {
     }
 
     @PatchMapping("/password/{employeeId}")
+    @PreAuthorize("hasAnyRole('EMPLOYEE_ADMIN', 'EMPLOYEE_REPORTER')")
     public ResponseEntity<Void> changePassword(@PathVariable Long employeeId, @RequestBody @Valid ChangePasswordRequest request) {
         employeeService.changePassword(employeeId, request);
         return ResponseEntity.noContent().build();
@@ -59,6 +60,7 @@ public class EmployeeController {
         return ResponseEntity.ok(clientsService.getAllClientDataReporter());
     }
 
+    // Admin endpoints - for administrative access
     @GetMapping("/admin/{clientId}")
     @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
     public ResponseEntity<ClientAdminView> getClientAsAdmin(@PathVariable Long clientId) {
@@ -69,6 +71,13 @@ public class EmployeeController {
     @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
     public ResponseEntity<List<ClientAdminView>> getAllClientsAsAdmin() {
         return ResponseEntity.ok(clientsService.getAllClientDataAdmin());
+    }
+
+    // Returns reporter employee accounts without exposing password data.
+    @GetMapping("/admin/reporters")
+    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+    public ResponseEntity<List<EmployeeProfileView>> getAllReportersAsAdmin() {
+        return ResponseEntity.ok(employeeService.getAllReporters());
     }
 }
 

@@ -111,7 +111,7 @@ class ClientsServiceTest {
         LoginRequest request = loginRequest("loginuser", "password1");
         when(clientsRepository.findLoginClientById(3L))
                 .thenReturn(loginClientView(3L, "loginuser", "password1"));
-        when(jwtUtil.generateToken("loginuser", 3L)).thenReturn("mock-jwt-token");
+        when(jwtUtil.generateToken()).thenReturn("mock-jwt-token");
 
         LoginResponse response = clientsService.login(3L, request);
 

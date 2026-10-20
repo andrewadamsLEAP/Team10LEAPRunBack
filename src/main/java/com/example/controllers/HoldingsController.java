@@ -5,6 +5,8 @@ import com.example.DTOs.holdings.QuantityResponse;
 import com.example.DTOs.holdings.BuyStockResponse;
 import com.example.DTOs.holdings.SellStockResponse;
 import com.example.services.HoldingsService;
+import com.example.authUtils.ClientIdContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +29,7 @@ public class HoldingsController {
     //Test endpoint
     // Example: GET /api/v1/holdings/test
     @GetMapping("/test")
+    @PreAuthorize("hasRole('CLIENT')")
     public String test() {
         return "Test endpoint works!";
     }
@@ -34,6 +37,7 @@ public class HoldingsController {
     //Test the service layer
     //Example: GET /api/holdings/service-test
     @GetMapping("/service-test")
+    @PreAuthorize("hasRole('CLIENT')")
     public String serviceTest() {
         return holdingsService.test();
     }
@@ -41,9 +45,11 @@ public class HoldingsController {
     //Get specific holding (entire holding) for a client and ticker
     // Example: GET /api/v1/holdings/1/AAPL
     @GetMapping("/{clientId}/{ticker}")
+    @PreAuthorize("hasRole('CLIENT')")
     public HoldingResponse getHolding(
             @PathVariable Long clientId,
             @PathVariable String ticker) {
+        ClientIdContextHolder.requireClient(clientId);
         return holdingsService.getHolding(clientId, ticker);
     }
 
@@ -51,17 +57,21 @@ public class HoldingsController {
     // Get all holdings for a specific client
     // Example: GET /api/v1/holdings/client/1
     @GetMapping("/client/{clientId}")
+    @PreAuthorize("hasRole('CLIENT')")
     public java.util.List<HoldingResponse> getClientHoldings(
             @PathVariable Long clientId) {
+        ClientIdContextHolder.requireClient(clientId);
         return holdingsService.getAllClientHoldings(clientId);
     }
 
     // Get only quantity of a specific ticker for a client
     // Example: GET /api/v1/holdings/quantity?clientId=1&ticker=AAPL
     @GetMapping("/quantity")
+    @PreAuthorize("hasRole('CLIENT')")
     public QuantityResponse getQuantity(
             @RequestParam Long clientId,
             @RequestParam String ticker) {
+        ClientIdContextHolder.requireClient(clientId);
         return holdingsService.getQuantity(clientId, ticker);
     }
 

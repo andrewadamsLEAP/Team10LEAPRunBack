@@ -82,6 +82,10 @@ public class OrdersService {
         return order;
     }
 
+    public List<OrderHistoryView> getAllOrdersAsDto() {
+        return orderDtoConverter.toOrderHistoryViews(ordersRepository.getAllOrders());
+    }
+
     /**
      * Retrieves all fulfilled orders for a specific client.
      *

@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.example.services.InstrumentService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.example.entities.Instrument;
 
 import com.example.entities.Instrument;
@@ -23,11 +24,13 @@ public class InstrumentController {
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public List<Instrument> getAllInstruments() {
         return instrumentService.getAllInstruments();
     }
 
     @GetMapping("/{ticker}")
+    @PreAuthorize("isAuthenticated()")
     public Instrument getInstrumentByTicker(@PathVariable String ticker) {
         return instrumentService.getInstrumentByTicker(ticker);
     }

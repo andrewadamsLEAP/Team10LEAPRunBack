@@ -2,6 +2,7 @@ package com.example.authUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.access.AccessDeniedException;
 
 /**
  * This allows services and controllers to access the current clientId without
@@ -31,6 +32,13 @@ public class ClientIdContextHolder {
         Long clientId = clientIdThreadLocal.get();
         logger.debug("Getting clientId from context: {}", clientId);
         return clientId;
+    }
+
+    public static void requireClient(Long requestedClientId) {
+        Long authenticatedClientId = getClientId();
+        if (authenticatedClientId == null || !authenticatedClientId.equals(requestedClientId)) {
+            throw new AccessDeniedException("The authenticated client cannot access this client resource");
+        }
     }
     
     /**
