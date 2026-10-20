@@ -34,6 +34,14 @@ public class ClientIdContextHolder {
         return clientId;
     }
 
+    public static Long requireClientId() {
+        Long clientId = getClientId();
+        if (clientId == null) {
+            throw new AccessDeniedException("Only an authenticated client may access this resource");
+        }
+        return clientId;
+    }
+
     public static void requireClient(Long requestedClientId) {
         Long authenticatedClientId = getClientId();
         if (authenticatedClientId == null || !authenticatedClientId.equals(requestedClientId)) {

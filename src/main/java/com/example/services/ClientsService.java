@@ -2,25 +2,18 @@ package com.example.services;
 
 import org.springframework.stereotype.Service;
 
-import com.example.DTOs.clients.ChangePasswordRequest;
 import com.example.DTOs.clients.ClientAdminView;
-import com.example.DTOs.clients.LoginView;
-import com.example.authUtils.JwtUtil;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientProfileView;
 import com.example.DTOs.clients.ClientReporterView;
-import com.example.DTOs.clients.LoginRequest;
-import com.example.DTOs.clients.LoginResponse;
 import com.example.entities.Client;
-import com.example.exceptions.ClientNotFoundException;
-import com.example.exceptions.InvalidArgumentsException;
-import com.example.exceptions.UpdateFailedException;
 import com.example.repositories.ClientsRepository;
-import com.example.repositories.EmployeeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.example.exceptions.ClientNotFoundException;
+import com.example.exceptions.InvalidArgumentsException;
+import com.example.exceptions.UpdateFailedException;
 import com.example.exceptions.Validate;
 
 import java.math.BigDecimal;
@@ -30,132 +23,10 @@ import java.util.List;
 public class ClientsService {
     private static final Logger logger = LoggerFactory.getLogger(ClientsService.class);
     private final ClientsRepository clientsRepository;
-    private final EmployeeRepository employeeRepository;
-    private final JwtUtil jwtUtil;
 
-    @Autowired
-    public ClientsService(ClientsRepository clientsRepository, EmployeeRepository employeeRepository, JwtUtil jwtUtil) {
+    public ClientsService(ClientsRepository clientsRepository) {
         this.clientsRepository = clientsRepository;
-        this.employeeRepository = employeeRepository;
-        this.jwtUtil = jwtUtil;
     }
-
-    public ClientsService(ClientsRepository clientsRepository, JwtUtil jwtUtil) {
-        this(clientsRepository, null, jwtUtil);
-    }
-
-
-
-
-    /**
-     * Handles the signup process for a new client.
-     *
-     * @param request the client information for signup
-     * @return a LoginResponse containing the created client's details
-     * @throws InvalidArgumentsException if the email or username is already in use
-     * @throws UpdateFailedException if the client could not be created in the database
-     */
-    public LoginResponse signup(Client request) {
-        logger.info("Signup attempt for email: {}", request.getEmail());
-        
-        Long existingEmailClientId = clientsRepository.findClientIdByEmail(request.getEmail());
-        Long existingEmailEmployeeId = employeeRepository == null
-            ? null
-            : employeeRepository.findEmployeeIdByEmail(request.getEmail());
-
-        // Clients and employees share the application login namespace. Admins and reporters
-        // are employee records, so this also prevents collisions with those accounts.
-        if (existingEmailClientId != null || existingEmailEmployeeId != null) {
-            logger.warn("Signup failed: Email already in use - {}", request.getEmail());
-            throw new InvalidArgumentsException("Invalid Email", "Email is already in use");
-        }
-
-        Long existingClientId = clientsRepository.findClientIdByUsername(request.getUsername());
-
-        // Check if the username is already taken
-        if (existingClientId != null) {
-            logger.warn("Signup failed: Username not unique - {}", request.getUsername());
-            throw new InvalidArgumentsException("Invalid Username", "Username is not unique");
-        }
-
-        int createdRows = clientsRepository.createClient(request);
-
-        // If the database doesn't record that a new row is created, it means the insert failed
-        if (createdRows != 1) {
-            logger.error("Signup failed: Database insert returned {} rows", createdRows);
-            throw new UpdateFailedException("Client signup failed");
-        }
-
-        LoginView createdClient = Validate.validateUser(clientsRepository.findLoginClientByUsername(request.getUsername()), "client");
-
-        // Check if the client was successfully created in the database
-        if (createdClient == null) {
-            logger.error("Signup failed: Created client not found after insert - {}", request.getUsername());
-            throw new UpdateFailedException("Client signup failed");
-        }
-
-        logger.info("Signup successful for username: {}", request.getUsername());
-        return new LoginResponse(createdClient.userId(), createdClient.username(), null, "Signup successful");
-    }
-
-
-
-
-    /**
-     * Handles the login process for an existing client.
-     *
-     * @param clientId the client ID attempting to login
-     * @param request the login request containing username and password
-     * @return a LoginResponse containing the client's details and JWT token if login is successful
-     * @throws InvalidArgumentsException if the credentials are invalid
-     */
-    public LoginResponse login(Long clientId, LoginRequest request) {
-        logger.info("Login attempt for client: {}", clientId);
-        
-        LoginView loginClient = Validate.validateUser(clientsRepository.findLoginClientById(clientId), "client");
-
-        if (loginClient == null || !loginClient.password().equals(request.password())) {
-            logger.warn("Login failed: Invalid credentials for client - {}", clientId);
-            throw new InvalidArgumentsException("Invalid Credentials", "Invalid username or password");
-        }
-
-        String jwt = jwtUtil.generateToken(clientId, loginClient.username(), "client", "CLIENT");
-        
-        logger.info("Login successful for client: {}", clientId);
-        return new LoginResponse(clientId, loginClient.username(), jwt, "Login successful");
-    }
-
-
-
-
-    /**
-     * Handles the password change process for an existing client.
-     *
-     * @param clientId the ID of the client
-     * @param request the change password request containing the current and new passwords
-     * @throws InvalidArgumentsException if the current password is incorrect or the new password is the same as the current password
-     * @throws UpdateFailedException if the password could not be updated in the database
-     */
-    // TODO: Encode passwords and verify when we work on JwT stuff (& check if user = clientId)
-    public void changePassword(Long clientId, ChangePasswordRequest request) {
-        LoginView client = Validate.validateUser(clientsRepository.findLoginClientById(clientId), "client");
-        
-        if (!client.password().equals(request.currentPassword())) {
-            throw new InvalidArgumentsException("Invalid Password Change", "Current password is incorrect");
-        }
-
-        if (request.currentPassword().equals(request.newPassword())) {
-            throw new InvalidArgumentsException("Invalid Password Change", "New password must be different from current password");
-        }
-
-        int updatedRows = clientsRepository.updatePassword(clientId, request.newPassword());
-
-        if (updatedRows != 1) {
-            throw new UpdateFailedException("Password update failed");
-        }
-    }
-
-
 
 
     /**
