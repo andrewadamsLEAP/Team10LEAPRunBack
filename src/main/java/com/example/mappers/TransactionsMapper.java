@@ -12,8 +12,8 @@ public interface TransactionsMapper {
 
     @Select("""
         SELECT
-            transaction_id,
-            client_id,
+            transaction_id AS "transactionId",
+            client_id AS "clientId",
             UPPER(ttype) AS type,
             amount,
             created_at AS timestamp
@@ -24,8 +24,8 @@ public interface TransactionsMapper {
 
     @Select("""
         SELECT
-            transaction_id,
-            client_id,
+            transaction_id AS "transactionId",
+            client_id AS "clientId",
             UPPER(ttype) AS type,
             amount,
             created_at AS timestamp
@@ -73,7 +73,8 @@ public interface TransactionsMapper {
         """)
     @Options(
         useGeneratedKeys = true,
-        keyProperty = "transactionId"
+        keyProperty = "transactionId",
+        keyColumn = "transaction_id"
     )
     int saveTransaction(Transaction transaction);
 }
