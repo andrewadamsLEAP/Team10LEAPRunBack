@@ -91,7 +91,8 @@ public interface ClientsMapper {
                username,
                password
             FROM clients
-            WHERE username = #{identifier} OR email = #{identifier}
+                WHERE LOWER(username) = LOWER(#{identifier})
+                    OR LOWER(email) = LOWER(#{identifier})
             """)
         LoginView findLoginClientByIdentifier(@Param("identifier") String identifier);
 

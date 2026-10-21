@@ -39,6 +39,11 @@ public class JwtInterceptor implements HandlerInterceptor {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         logger.debug("Processing request: {} {}", request.getMethod(), request.getRequestURI());
 
+        // Browser CORS preflight requests do not carry the application JWT.
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+
         try {
             String authHeader = request.getHeader("Authorization");
             

@@ -71,7 +71,8 @@ public interface EmployeeMapper {
                password,
                role
         FROM employees
-        WHERE username = #{identifier} OR email = #{identifier}
+          WHERE LOWER(username) = LOWER(#{identifier})
+              OR LOWER(email) = LOWER(#{identifier})
         """)
     EmployeeLoginView findLoginEmployeeByIdentifier(@Param("identifier") String identifier);
 

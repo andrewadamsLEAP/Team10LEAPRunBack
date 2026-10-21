@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Date;
 
 /**
  * JWT Utility class for validating and extracting claims from JWT tokens.
@@ -27,6 +28,33 @@ public class JwtUtil {
     
     @Value("${jwt.secret}")
     private String jwtSecret;
+
+    @Value("${jwt.expiration:3600000}")
+    private long jwtExpirationMs;
+
+    /**
+     * Creates a local access token for the backend login endpoint.
+     * NestJS remains the production token issuer.
+     */
+    public String generateToken(Long userId, String username, String actorType, String role) {
+        Date issuedAt = new Date();
+        Date expiration = new Date(issuedAt.getTime() + jwtExpirationMs);
+
+        var builder = Jwts.builder()
+                .setSubject(String.valueOf(userId))
+                .claim("username", username)
+                .claim("actorType", actorType)
+                .claim("token_use", "access")
+                .setIssuedAt(issuedAt)
+                .setExpiration(expiration)
+                .signWith(signingKey(), SignatureAlgorithm.HS256);
+
+        if (role != null && !role.isBlank()) {
+            builder.claim("role", role);
+        }
+
+        return builder.compact();
+    }
     
     /**
      * Validate JWT token signature and expiration
