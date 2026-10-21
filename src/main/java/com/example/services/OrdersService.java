@@ -90,6 +90,15 @@ public class OrdersService {
             .toList();
     }
 
+            public List<OrderHistoryView> getAllOrdersForClientAsDto(Long clientId) {
+            validateId(clientId, "Client ID");
+            return ordersRepository.getAllOrdersForClient(clientId).stream()
+                .map(order -> orderDtoConverter.toOrderHistoryView(
+                    order,
+                    clientsService.getClientDataAdmin(order.getClientId()).username()))
+                .toList();
+            }
+
     /**
      * Retrieves all fulfilled orders for a specific client.
      *

@@ -46,6 +46,14 @@ public List<OrderHistoryView> getAllOrdersForEmployee() {
     return ordersService.getAllOrdersAsDto();
 }
 
+@GetMapping("/client/all/{clientId}")
+@PreAuthorize("hasRole('CLIENT')")
+public List<OrderHistoryView> getAllOrdersForClient(
+        @PathVariable Long clientId) {
+    ClientIdContextHolder.requireClient(clientId);
+    return ordersService.getAllOrdersForClientAsDto(clientId);
+}
+
 // =========================================================
 // Get order by ID
 // =========================================================
