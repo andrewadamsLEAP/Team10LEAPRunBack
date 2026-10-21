@@ -52,14 +52,12 @@ public interface HoldingsMapper {
         INSERT INTO holdings (
             client_id,
             ticker,
-            quantity,
-            updated_at
+            quantity
         )
         VALUES (
             #{holding.client_id},
             #{holding.ticker},
-            #{holding.quantity},
-            CURRENT_TIMESTAMP
+            #{holding.quantity}
         )
         """)
     void createHolding(@Param("holding") Holding holding);
@@ -67,7 +65,7 @@ public interface HoldingsMapper {
 
     @Update("""
         UPDATE holdings
-        SET quantity = quantity + #{quantity}, updated_at = CURRENT_TIMESTAMP
+        SET quantity = quantity + #{quantity}
         WHERE client_id = #{client_id} AND ticker = #{ticker}
         """)
     int updateBuyHolding(@Param("quantity") Integer quantity, @Param("client_id") Long client_id, @Param("ticker") String ticker);
@@ -75,7 +73,7 @@ public interface HoldingsMapper {
 
     @Update("""
         UPDATE holdings
-        SET quantity = quantity - #{quantity}, updated_at = CURRENT_TIMESTAMP
+        SET quantity = quantity - #{quantity}
         WHERE client_id = #{client_id} AND ticker = #{ticker}
         """)
     int updateSellHolding(@Param("quantity") Integer quantity, @Param("client_id") Long client_id, @Param("ticker") String ticker);

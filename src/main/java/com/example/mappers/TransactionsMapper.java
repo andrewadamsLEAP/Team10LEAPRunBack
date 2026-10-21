@@ -12,14 +12,26 @@ public interface TransactionsMapper {
 
     @Select("""
         SELECT
-            transaction_id,
-            client_id,
-            type,
+            transaction_id AS "transactionId",
+            client_id AS "clientId",
+            UPPER(ttype) AS type,
             amount,
-            timestamp
+            created_at AS timestamp
+        FROM transactions
+        ORDER BY created_at DESC, transaction_id DESC
+        """)
+    List<Transaction> getAllTransactions();
+
+    @Select("""
+        SELECT
+            transaction_id AS "transactionId",
+            client_id AS "clientId",
+            UPPER(ttype) AS type,
+            amount,
+            created_at AS timestamp
         FROM transactions
         WHERE client_id = #{clientId}
-        ORDER BY timestamp DESC
+        ORDER BY created_at DESC
         """)
     List<Transaction> getTransactions(
             @Param("clientId") Long clientId
@@ -48,20 +60,21 @@ public interface TransactionsMapper {
     @Insert("""
         INSERT INTO transactions (
             client_id,
-            type,
+            ttype,
             amount,
-            timestamp
+            created_at
         )
         VALUES (
             #{clientId},
-            #{type},
+            LOWER(#{type}),
             #{amount},
             #{timestamp}
         )
         """)
     @Options(
         useGeneratedKeys = true,
-        keyProperty = "transactionId"
+        keyProperty = "transactionId",
+        keyColumn = "transaction_id"
     )
     int saveTransaction(Transaction transaction);
 }

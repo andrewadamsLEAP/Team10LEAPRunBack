@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Result;
 import com.example.entities.Instrument;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import com.example.entities.Instrument;
 
@@ -44,4 +45,23 @@ public interface InstrumentMapper {
         @Result(property = "assetType", column = "asset_type")
     })
     Instrument findByTicker(@Param("ticker") String ticker);
+
+    /**
+     * Updates provider-derived market statistics while preserving instrument identity.
+     * Ticker and asset type are intentionally excluded from this statement.
+     */
+    @Update("""
+        UPDATE instruments
+        SET previous_close = #{previousClose},
+            open = #{open},
+            volume = #{volume},
+            avg_volume = #{avgVolume}
+        WHERE ticker = #{ticker}
+        """)
+    int updateMarketStats(
+            @Param("ticker") String ticker,
+            @Param("previousClose") Double previousClose,
+            @Param("open") Double open,
+            @Param("volume") Integer volume,
+            @Param("avgVolume") Double avgVolume);
 }

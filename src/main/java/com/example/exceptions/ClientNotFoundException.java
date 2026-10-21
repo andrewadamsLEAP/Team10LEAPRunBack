@@ -5,7 +5,7 @@ public class ClientNotFoundException extends RuntimeException {
         super(message);
     }
 
-    public ClientNotFoundException(Long clientId) {
-        super("Client with ID " + clientId + " not found in or has no holdings");
+    public ClientNotFoundException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

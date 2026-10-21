@@ -6,9 +6,11 @@ import java.time.LocalDateTime;
 /**
  * DTO for viewing a client's order history
  * @param orderId
+ * @param clientId
  * @param ticker
  * @param quantity
  * @param price
+ * @param orderType
  * @param status
  * @param createdAt
  * @param executedPrice
@@ -17,9 +19,11 @@ import java.time.LocalDateTime;
  */
 public record OrderHistoryView(
         long orderId,
+        Long clientId,
         String ticker,
         Integer quantity,
         BigDecimal price,
+        String orderType,
         String status,
         LocalDateTime createdAt,
         BigDecimal executedPrice,

@@ -1,5 +1,6 @@
 package com.example.generalServices;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,6 +34,7 @@ public class FrankfurterClient {
                         .connectTimeout(Duration.ofMillis(requestTimeoutMs))
                         .build());
         requestFactory.setReadTimeout(Duration.ofMillis(requestTimeoutMs));
+
         this.client = RestClient.builder()
                 .baseUrl(baseUrl)
                 .requestFactory(requestFactory)
@@ -46,12 +48,13 @@ public class FrankfurterClient {
             return List.of();
         }
 
+        String quoteParameter = String.join(",", quotes);
         for (int attempt = 0; attempt <= maxRetries; attempt++) {
             try {
                 FrankfurterRate[] response = client.get()
                         .uri(uriBuilder -> uriBuilder
                                 .queryParam("base", base)
-                                .queryParam("quotes", String.join(",", quotes))
+                                .queryParam("quotes", quoteParameter)
                                 .build())
                         .retrieve()
                         .body(FrankfurterRate[].class);
@@ -75,10 +78,14 @@ public class FrankfurterClient {
             Thread.sleep(retryBackoffMs);
         } catch (InterruptedException exception) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Frankfurter retry was interrupted", exception);
+            throw new IllegalStateException("Frankfurter request retry was interrupted", exception);
         }
     }
 
-    public record FrankfurterRate(LocalDate date, String base, String quote, BigDecimal rate) {
+    public record FrankfurterRate(
+            LocalDate date,
+            String base,
+            String quote,
+            BigDecimal rate) {
     }
 }

@@ -23,6 +23,10 @@ public class TransactionsRepository {
         return transactionsMapper.getTransactions(clientId);
     }
 
+    public List<Transaction> getAllTransactions() {
+        return transactionsMapper.getAllTransactions();
+    }
+
     public int increaseBuyingPower(
             Long clientId,
             BigDecimal amount) {

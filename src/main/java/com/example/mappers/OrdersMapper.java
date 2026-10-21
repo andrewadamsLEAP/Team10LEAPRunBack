@@ -4,9 +4,13 @@ import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Result;
+import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import com.example.config.OrderStatusHandler;
+import com.example.config.OrderTypeHandler;
 import com.example.entities.Order;
 
 import java.util.List;
@@ -33,7 +37,42 @@ public interface OrdersMapper {
         FROM orders
         WHERE order_id = #{orderId}
         """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
     Order getOrderById(@Param("orderId") Long orderId);
+
+    @Select("""
+        SELECT
+            order_id,
+            client_id,
+            ticker,
+            order_type,
+            order_status,
+            quantity,
+            price,
+            order_date
+        FROM orders
+        ORDER BY order_date DESC, order_id DESC
+        """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
+    List<Order> getAllOrders();
 
 
     /**
@@ -56,6 +95,16 @@ public interface OrdersMapper {
         WHERE order_status = 'FULFILLED'
           AND client_id = #{clientId}
         """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
     List<Order> getFulfilledOrders(
             @Param("clientId") Long clientId
     );
@@ -78,6 +127,16 @@ public interface OrdersMapper {
         FROM orders
         WHERE order_status = 'CANCELLED'
         """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
     List<Order> getCancelledOrders();
 
 
@@ -101,6 +160,16 @@ public interface OrdersMapper {
         WHERE order_status = 'CANCELLED'
           AND client_id = #{clientId}
         """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
     List<Order> getCancelledOrdersForClient(
             @Param("clientId") Long clientId
     );
@@ -127,6 +196,16 @@ public interface OrdersMapper {
           AND ticker = #{ticker}
           AND order_type = 'SELL'
         """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
     List<Order> getPendingSellOrdersForTicker(
             @Param("ticker") String ticker
     );
@@ -152,6 +231,16 @@ public interface OrdersMapper {
           AND ticker = #{ticker}
           AND order_type = 'BUY'
         """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
     List<Order> getPendingBuyOrdersForTicker(
             @Param("ticker") String ticker
     );
@@ -178,6 +267,16 @@ public interface OrdersMapper {
           AND client_id = #{clientId}
           AND order_type = 'BUY'
         """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
     List<Order> getPendingBuyOrdersForClient(
             @Param("clientId") Long clientId
     );
@@ -203,6 +302,16 @@ public interface OrdersMapper {
           AND client_id = #{clientId}
           AND order_type = 'SELL'
         """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
     List<Order> getPendingSellOrdersForClient(
             @Param("clientId") Long clientId
     );
@@ -230,6 +339,16 @@ public interface OrdersMapper {
           AND ticker = #{ticker}
           AND order_type = 'SELL'
         """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
     List<Order> getPendingSellOrdersForClientAndTicker(
             @Param("clientId") Long clientId,
             @Param("ticker") String ticker

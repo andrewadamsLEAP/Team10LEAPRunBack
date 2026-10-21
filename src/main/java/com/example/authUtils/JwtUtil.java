@@ -27,7 +27,7 @@ public class JwtUtil {
     
     @Value("${jwt.secret}")
     private String jwtSecret;
-
+    
     /**
      * Validate JWT token signature and expiration
      * 

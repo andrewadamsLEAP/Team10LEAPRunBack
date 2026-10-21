@@ -66,7 +66,7 @@ public interface ClientsMapper {
     @Select("""
             SELECT client_id
             FROM clients
-            WHERE email = #{email}
+            WHERE LOWER(email) = LOWER(#{email})
             """)
     Long findClientIdByEmail(@Param("email") String email);
 
@@ -85,6 +85,15 @@ public interface ClientsMapper {
             WHERE username = #{username}
             """)
     LoginView findLoginClientByUsername(@Param("username") String username);
+
+        @Select("""
+            SELECT client_id AS userId,
+               username,
+               password
+            FROM clients
+            WHERE username = #{identifier} OR email = #{identifier}
+            """)
+        LoginView findLoginClientByIdentifier(@Param("identifier") String identifier);
 
     @Select("""
             SELECT client_id AS clientId,

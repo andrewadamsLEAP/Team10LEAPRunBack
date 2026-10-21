@@ -37,9 +37,11 @@ public class OrderDtoConverter {
         }
         return new OrderHistoryView(
                 order.getOrderId(),
+            order.getClientId(),
                 order.getTicker(),
                 order.getQuantity(),
                 order.getPrice(),
+            order.getOrderType().name(),
                 order.getOrderStatus().name(),
                 order.getOrderDate() != null ? order.getOrderDate().toLocalDateTime() : null,
                 null,  // executedPrice - would come from execution details if tracked

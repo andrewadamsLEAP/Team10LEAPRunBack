@@ -14,10 +14,13 @@ import com.example.repositories.MarketDataRepository;
 import com.example.generalServices.AlpacaClient;
 import com.example.generalServices.FrankfurterClient;
 import com.example.mappers.MarketSymbolMapper;
+import com.example.services.InstrumentService;
 import com.example.generalServices.AlpacaClient.AlpacaQuotesResponse;
 
 import java.time.OffsetDateTime;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,7 @@ public class MarketDataService {
 
     private final MarketDataRepository marketDataRepository;
     private final AlpacaClient alpacaClient;
+        private final InstrumentService instrumentService;
         private final FrankfurterClient frankfurterClient;
     private final MarketSymbolMapper marketSymbolMapper;
     private final MarketHoursService marketHoursService;
@@ -46,22 +50,24 @@ public class MarketDataService {
 
     private int lastSuccessfulTickerCount;
     private int lastFailedTickerCount;
+        private LocalDate lastStockStatsRefreshDate;
 
     public MarketDataService(
             MarketDataRepository marketDataRepository,
             AlpacaClient alpacaClient,
+            InstrumentService instrumentService,
             FrankfurterClient frankfurterClient,
             MarketSymbolMapper marketSymbolMapper,
             MarketHoursService marketHoursService,
             Environment environment,
 
-            @Value("${alpaca.refresh-all:true}")
+            @Value("${alpaca.refresh-all}")
             boolean refreshAll,
 
-            @Value("${alpaca.refresh-forex:false}")
+            @Value("${alpaca.refresh-forex}")
             boolean refreshForex,
 
-            @Value("${alpaca.skip-outside-market-hours:false}")
+            @Value("${alpaca.skip-outside-market-hours}")
             boolean skipOutsideMarketHours) {
 
         this.marketDataRepository =
@@ -69,6 +75,9 @@ public class MarketDataService {
 
         this.alpacaClient =
                 alpacaClient;
+
+        this.instrumentService =
+                instrumentService;
 
         this.frankfurterClient =
                 frankfurterClient;
@@ -112,22 +121,6 @@ public class MarketDataService {
          */
         if (environment.acceptsProfiles(
                 Profiles.of("test"))) {
-
-            return;
-        }
-
-        if (!alpacaClient.isApiKeyConfigured()) {
-
-            logger.warn(
-                    "ALPACA_API_KEY is not configured");
-
-            return;
-        }
-
-        if (!alpacaClient.isApiSecretConfigured()) {
-
-            logger.warn(
-                    "ALPACA_API_SECRET is not configured");
 
             return;
         }
@@ -193,8 +186,6 @@ public class MarketDataService {
         lastSuccessfulTickerCount = 0;
 
         lastFailedTickerCount = 0;
-
-        alpacaClient.validateCredentials();
 
         List<Instrument> instruments =
                 marketDataRepository.findInstruments();
@@ -289,6 +280,12 @@ public class MarketDataService {
 
                 refreshStocks(
                         stockSymbols);
+
+                                LocalDate today = OffsetDateTime.now(ZoneOffset.UTC).toLocalDate();
+                                if (!today.equals(lastStockStatsRefreshDate)
+                                                && refreshStockInstrumentStats(stockSymbols)) {
+                                        lastStockStatsRefreshDate = today;
+                                }
             }
         }
 
@@ -395,6 +392,64 @@ public class MarketDataService {
                     exception);
         }
     }
+
+        // =========================================================
+        // Stock Instrument Statistics
+        //
+        // Daily bars populate the four mutable statistics stored on
+        // instruments. Ticker and asset type remain unchanged.
+        // =========================================================
+
+        private boolean refreshStockInstrumentStats(List<String> symbols) {
+                try {
+                        AlpacaClient.AlpacaBarsResponse response =
+                                        alpacaClient.getDailyStockBars(symbols);
+
+                        if (response == null || response.bars() == null) {
+                                return false;
+                        }
+
+                        response.bars().forEach((ticker, bars) -> {
+                                if (bars == null || bars.isEmpty()) {
+                                        logger.warn("No daily bars returned for stock {}", ticker);
+                                        return;
+                                }
+
+                                AlpacaClient.AlpacaBar latest = bars.get(bars.size() - 1);
+                                AlpacaClient.AlpacaBar previous = bars.size() > 1
+                                                ? bars.get(bars.size() - 2)
+                                                : latest;
+
+                                // Average the returned daily volumes instead of deriving volume from quotes.
+                                double averageVolume = bars.stream()
+                                                .map(AlpacaClient.AlpacaBar::volume)
+                                                .filter(java.util.Objects::nonNull)
+                                                .mapToDouble(java.math.BigDecimal::doubleValue)
+                                                .average()
+                                                .orElse(0.0);
+
+                                int volume = latest.volume() == null
+                                                ? 0
+                                                : latest.volume().intValue();
+
+                                // The previous bar is the previous trading session, not necessarily yesterday.
+                                int updatedRows = instrumentService.updateMarketStats(
+                                                ticker,
+                                                previous.close() == null ? 0.0 : previous.close().doubleValue(),
+                                                latest.open() == null ? 0.0 : latest.open().doubleValue(),
+                                                volume,
+                                                averageVolume);
+
+                                if (updatedRows != 1) {
+                                        logger.warn("Daily bars returned for unknown stock ticker {}", ticker);
+                                }
+                        });
+                        return !response.bars().isEmpty();
+                } catch (Exception exception) {
+                        logger.error("Unable to refresh stock instrument statistics", exception);
+                        return false;
+                }
+        }
 
     // =========================================================
     // Crypto Refresh
@@ -510,17 +565,17 @@ public class MarketDataService {
                                         .equalsIgnoreCase(normalizedPair))
                                 .findFirst()
                                 .orElse(normalizedPair);
-                        java.time.OffsetDateTime quoteTimestamp = rate.date()
+                        OffsetDateTime quoteTimestamp = rate.date()
                                 .atStartOfDay()
-                                .atOffset(java.time.ZoneOffset.UTC);
+                                .atOffset(ZoneOffset.UTC);
                         marketDataRepository.saveQuote(
                                 databaseTicker,
                                 rate.rate(),
-                                java.math.BigDecimal.ZERO,
-                                "FRANKFURT",
+                                BigDecimal.ZERO,
+                                "FOREX",
                                 rate.rate(),
-                                java.math.BigDecimal.ZERO,
-                                "FRANKFURT",
+                                BigDecimal.ZERO,
+                                "FOREX",
                                 null,
                                 quoteTimestamp);
                         lastSuccessfulTickerCount++;

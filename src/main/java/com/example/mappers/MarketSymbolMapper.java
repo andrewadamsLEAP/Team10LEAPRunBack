@@ -113,10 +113,12 @@ public class MarketSymbolMapper {
         if (ticker == null) {
             throw new IllegalArgumentException("Forex ticker cannot be null");
         }
+
         String normalized = ticker.replace("-", "").replace("/", "").toUpperCase();
         if (!normalized.matches("[A-Z]{6}")) {
             throw new IllegalArgumentException("Invalid forex ticker: " + ticker);
         }
+
         return normalized;
     }
 }

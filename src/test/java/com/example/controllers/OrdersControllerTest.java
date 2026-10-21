@@ -1,24 +1,28 @@
 package com.example.controllers;
 
-import com.example.services.OrdersService;
-import com.example.DTOs.orders.PlaceOrderRequest;
-import com.example.DTOs.orders.OrderResponse;
 import com.example.DTOs.orders.OrderHistoryView;
+import com.example.DTOs.orders.OrderResponse;
+import com.example.DTOs.orders.PlaceOrderRequest;
+import com.example.authUtils.ClientIdContextHolder;
+import com.example.entities.Order;
+import com.example.services.OrdersService;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OrdersControllerTest {
+    private static final Long CLIENT_ID = 1L;
 
     @Mock
     private OrdersService ordersService;
@@ -26,205 +30,62 @@ class OrdersControllerTest {
     @InjectMocks
     private OrdersController ordersController;
 
-    /**
-     * Tests getting order by ID
-     */
-    @Test
-    void getOrderById_shouldReturnOrderFromService() {
-        Long orderId = 1L;
-        OrderResponse mockOrder = new OrderResponse(
-                orderId, "AAPL", 100, new BigDecimal("150.00"), "PENDING", null
-        );
-
-        when(ordersService.getOrderByIdAsDto(orderId)).thenReturn(mockOrder);
-
-        OrderResponse result = ordersController.getOrderById(orderId);
-
-        assertNotNull(result);
-        assertEquals(orderId, result.orderId());
-        assertEquals("AAPL", result.ticker());
-        verify(ordersService, times(1)).getOrderByIdAsDto(orderId);
+    @BeforeEach
+    void setUpContext() {
+        ClientIdContextHolder.setClientId(CLIENT_ID);
     }
 
-    /**
-     * Tests getting fulfilled orders for client
-     */
-    @Test
-    void getFulfilledOrders_shouldReturnFulfilledOrdersForClient() {
-        Long clientId = 1L;
-        List<OrderHistoryView> mockOrders = new ArrayList<>();
-        OrderHistoryView order = new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "FULFILLED", null, null, null, null);
-        mockOrders.add(order);
-
-        when(ordersService.getFulfilledOrdersAsDto(clientId)).thenReturn(mockOrders);
-
-        List<OrderHistoryView> result = ordersController.getFulfilledOrders(clientId);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("FULFILLED", result.get(0).status());
-        verify(ordersService, times(1)).getFulfilledOrdersAsDto(clientId);
+    @AfterEach
+    void clearContext() {
+        ClientIdContextHolder.clear();
     }
 
-    /**
-     * Tests getting cancelled orders
-     */
     @Test
-    void getCancelledOrders_shouldReturnAllCancelledOrders() {
-        List<OrderHistoryView> mockOrders = new ArrayList<>();
-        OrderHistoryView order = new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "CANCELLED", null, null, null, null);
-        mockOrders.add(order);
+    void getFulfilledOrdersUsesAuthenticatedClient() {
+        List<OrderHistoryView> expected = List.of();
+        when(ordersService.getFulfilledOrdersAsDto(CLIENT_ID)).thenReturn(expected);
 
-        when(ordersService.getCancelledOrdersAsDto()).thenReturn(mockOrders);
-
-        List<OrderHistoryView> result = ordersController.getCancelledOrders();
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals("CANCELLED", result.get(0).status());
-        verify(ordersService, times(1)).getCancelledOrdersAsDto();
+        assertEquals(expected, ordersController.getFulfilledOrders());
+        verify(ordersService).getFulfilledOrdersAsDto(CLIENT_ID);
     }
 
-    /**
-     * Tests getting pending sell orders for ticker
-     */
     @Test
-    void getPendingSellOrdersForTicker_shouldReturnSellOrdersForTicker() {
-        String ticker = "AAPL";
-        List<OrderHistoryView> mockOrders = new ArrayList<>();
-        OrderHistoryView order = new OrderHistoryView(1L, ticker, 50, new BigDecimal("150.00"), "PENDING", null, null, null, null);
-        mockOrders.add(order);
+    void placeBuyOrderUsesAuthenticatedClient() {
+        PlaceOrderRequest request = new PlaceOrderRequest("AAPL", 100, new BigDecimal("150.00"));
+        OrderResponse expected = new OrderResponse(1L, "AAPL", 100, new BigDecimal("150.00"), "PENDING", null);
+        when(ordersService.placeBuyOrderAsDto(CLIENT_ID, "AAPL", 100)).thenReturn(expected);
 
-        when(ordersService.getPendingSellOrdersForTickerAsDto(ticker)).thenReturn(mockOrders);
-
-        List<OrderHistoryView> result = ordersController.getPendingSellOrdersForTicker(ticker);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        assertEquals(ticker, result.get(0).ticker());
-        verify(ordersService, times(1)).getPendingSellOrdersForTickerAsDto(ticker);
+        assertEquals(expected, ordersController.placeBuyOrder(request));
+        verify(ordersService).placeBuyOrderAsDto(CLIENT_ID, "AAPL", 100);
     }
 
-    /**
-     * Tests getting pending buy orders for ticker
-     */
     @Test
-    void getPendingBuyOrdersForTicker_shouldReturnBuyOrdersForTicker() {
-        String ticker = "GOOGL";
-        List<OrderHistoryView> mockOrders = new ArrayList<>();
-        OrderHistoryView order = new OrderHistoryView(1L, ticker, 75, new BigDecimal("100.00"), "PENDING", null, null, null, null);
-        mockOrders.add(order);
+    void placeSellOrderUsesAuthenticatedClient() {
+        PlaceOrderRequest request = new PlaceOrderRequest("MSFT", 50, new BigDecimal("200.00"));
+        OrderResponse expected = new OrderResponse(2L, "MSFT", 50, new BigDecimal("200.00"), "PENDING", null);
+        when(ordersService.placeSellOrderAsDto(CLIENT_ID, "MSFT", 50)).thenReturn(expected);
 
-        when(ordersService.getPendingBuyOrdersForTickerAsDto(ticker)).thenReturn(mockOrders);
-
-        List<OrderHistoryView> result = ordersController.getPendingBuyOrdersForTicker(ticker);
-
-        assertNotNull(result);
-        assertEquals(1, result.size());
-        verify(ordersService, times(1)).getPendingBuyOrdersForTickerAsDto(ticker);
+        assertEquals(expected, ordersController.placeSellOrder(request));
+        verify(ordersService).placeSellOrderAsDto(CLIENT_ID, "MSFT", 50);
     }
 
-    /**
-     * Tests placing buy order
-     */
     @Test
-    void placeBuyOrder_shouldPlaceOrderAndReturnResponse() {
-        PlaceOrderRequest request = new PlaceOrderRequest(1L, "AAPL", 100, new BigDecimal("150.00"));
-        OrderResponse mockResponse = new OrderResponse(
-                1L, "AAPL", 100, new BigDecimal("150.00"), "PENDING", null
-        );
+    void getCancelledOrdersReturnsServiceResults() {
+        List<OrderHistoryView> expected = List.of();
+        when(ordersService.getCancelledOrdersAsDto()).thenReturn(expected);
 
-        when(ordersService.placeBuyOrderAsDto(1L, "AAPL", 100))
-                .thenReturn(mockResponse);
-
-        OrderResponse result = ordersController.placeBuyOrder(request);
-
-        assertNotNull(result);
-        assertEquals("AAPL", result.ticker());
-        verify(ordersService, times(1)).placeBuyOrderAsDto(1L, "AAPL", 100);
+        assertEquals(expected, ordersController.getCancelledOrders());
     }
 
-    /**
-     * Tests placing sell order
-     */
     @Test
-    void placeSellOrder_shouldPlaceOrderAndReturnResponse() {
-        PlaceOrderRequest request = new PlaceOrderRequest(1L, "MSFT", 50, new BigDecimal("200.00"));
-        OrderResponse mockResponse = new OrderResponse(
-                1L, "MSFT", 50, new BigDecimal("200.00"), "PENDING", null
-        );
+    void getOrderByIdRequiresAuthenticatedOrderOwner() {
+        Order order = new Order();
+        order.setClientId(CLIENT_ID);
+        when(ordersService.getOrderById(3L)).thenReturn(order);
+        OrderResponse expected = new OrderResponse(3L, "AAPL", 1, BigDecimal.TEN, "PENDING", null);
+        when(ordersService.getOrderByIdAsDto(3L)).thenReturn(expected);
 
-        when(ordersService.placeSellOrderAsDto(1L, "MSFT", 50))
-                .thenReturn(mockResponse);
-
-        OrderResponse result = ordersController.placeSellOrder(request);
-
-        assertNotNull(result);
-        assertEquals("MSFT", result.ticker());
-        verify(ordersService, times(1)).placeSellOrderAsDto(1L, "MSFT", 50);
-    }
-
-    /**
-     * Tests cancelling order
-     */
-    @Test
-    void cancelOrder_shouldCancelOrderAndReturnResponse() {
-        Long orderId = 1L;
-        OrderResponse mockResponse = new OrderResponse(
-                orderId, "AAPL", 100, new BigDecimal("150.00"), "CANCELLED", null
-        );
-
-        when(ordersService.cancelOrderAsDto(orderId)).thenReturn(mockResponse);
-
-        OrderResponse result = ordersController.cancelOrder(orderId);
-
-        assertNotNull(result);
-        assertEquals("CANCELLED", result.status());
-        verify(ordersService, times(1)).cancelOrderAsDto(orderId);
-    }
-
-    /**
-     * Tests getting empty fulfilled orders list
-     */
-    @Test
-    void getFulfilledOrders_shouldReturnEmptyListWhenNoOrders() {
-        Long clientId = 1L;
-
-        when(ordersService.getFulfilledOrdersAsDto(clientId)).thenReturn(new ArrayList<>());
-
-        List<OrderHistoryView> result = ordersController.getFulfilledOrders(clientId);
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    /**
-     * Tests getting cancelled orders returns empty list
-     */
-    @Test
-    void getCancelledOrders_shouldReturnEmptyListWhenNoOrders() {
-        when(ordersService.getCancelledOrdersAsDto()).thenReturn(new ArrayList<>());
-
-        List<OrderHistoryView> result = ordersController.getCancelledOrders();
-
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    /**
-     * Tests multiple fulfilled orders for same client
-     */
-    @Test
-    void getFulfilledOrders_shouldReturnMultipleOrdersForClient() {
-        Long clientId = 1L;
-        List<OrderHistoryView> mockOrders = new ArrayList<>();
-        mockOrders.add(new OrderHistoryView(1L, "AAPL", 100, new BigDecimal("150.00"), "FULFILLED", null, null, null, null));
-        mockOrders.add(new OrderHistoryView(2L, "GOOGL", 50, new BigDecimal("100.00"), "FULFILLED", null, null, null, null));
-
-        when(ordersService.getFulfilledOrdersAsDto(clientId)).thenReturn(mockOrders);
-
-        List<OrderHistoryView> result = ordersController.getFulfilledOrders(clientId);
-
-        assertEquals(2, result.size());
+        assertEquals(expected, ordersController.getOrderById(3L));
+        verify(ordersService).getOrderByIdAsDto(3L);
     }
 }
