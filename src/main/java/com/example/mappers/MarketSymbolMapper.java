@@ -55,8 +55,8 @@ public class MarketSymbolMapper {
             String ticker) {
 
         return ticker != null
-                && ticker.length() == 6
-                && !ticker.contains("-");
+            && (ticker.matches("[A-Za-z]{6}")
+            || ticker.matches("[A-Za-z]{3}-[A-Za-z]{3}"));
     }
 
     public String toAlpacaForexSymbol(
@@ -97,5 +97,26 @@ public class MarketSymbolMapper {
         }
 
         return ticker.replace("/", "");
+    }
+
+    public String toFrankfurterBase(String ticker) {
+        String normalized = normalizeForexTicker(ticker);
+        return normalized.substring(0, 3);
+    }
+
+    public String toFrankfurterQuote(String ticker) {
+        String normalized = normalizeForexTicker(ticker);
+        return normalized.substring(3);
+    }
+
+    private String normalizeForexTicker(String ticker) {
+        if (ticker == null) {
+            throw new IllegalArgumentException("Forex ticker cannot be null");
+        }
+        String normalized = ticker.replace("-", "").replace("/", "").toUpperCase();
+        if (!normalized.matches("[A-Z]{6}")) {
+            throw new IllegalArgumentException("Invalid forex ticker: " + ticker);
+        }
+        return normalized;
     }
 }

@@ -12,8 +12,8 @@ import org.springframework.stereotype.Service;
 
 import com.example.repositories.MarketDataRepository;
 import com.example.generalServices.AlpacaClient;
+import com.example.generalServices.FrankfurterClient;
 import com.example.mappers.MarketSymbolMapper;
-import com.example.generalServices.AlpacaClient.AlpacaForexResponse;
 import com.example.generalServices.AlpacaClient.AlpacaQuotesResponse;
 
 import java.time.OffsetDateTime;
@@ -31,6 +31,7 @@ public class MarketDataService {
 
     private final MarketDataRepository marketDataRepository;
     private final AlpacaClient alpacaClient;
+        private final FrankfurterClient frankfurterClient;
     private final MarketSymbolMapper marketSymbolMapper;
     private final MarketHoursService marketHoursService;
     private final Environment environment;
@@ -49,6 +50,7 @@ public class MarketDataService {
     public MarketDataService(
             MarketDataRepository marketDataRepository,
             AlpacaClient alpacaClient,
+            FrankfurterClient frankfurterClient,
             MarketSymbolMapper marketSymbolMapper,
             MarketHoursService marketHoursService,
             Environment environment,
@@ -67,6 +69,9 @@ public class MarketDataService {
 
         this.alpacaClient =
                 alpacaClient;
+
+        this.frankfurterClient =
+                frankfurterClient;
 
         this.marketSymbolMapper =
                 marketSymbolMapper;
@@ -477,63 +482,54 @@ public class MarketDataService {
 
         try {
 
-            /*
-             * Forex is different from stocks and crypto.
-             *
-             * Alpaca expects:
-             *
-             * currency_pairs=EUR/USD,USD/JPY
-             *
-             * rather than:
-             *
-             * symbols=EUR/USD,USD/JPY
-             */
-            String currencyPairs =
-                    marketSymbolMapper
-                            .toAlpacaForexSymbols(
-                                    symbols);
+            Map<String, List<String>> quotesByBase = symbols.stream()
+                    .map(symbol -> new String[] {
+                            marketSymbolMapper.toFrankfurterBase(symbol),
+                            marketSymbolMapper.toFrankfurterQuote(symbol)
+                    })
+                    .collect(java.util.stream.Collectors.groupingBy(
+                            pair -> pair[0],
+                            java.util.LinkedHashMap::new,
+                            java.util.stream.Collectors.mapping(
+                                    pair -> pair[1],
+                                    java.util.stream.Collectors.toList())));
 
-            logger.info(
-                    "Requesting forex rates for {} symbols: {}",
-                    symbols.size(),
-                    currencyPairs);
-
-            /*
-             * Forex returns AlpacaForexResponse,
-             * NOT AlpacaQuotesResponse.
-             */
-            AlpacaClient.AlpacaForexResponse response =
-                    alpacaClient.getForexRates(
-                            currencyPairs);
-
-            if (response != null && response.rates() != null) {
-                logger.info("Forex rates received:");
-                response.rates().forEach((ticker, rate) -> {
+            quotesByBase.forEach((base, quotes) -> {
+                logger.info("Requesting Frankfurter rates for base {} and quotes {}", base, quotes);
+                List<FrankfurterClient.FrankfurterRate> response =
+                        frankfurterClient.getRates(base, quotes);
+                response.forEach(rate -> {
                     logger.info(
-                            "  {} - Ask: {}, Bid: {} @ {}",
-                            ticker,
-                            rate.askPrice(),
-                            rate.bidPrice(),
-                            rate.quoteTimestamp());
+                            "  {}/{} - Rate: {} @ {}",
+                            rate.base(), rate.quote(), rate.rate(), rate.date());
                     try {
-                        String databaseTicker = marketSymbolMapper.toDatabaseForexSymbol(ticker);
+                        String normalizedPair = rate.base() + rate.quote();
+                        String databaseTicker = symbols.stream()
+                                .filter(symbol -> symbol.replace("-", "")
+                                        .replace("/", "")
+                                        .equalsIgnoreCase(normalizedPair))
+                                .findFirst()
+                                .orElse(normalizedPair);
+                        java.time.OffsetDateTime quoteTimestamp = rate.date()
+                                .atStartOfDay()
+                                .atOffset(java.time.ZoneOffset.UTC);
                         marketDataRepository.saveQuote(
                                 databaseTicker,
-                                rate.askPrice(),
+                                rate.rate(),
+                                java.math.BigDecimal.ZERO,
+                                "FRANKFURT",
+                                rate.rate(),
+                                java.math.BigDecimal.ZERO,
+                                "FRANKFURT",
                                 null,
-                                rate.askExchange(),
-                                rate.bidPrice(),
-                                null,
-                                rate.bidExchange(),
-                                null,
-                                rate.quoteTimestamp());
+                                quoteTimestamp);
                         lastSuccessfulTickerCount++;
                     } catch (Exception ex) {
                         lastFailedTickerCount++;
-                        logger.error("Failed to save quote for ticker: {}", ticker, ex);
+                        logger.error("Failed to save forex rate for {}/{}", rate.base(), rate.quote(), ex);
                     }
                 });
-            }
+            });
 
         } catch (Exception exception) {
 
