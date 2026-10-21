@@ -15,13 +15,14 @@ import java.util.List;
 @Mapper
 public interface InstrumentMapper {
     @Select("""
-        SELECT ticker, previous_close, open, volume,
+        SELECT ticker, display_name, previous_close, open, volume,
                avg_volume, asset_type
         FROM instruments
         ORDER BY ticker
         """)
     @Results({
         @Result(property = "ticker", column = "ticker"),
+        @Result(property = "displayName", column = "display_name"),
         @Result(property = "previousClose", column = "previous_close"),
         @Result(property = "open", column = "open"),
         @Result(property = "volume", column = "volume"),
@@ -31,13 +32,14 @@ public interface InstrumentMapper {
     List<Instrument> findAll();
 
     @Select("""
-        SELECT ticker, previous_close, open, volume,
+        SELECT ticker, display_name, previous_close, open, volume,
                avg_volume, asset_type
         FROM instruments
         WHERE ticker = #{ticker}
         """)
     @Results({
         @Result(property = "ticker", column = "ticker"),
+        @Result(property = "displayName", column = "display_name"),
         @Result(property = "previousClose", column = "previous_close"),
         @Result(property = "open", column = "open"),
         @Result(property = "volume", column = "volume"),
