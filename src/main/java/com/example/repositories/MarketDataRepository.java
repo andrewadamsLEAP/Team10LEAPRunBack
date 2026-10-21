@@ -1,5 +1,6 @@
 package com.example.repositories;
 
+import com.example.DTOs.instruments.InstrumentDetail;
 import com.example.services.MarketDataService;
 import com.example.mappers.MarketDataMapper;
 
@@ -36,6 +37,13 @@ public class MarketDataRepository {
     public List<String> findTickers() {
 
         return marketDataMapper.findTickers();
+    }
+
+    public InstrumentDetail findInstrumentDetails(
+            String ticker) {
+
+        return marketDataMapper.findInstrumentDetails(
+                ticker);
     }
 
     public OffsetDateTime findLastRecordedAt(
