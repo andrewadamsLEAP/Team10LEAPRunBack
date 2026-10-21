@@ -36,3 +36,7 @@ build/
 src/main/resources/application.properties
 
 logs/
+.postman
+postman
+.postman/resources.yaml
+postman/globals/workspace.globals.yaml
