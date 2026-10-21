@@ -10,6 +10,7 @@ import org.springframework.core.env.Profiles;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import com.example.DTOs.instruments.InstrumentDetail;
 import com.example.repositories.MarketDataRepository;
 import com.example.generalServices.AlpacaClient;
 import com.example.generalServices.FrankfurterClient;
@@ -681,6 +682,14 @@ public class MarketDataService {
                 .findTickers();
     }
 
+    public InstrumentDetail getInstrumentDetails(
+            String ticker) {
+
+        return marketDataRepository
+                .findInstrumentDetails(
+                        ticker.toUpperCase());
+    }
+
     // =========================================================
     // Database Schema
     // =========================================================
@@ -751,4 +760,3 @@ public class MarketDataService {
             int failedTickerCount) {
     }
 }
-

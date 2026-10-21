@@ -1,6 +1,8 @@
 package com.example.mappers;
 
 import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Arg;
+import org.apache.ibatis.annotations.ConstructorArgs;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
@@ -8,6 +10,7 @@ import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import com.example.DTOs.instruments.InstrumentDetail;
 import com.example.services.MarketDataService.Instrument;
 
 import java.math.BigDecimal;
@@ -63,6 +66,64 @@ public interface MarketDataMapper {
         ORDER BY ticker
         """)
     List<String> findTickers();
+    
+        @Select("""
+        SELECT
+            i.ticker AS ticker,
+            i.asset_type AS asset_type,
+            i.previous_close AS previous_close,
+            i.open AS open,
+            i.volume AS volume,
+            i.avg_volume AS average_volume,
+            p.bid_price AS bid_price,
+            p.ask_price AS ask_price,
+            p.bid_size AS bid_size,
+            p.ask_size AS ask_size,
+            p.quote_timestamp AS quote_timestamp,
+            p.recorded_at AS recorded_at,
+            CASE
+                WHEN i.previous_close = 0
+                     OR COALESCE(p.bid_price, p.ask_price) IS NULL
+                THEN NULL
+                ELSE (
+                    (COALESCE(p.bid_price, p.ask_price) - i.previous_close)
+                    / i.previous_close
+                ) * 100
+            END AS change_percent
+        FROM instruments i
+        LEFT JOIN LATERAL (
+            SELECT
+                bid_price,
+                ask_price,
+                bid_size,
+                ask_size,
+                quote_timestamp,
+                recorded_at
+            FROM prices
+            WHERE prices.ticker = i.ticker
+            ORDER BY recorded_at DESC
+            LIMIT 1
+        ) p ON true
+        WHERE i.ticker = #{ticker}
+        """)
+    @ConstructorArgs({
+            @Arg(column = "ticker", javaType = String.class),
+            @Arg(column = "asset_type", javaType = String.class),
+            @Arg(column = "previous_close", javaType = BigDecimal.class),
+            @Arg(column = "open", javaType = BigDecimal.class),
+            @Arg(column = "volume", javaType = Integer.class),
+            @Arg(column = "average_volume", javaType = BigDecimal.class),
+            @Arg(column = "bid_price", javaType = BigDecimal.class),
+            @Arg(column = "ask_price", javaType = BigDecimal.class),
+            @Arg(column = "bid_size", javaType = BigDecimal.class),
+            @Arg(column = "ask_size", javaType = BigDecimal.class),
+            @Arg(column = "quote_timestamp", javaType = OffsetDateTime.class),
+            @Arg(column = "recorded_at", javaType = OffsetDateTime.class),
+            @Arg(column = "change_percent", javaType = BigDecimal.class)
+    })
+    InstrumentDetail findInstrumentDetails(
+            @Param("ticker")
+            String ticker);
 
     @Insert("""
         INSERT INTO prices (

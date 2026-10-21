@@ -1,5 +1,6 @@
 package com.example.controllers;
 
+import com.example.DTOs.instruments.InstrumentDetail;
 import com.example.services.MarketDataService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -59,6 +60,19 @@ public class MarketDataController {
     @PreAuthorize("isAuthenticated()")
     public List<String> getTickers() {
         return marketDataService.getTickers();
+    }
+
+    /**
+     * Returns instrument statistics and the latest stored quote
+     * for one ticker.
+     */
+    @GetMapping("/market-data/instruments/{ticker}")
+    @PreAuthorize("isAuthenticated()")
+    public InstrumentDetail getInstrumentDetails(
+            @PathVariable String ticker) {
+
+        return marketDataService.getInstrumentDetails(
+                ticker.toUpperCase());
     }
 
     /**
