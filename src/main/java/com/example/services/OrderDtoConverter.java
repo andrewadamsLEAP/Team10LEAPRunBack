@@ -37,6 +37,7 @@ public class OrderDtoConverter {
         }
         return new OrderHistoryView(
                 order.getOrderId(),
+            order.getClientId(),
                 order.getTicker(),
                 order.getQuantity(),
                 order.getPrice(),

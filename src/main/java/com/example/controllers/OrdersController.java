@@ -40,9 +40,9 @@ public OrdersController(OrdersService ordersService) {
     this.ordersService = ordersService;
 }
 
-@GetMapping("/admin/all")
-@PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
-public List<OrderHistoryView> getAllOrdersForAdmin() {
+@GetMapping("/employee/all")
+@PreAuthorize("hasAnyRole('EMPLOYEE_ADMIN', 'EMPLOYEE_REPORTER')")
+public List<OrderHistoryView> getAllOrdersForEmployee() {
     return ordersService.getAllOrdersAsDto();
 }
 
