@@ -43,6 +43,10 @@ public class OrdersRepository {
         return ordersMapper.getAllOrders();
     }
 
+    public List<Order> getAllOrdersForClient(Long clientId) {
+        return ordersMapper.getAllOrdersForClient(clientId);
+    }
+
 
     /**
      * Get fulfilled orders for a specific client.

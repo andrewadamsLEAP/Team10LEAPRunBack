@@ -74,6 +74,26 @@ public interface OrdersMapper {
     })
     List<Order> getAllOrders();
 
+    /** Retrieves every order belonging to one client. */
+    @Select("""
+        SELECT order_id, client_id, ticker, order_type, order_status,
+               quantity, price, order_date
+        FROM orders
+        WHERE client_id = #{clientId}
+        ORDER BY order_date DESC, order_id DESC
+        """)
+    @Results({
+        @Result(property = "orderId", column = "order_id"),
+        @Result(property = "clientId", column = "client_id"),
+        @Result(property = "ticker", column = "ticker"),
+        @Result(property = "orderType", column = "order_type", typeHandler = OrderTypeHandler.class),
+        @Result(property = "orderStatus", column = "order_status", typeHandler = OrderStatusHandler.class),
+        @Result(property = "quantity", column = "quantity"),
+        @Result(property = "price", column = "price"),
+        @Result(property = "orderDate", column = "order_date")
+    })
+    List<Order> getAllOrdersForClient(@Param("clientId") Long clientId);
+
 
     /**
      * Retrieves all fulfilled orders for a specific client.
