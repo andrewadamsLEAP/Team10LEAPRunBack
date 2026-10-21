@@ -36,12 +36,17 @@ public interface ClientsMapper {
     ClientAdminView findByIdAdmin(@Param("clientId") Long clientId);
 
     @Select("""
-     SELECT client_id AS clientId,
+     SELECT client_id AS "clientId",
          username,
          email
         FROM clients
         WHERE client_id = #{clientId}
         """)
+    @ConstructorArgs({
+        @Arg(column = "clientId", javaType = Long.class),
+        @Arg(column = "username", javaType = String.class),
+        @Arg(column = "email", javaType = String.class)
+    })
     ClientReporterView findByIdReporter(@Param("clientId") Long clientId);
 
     @Select("""
@@ -56,11 +61,16 @@ public interface ClientsMapper {
     List<ClientAdminView> findAllClientsAdmin();
 
     @Select("""
-         SELECT client_id AS clientId,
+            SELECT client_id AS "clientId",
              username,
              email
             FROM clients
             """)
+        @ConstructorArgs({
+            @Arg(column = "clientId", javaType = Long.class),
+            @Arg(column = "username", javaType = String.class),
+            @Arg(column = "email", javaType = String.class)
+        })
     List<ClientReporterView> findAllClientsReporter();
     
     @Select("""

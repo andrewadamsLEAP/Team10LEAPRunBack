@@ -20,9 +20,9 @@ public class TransactionsController {
         this.transactionsService = transactionsService;
     }
 
-    @GetMapping("/admin/transactions")
-    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
-    public List<Transaction> getAllTransactionsForAdmin() {
+    @GetMapping("/employee/transactions")
+    @PreAuthorize("hasAnyRole('EMPLOYEE_ADMIN', 'EMPLOYEE_REPORTER')")
+    public List<Transaction> getAllTransactionsForEmployee() {
         return transactionsService.getAllTransactions();
     }
 
