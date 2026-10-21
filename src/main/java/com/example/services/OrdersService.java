@@ -83,7 +83,11 @@ public class OrdersService {
     }
 
     public List<OrderHistoryView> getAllOrdersAsDto() {
-        return orderDtoConverter.toOrderHistoryViews(ordersRepository.getAllOrders());
+        return ordersRepository.getAllOrders().stream()
+            .map(order -> orderDtoConverter.toOrderHistoryView(
+                order,
+                clientsService.getClientDataAdmin(order.getClientId()).username()))
+            .toList();
     }
 
     /**

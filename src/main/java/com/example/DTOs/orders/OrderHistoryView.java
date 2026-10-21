@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
  */
 public record OrderHistoryView(
         long orderId,
+        Long clientId,
+        String clientUsername,
         String ticker,
         Integer quantity,
         BigDecimal price,

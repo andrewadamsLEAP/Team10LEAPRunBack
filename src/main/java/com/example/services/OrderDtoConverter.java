@@ -37,6 +37,8 @@ public class OrderDtoConverter {
         }
         return new OrderHistoryView(
                 order.getOrderId(),
+            order.getClientId(),
+            null,
                 order.getTicker(),
                 order.getQuantity(),
                 order.getPrice(),
@@ -46,6 +48,24 @@ public class OrderDtoConverter {
                 null,  // executedPrice - would come from execution details if tracked
                 null,  // executedAt - would come from execution details if tracked
                 null   // cancellationReason - would come from cancellation tracking if implemented
+        );
+    }
+
+    public OrderHistoryView toOrderHistoryView(Order order, String clientUsername) {
+        OrderHistoryView orderHistoryView = toOrderHistoryView(order);
+        return new OrderHistoryView(
+                orderHistoryView.orderId(),
+                orderHistoryView.clientId(),
+                clientUsername,
+                orderHistoryView.ticker(),
+                orderHistoryView.quantity(),
+                orderHistoryView.price(),
+                orderHistoryView.orderType(),
+                orderHistoryView.status(),
+                orderHistoryView.createdAt(),
+                orderHistoryView.executedPrice(),
+                orderHistoryView.executedAt(),
+                orderHistoryView.cancellationReason()
         );
     }
 
