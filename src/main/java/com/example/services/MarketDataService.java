@@ -572,10 +572,10 @@ public class MarketDataService {
                                 databaseTicker,
                                 rate.rate(),
                                 BigDecimal.ZERO,
-                                "FRANKFURT",
+                                "FOREX",
                                 rate.rate(),
                                 BigDecimal.ZERO,
-                                "FRANKFURT",
+                                "FOREX",
                                 null,
                                 quoteTimestamp);
                         lastSuccessfulTickerCount++;
