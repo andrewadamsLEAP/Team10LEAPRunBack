@@ -46,6 +46,13 @@ public List<OrderHistoryView> getAllOrdersForEmployee() {
     return ordersService.getAllOrdersAsDto();
 }
 
+@GetMapping("/employee/all/{clientId}")
+@PreAuthorize("hasAnyRole('EMPLOYEE_ADMIN', 'EMPLOYEE_REPORTER')")
+public List<OrderHistoryView> getAllOrdersForEmployeeByClient(
+        @PathVariable Long clientId) {
+    return ordersService.getAllOrdersForClientAsDto(clientId);
+}
+
 @GetMapping("/client/all/{clientId}")
 @PreAuthorize("hasRole('CLIENT')")
 public List<OrderHistoryView> getAllOrdersForClient(
