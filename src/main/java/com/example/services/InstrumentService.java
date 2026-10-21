@@ -32,7 +32,10 @@ public class InstrumentService {
      * @return a list of all instruments
      */
     public List<Instrument> getAllInstruments() {
-        return instrumentRepository.findAll();
+        return instrumentRepository.findAll()
+            .stream()
+            .peek(this::applyDisplayNameFallback)
+            .toList();
     }
 
 
@@ -53,7 +56,7 @@ public class InstrumentService {
             throw new IllegalArgumentException("Instrument not found: " + normalizedTicker);
         }
         
-        return instrument;
+        return applyDisplayNameFallback(instrument);
     }
 
     /**
@@ -81,5 +84,14 @@ public class InstrumentService {
             Double avgVolume) {
         return instrumentRepository.updateMarketStats(
                 ticker, previousClose, open, volume, avgVolume);
+    }
+
+    private Instrument applyDisplayNameFallback(Instrument instrument) {
+        if (instrument != null
+                && (instrument.getDisplayName() == null
+                || instrument.getDisplayName().isBlank())) {
+            instrument.setDisplayName(instrument.getTicker());
+        }
+        return instrument;
     }
 }

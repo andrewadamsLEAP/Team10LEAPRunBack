@@ -2,6 +2,7 @@ package com.example.entities;
 
 public class Instrument {
     private String ticker;
+    private String displayName;
     private Double previousClose;
     private Double open;
     private Integer volume;
@@ -15,6 +16,10 @@ public class Instrument {
     // Getters
     public String getTicker(){
         return ticker;
+    }
+
+    public String getDisplayName(){
+        return displayName;
     }
 
     public Double getPreviousClose(){
@@ -40,6 +45,10 @@ public class Instrument {
     // Setters
     public void setTicker(String ticker){
         this.ticker = ticker;
+    }
+
+    public void setDisplayName(String displayName){
+        this.displayName = displayName;
     }
 
     public void setPreviousClose(Double previousClose){
