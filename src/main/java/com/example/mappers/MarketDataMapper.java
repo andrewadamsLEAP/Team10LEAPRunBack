@@ -70,6 +70,7 @@ public interface MarketDataMapper {
         @Select("""
         SELECT
             i.ticker AS ticker,
+            i.display_name AS display_name,
             i.asset_type AS asset_type,
             i.previous_close AS previous_close,
             i.open AS open,
@@ -108,6 +109,7 @@ public interface MarketDataMapper {
         """)
     @ConstructorArgs({
             @Arg(column = "ticker", javaType = String.class),
+            @Arg(column = "display_name", javaType = String.class),
             @Arg(column = "asset_type", javaType = String.class),
             @Arg(column = "previous_close", javaType = BigDecimal.class),
             @Arg(column = "open", javaType = BigDecimal.class),

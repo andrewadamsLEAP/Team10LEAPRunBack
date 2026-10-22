@@ -10,6 +10,7 @@ CREATE TABLE employees (
 
 CREATE TABLE instruments (
     ticker VARCHAR(100) PRIMARY KEY,
+    display_name VARCHAR(255) NOT NULL,
     previous_close float8 NOT NULL DEFAULT 0,
     open float8 NOT NULL DEFAULT 0,
     volume integer NOT NULL DEFAULT 0,

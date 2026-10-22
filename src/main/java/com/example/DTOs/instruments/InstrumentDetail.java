@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 
 public record InstrumentDetail(
         String ticker,
+        String displayName,
         String assetType,
         BigDecimal previousClose,
         BigDecimal open,
