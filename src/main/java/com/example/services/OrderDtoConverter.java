@@ -44,10 +44,7 @@ public class OrderDtoConverter {
                 order.getPrice(),
             order.getOrderType().name(),
                 order.getOrderStatus().name(),
-                order.getOrderDate() != null ? order.getOrderDate().toLocalDateTime() : null,
-                null,  // executedPrice - would come from execution details if tracked
-                null,  // executedAt - would come from execution details if tracked
-                null   // cancellationReason - would come from cancellation tracking if implemented
+                order.getOrderDate() != null ? order.getOrderDate().toLocalDateTime() : null
         );
     }
 
@@ -62,10 +59,7 @@ public class OrderDtoConverter {
                 orderHistoryView.price(),
                 orderHistoryView.orderType(),
                 orderHistoryView.status(),
-                orderHistoryView.createdAt(),
-                orderHistoryView.executedPrice(),
-                orderHistoryView.executedAt(),
-                orderHistoryView.cancellationReason()
+                orderHistoryView.createdAt()
         );
     }
 
