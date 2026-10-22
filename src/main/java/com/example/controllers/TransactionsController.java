@@ -26,6 +26,13 @@ public class TransactionsController {
         return transactionsService.getAllTransactions();
     }
 
+    @GetMapping("/admin/transactions/{clientId}")
+    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+    public List<Transaction> getTransactionsForClientAsAdmin(
+            @PathVariable Long clientId) {
+        return transactionsService.getTransactions(clientId);
+    }
+
     @GetMapping("/transactions")
     @PreAuthorize("hasRole('CLIENT')")
     public List<Transaction> getTransactions() {
