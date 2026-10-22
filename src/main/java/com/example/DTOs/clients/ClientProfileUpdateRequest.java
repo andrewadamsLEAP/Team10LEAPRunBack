@@ -15,15 +15,12 @@ import jakarta.validation.constraints.NotBlank;
  */
 
 public record ClientProfileUpdateRequest(
-        @NotBlank
         @Size(min = 3, max = 100)
         String username,
         
-        @NotBlank
         @Size(min = 1, max = 100)
         String firstName,
         
-        @NotBlank
         @Size(min = 1, max = 100)
         String lastName
 ) {
