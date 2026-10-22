@@ -44,6 +44,7 @@ INSERT INTO employees (
 
 INSERT INTO instruments (
     ticker,
+    display_name,
     previous_close,
     open,
     volume,
