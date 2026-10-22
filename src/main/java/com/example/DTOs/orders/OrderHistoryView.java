@@ -13,9 +13,6 @@ import java.time.LocalDateTime;
  * @param orderType
  * @param status
  * @param createdAt
- * @param executedPrice
- * @param executedAt
- * @param cancellationReason
  */
 public record OrderHistoryView(
         long orderId,
@@ -26,8 +23,5 @@ public record OrderHistoryView(
         BigDecimal price,
         String orderType,
         String status,
-        LocalDateTime createdAt,
-        BigDecimal executedPrice,
-        LocalDateTime executedAt,
-        String cancellationReason
+        LocalDateTime createdAt
 ) {}

@@ -1,5 +1,6 @@
 package com.example.services;
 
+import com.example.DTOs.Transactions.TransactionView;
 import com.example.entities.Transaction;
 import com.example.entities.TransactionType;
 import com.example.repositories.TransactionsRepository;
@@ -30,6 +31,19 @@ public class TransactionsService {
 
     public List<Transaction> getTransactions(Long clientId) {
         return transactionsRepository.getTransactions(clientId);
+    }
+
+    public List<TransactionView> getTransactionsForClientWithUsername(Long clientId) {
+        String clientUsername = clientsService.getClientProfile(clientId).username();
+        return transactionsRepository.getTransactions(clientId).stream()
+                .map(transaction -> new TransactionView(
+                        transaction.getTransactionId(),
+                        transaction.getClientId(),
+                        clientUsername,
+                        transaction.getType(),
+                        transaction.getAmount(),
+                        transaction.getTimestamp()))
+                .toList();
     }
 
     public List<Transaction> getAllTransactions() {

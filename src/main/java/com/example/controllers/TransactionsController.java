@@ -1,5 +1,6 @@
 package com.example.controllers;
 
+import com.example.DTOs.Transactions.TransactionView;
 import com.example.entities.Transaction;
 import com.example.services.TransactionsService;
 import com.example.authUtils.ClientIdContextHolder;
@@ -28,9 +29,9 @@ public class TransactionsController {
 
     @GetMapping("/admin/transactions/{clientId}")
     @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
-    public List<Transaction> getTransactionsForClientAsAdmin(
+    public List<TransactionView> getTransactionsForClientAsAdmin(
             @PathVariable Long clientId) {
-        return transactionsService.getTransactions(clientId);
+        return transactionsService.getTransactionsForClientWithUsername(clientId);
     }
 
     @GetMapping("/transactions")
