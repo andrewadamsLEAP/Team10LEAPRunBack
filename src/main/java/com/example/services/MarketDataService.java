@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.example.DTOs.instruments.InstrumentDetail;
+import com.example.DTOs.instruments.PriceHistoryPoint;
 import com.example.repositories.MarketDataRepository;
 import com.example.generalServices.AlpacaClient;
 import com.example.generalServices.FrankfurterClient;
@@ -674,6 +675,18 @@ public class MarketDataService {
                         ticker,
                         from,
                         to);
+    }
+
+    public List<PriceHistoryPoint> getPriceHistoryPoints(
+            String ticker,
+            OffsetDateTime from,
+            OffsetDateTime to) {
+
+        return marketDataRepository
+                        .findPriceHistoryPoints(
+                                ticker.toUpperCase(),
+                                from,
+                                to);
     }
 
     public List<String> getTickers() {

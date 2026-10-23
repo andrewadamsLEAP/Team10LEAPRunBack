@@ -11,6 +11,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import com.example.DTOs.instruments.InstrumentDetail;
+import com.example.DTOs.instruments.PriceHistoryPoint;
 import com.example.services.MarketDataService.Instrument;
 
 import java.math.BigDecimal;
@@ -296,6 +297,55 @@ public interface MarketDataMapper {
 
             @Param("to")
             OffsetDateTime to);
+
+    @Select("""
+        SELECT
+            ticker,
+            CASE
+                WHEN EXTRACT(EPOCH FROM CAST(#{to} AS TIMESTAMP WITH TIME ZONE))
+                   - EXTRACT(EPOCH FROM CAST(#{from} AS TIMESTAMP WITH TIME ZONE)) > 604800
+                 AND EXTRACT(EPOCH FROM CAST(#{to} AS TIMESTAMP WITH TIME ZONE))
+                   - EXTRACT(EPOCH FROM CAST(#{from} AS TIMESTAMP WITH TIME ZONE)) <= 2592000
+                THEN hourly_average
+                ELSE price
+            END AS price,
+            recorded_at AS timestamp
+        FROM (
+            SELECT ticker, COALESCE(bid_price, ask_price) AS price, recorded_at,
+                AVG(COALESCE(bid_price, ask_price)) OVER (
+                    PARTITION BY FLOOR(EXTRACT(EPOCH FROM recorded_at) / 3600)
+                ) AS hourly_average,
+                ROW_NUMBER() OVER (
+                    PARTITION BY FLOOR(EXTRACT(EPOCH FROM recorded_at) /
+                        CASE
+                            WHEN EXTRACT(EPOCH FROM CAST(#{to} AS TIMESTAMP WITH TIME ZONE))
+                               - EXTRACT(EPOCH FROM CAST(#{from} AS TIMESTAMP WITH TIME ZONE)) <= 86400 THEN 60
+                            WHEN EXTRACT(EPOCH FROM CAST(#{to} AS TIMESTAMP WITH TIME ZONE))
+                               - EXTRACT(EPOCH FROM CAST(#{from} AS TIMESTAMP WITH TIME ZONE)) <= 604800 THEN 900
+                            WHEN EXTRACT(EPOCH FROM CAST(#{to} AS TIMESTAMP WITH TIME ZONE))
+                               - EXTRACT(EPOCH FROM CAST(#{from} AS TIMESTAMP WITH TIME ZONE)) <= 2592000 THEN 3600
+                            ELSE 86400
+                        END)
+                    ORDER BY recorded_at DESC, COALESCE(bid_price, ask_price) DESC
+                ) AS bucket_rank
+            FROM prices
+            WHERE ticker = #{ticker}
+              AND recorded_at >= #{from}
+              AND recorded_at <= #{to}
+              AND COALESCE(bid_price, ask_price) IS NOT NULL
+        ) bucketed
+        WHERE bucket_rank = 1
+        ORDER BY recorded_at
+        """)
+    @ConstructorArgs({
+            @Arg(column = "ticker", javaType = String.class),
+            @Arg(column = "price", javaType = BigDecimal.class),
+            @Arg(column = "timestamp", javaType = OffsetDateTime.class)
+    })
+    List<PriceHistoryPoint> findPriceHistoryPoints(
+            @Param("ticker") String ticker,
+            @Param("from") OffsetDateTime from,
+            @Param("to") OffsetDateTime to);
 
     @Update("""
         DO $$

@@ -1,6 +1,7 @@
 package com.example.controllers;
 
 import com.example.DTOs.instruments.InstrumentDetail;
+import com.example.DTOs.instruments.PriceHistoryPoint;
 import com.example.services.MarketDataService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -140,6 +141,36 @@ public class MarketDataController {
         }
 
         return marketDataService.getPriceHistory(
+                ticker.toUpperCase(),
+                historyStart,
+                historyEnd);
+    }
+
+    @GetMapping("/market-data/prices/{ticker}/chart-history")
+    @PreAuthorize("isAuthenticated()")
+    public List<PriceHistoryPoint> getChartPriceHistory(
+            @PathVariable String ticker,
+            @RequestParam(required = false) OffsetDateTime from,
+            @RequestParam(required = false) OffsetDateTime to) {
+
+        OffsetDateTime now = OffsetDateTime.now(ZoneOffset.UTC);
+
+        OffsetDateTime historyStart =
+                from == null
+                        ? now.minus(Duration.ofDays(30))
+                        : from;
+
+        OffsetDateTime historyEnd =
+                to == null
+                        ? now
+                        : to;
+
+        if (historyStart.isAfter(historyEnd)) {
+            throw new IllegalArgumentException(
+                    "from must be before or equal to to");
+        }
+
+        return marketDataService.getPriceHistoryPoints(
                 ticker.toUpperCase(),
                 historyStart,
                 historyEnd);
