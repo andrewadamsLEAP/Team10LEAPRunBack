@@ -32,6 +32,7 @@ public class GlobalExceptionHandler {
     
     @ExceptionHandler(UpdateFailedException.class)
     public ResponseEntity<ProblemDetail> handleUpdateFailed(UpdateFailedException ex) {
+        logger.error("Update failed: {}", ex.getMessage(), ex);
         return buildProblem(HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 
@@ -40,13 +41,37 @@ public class GlobalExceptionHandler {
         return buildProblem(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
+        @ExceptionHandler(IllegalStateException.class)
+        public ResponseEntity<ProblemDetail> handleIllegalState(
+            IllegalStateException ex,
+            ServletWebRequest request) {
+        String path = request.getRequest().getRequestURI();
+        logger.warn("Request rejected due to application state on {}: {}",
+            path, ex.getMessage());
+        return buildProblem(HttpStatus.CONFLICT, ex.getMessage());
+        }
+
     @ExceptionHandler(DataAccessException.class)
-    public ResponseEntity<ProblemDetail> handleDataAccess(DataAccessException ex) {
+        public ResponseEntity<ProblemDetail> handleDataAccess(
+            DataAccessException ex,
+            ServletWebRequest request) {
+        logger.error("Database operation failed on {}", request.getRequest().getRequestURI(), ex);
         return buildProblem(
                 HttpStatus.INTERNAL_SERVER_ERROR,
-                "Database operation failed. The transactions table schema may be out of sync with the application mapper."
+            "Database operation failed. Check the backend logs for the database error details."
         );
     }
+
+        @ExceptionHandler(Exception.class)
+        public ResponseEntity<ProblemDetail> handleUnexpected(
+            Exception ex,
+            ServletWebRequest request) {
+        logger.error("Unexpected request failure on {}",
+            request.getRequest().getRequestURI(), ex);
+        return buildProblem(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "Unexpected server error. Check the backend logs using the request timestamp.");
+        }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ProblemDetail> handleAccessDenied(AccessDeniedException ex, ServletWebRequest request) {

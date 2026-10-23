@@ -19,27 +19,23 @@ pipeline {
 
         stage('Setup') {
             steps {
-                echo '📋 Verifying Java and Maven...'
+                echo 'Verifying Java and the Maven Wrapper...'
                 sh 'java -version'
-                sh 'mvn --version'
+                sh './mvnw --version'
             }
         }
 
         stage('Clean & Compile') {
             steps {
-                echo '🧹 Cleaning and compiling project...'
-                sh 'mvn clean compile'
+                echo 'Cleaning and compiling project...'
+                sh './mvnw -B clean compile'
             }
         }
 
         stage('Test') {
             steps {
-                echo '🧪 Running unit and integration tests...'
-                
-                // Set test database credentials
-                withEnv(['DB_USERNAME=sa', 'DB_PASSWORD=', 'SPRING_PROFILES_ACTIVE=test']) {
-                    sh 'mvn test -Dtest.db.skip=false'
-                }
+                echo 'Running unit and integration tests...'
+                sh './mvnw -B test'
             }
 
             post {
@@ -47,9 +43,9 @@ pipeline {
                     echo '📊 Generating test reports...'
                     
                     // Always publish test results, even if some fail
-                    junit testResults: 'target/surefire-reports/*.xml', 
-                          allowEmptyResults: false,
-                          keepLongStdio: true
+                    junit testResults: 'target/surefire-reports/*.xml',
+                        allowEmptyResults: false,
+                        keepLongStdio: true
                     
                     // Archive test reports for debugging
                     archiveArtifacts artifacts: 'target/surefire-reports/**', 
@@ -69,8 +65,8 @@ pipeline {
 
         stage('Build Package') {
             steps {
-                echo '📦 Building JAR package...'
-                sh 'mvn package -DskipTests'
+                echo 'Building JAR package...'
+                sh './mvnw -B package -DskipTests'
             }
             
             post {

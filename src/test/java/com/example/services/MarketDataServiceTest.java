@@ -184,10 +184,10 @@ class MarketDataServiceTest {
                 eq("EUR-USD"),
                 eq(new java.math.BigDecimal("1.1238")),
                 eq(java.math.BigDecimal.ZERO),
-                eq("FRANKFURT"),
+                eq("FOREX"),
                 eq(new java.math.BigDecimal("1.1238")),
                 eq(java.math.BigDecimal.ZERO),
-                eq("FRANKFURT"),
+                eq("FOREX"),
                 isNull(),
                 eq(java.time.LocalDate.of(2026, 10, 19)
                         .atStartOfDay()
