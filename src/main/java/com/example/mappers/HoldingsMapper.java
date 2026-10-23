@@ -55,7 +55,7 @@ public interface HoldingsMapper {
             quantity
         )
         VALUES (
-            #{holding.client_id},
+            #{holding.client_Id},
             #{holding.ticker},
             #{holding.quantity}
         )

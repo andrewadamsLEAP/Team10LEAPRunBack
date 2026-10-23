@@ -14,14 +14,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @Service
 @ConditionalOnProperty(name = "app.kafka.enabled", havingValue = "true")
 public class OrderProducerService {
-    private static final Logger logger = LoggerFactory.getLogger(OrdersService.class);
+    private static final Logger logger = LoggerFactory.getLogger(OrderProducerService.class);
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final String orderPendingTopic;
     private final ObjectMapper objectMapper;
 
     public OrderProducerService (
         KafkaTemplate<String, String> kafkaTemplate,
-        @Value("${app.kafka.topics.order-pending}") String orderPendingTopic,
+        @Value("${app.kafka.topics.order-pending:order-pending-topic}") String orderPendingTopic,
         ObjectMapper objectMapper) {
         this.kafkaTemplate = kafkaTemplate;    
         this.orderPendingTopic = orderPendingTopic;
