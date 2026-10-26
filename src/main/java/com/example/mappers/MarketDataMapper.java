@@ -12,6 +12,7 @@ import org.apache.ibatis.annotations.Update;
 
 import com.example.DTOs.instruments.InstrumentDetail;
 import com.example.DTOs.instruments.PriceHistoryPoint;
+import com.example.DTOs.portfolio.PortfolioHistoryPrice;
 import com.example.services.MarketDataService.Instrument;
 
 import java.math.BigDecimal;
@@ -346,6 +347,53 @@ public interface MarketDataMapper {
             @Param("ticker") String ticker,
             @Param("from") OffsetDateTime from,
             @Param("to") OffsetDateTime to);
+
+    @Select("""
+        <script>
+        WITH valuation_points (valuation_time) AS (
+            <foreach collection="timestamps" item="timestamp" separator=" UNION ALL ">
+                SELECT CAST(#{timestamp} AS TIMESTAMP WITH TIME ZONE)
+            </foreach>
+        ), requested_tickers (ticker) AS (
+            <foreach collection="tickers" item="ticker" separator=" UNION ALL ">
+                SELECT CAST(#{ticker} AS VARCHAR)
+            </foreach>
+        )
+        SELECT
+            valuation_timestamp,
+            ticker,
+            bid_price,
+            price_timestamp
+        FROM (
+            SELECT
+                vp.valuation_time AS valuation_timestamp,
+                rt.ticker,
+                p.bid_price,
+                COALESCE(p.quote_timestamp, p.recorded_at) AS price_timestamp,
+                ROW_NUMBER() OVER (
+                    PARTITION BY vp.valuation_time, rt.ticker
+                    ORDER BY COALESCE(p.quote_timestamp, p.recorded_at) DESC,
+                             p.recorded_at DESC
+                ) AS price_rank
+            FROM valuation_points vp
+            CROSS JOIN requested_tickers rt
+            LEFT JOIN prices p
+                ON p.ticker = rt.ticker
+               AND COALESCE(p.quote_timestamp, p.recorded_at) &lt;= vp.valuation_time
+        ) ranked_quotes
+        WHERE price_rank = 1
+        ORDER BY valuation_timestamp, ticker
+        </script>
+        """)
+    @ConstructorArgs({
+            @Arg(column = "valuation_timestamp", javaType = OffsetDateTime.class),
+            @Arg(column = "ticker", javaType = String.class),
+            @Arg(column = "bid_price", javaType = BigDecimal.class),
+            @Arg(column = "price_timestamp", javaType = OffsetDateTime.class)
+    })
+    List<PortfolioHistoryPrice> findPortfolioHistoryPrices(
+            @Param("timestamps") List<OffsetDateTime> timestamps,
+            @Param("tickers") List<String> tickers);
 
     @Update("""
         DO $$

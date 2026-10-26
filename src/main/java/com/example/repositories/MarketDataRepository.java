@@ -2,6 +2,7 @@ package com.example.repositories;
 
 import com.example.DTOs.instruments.InstrumentDetail;
 import com.example.DTOs.instruments.PriceHistoryPoint;
+import com.example.DTOs.portfolio.PortfolioHistoryPrice;
 import com.example.services.MarketDataService;
 import com.example.mappers.MarketDataMapper;
 
@@ -116,6 +117,13 @@ public class MarketDataRepository {
                 ticker,
                 from,
                 to);
+    }
+
+    public List<PortfolioHistoryPrice> findPortfolioHistoryPrices(
+            List<OffsetDateTime> timestamps,
+            List<String> tickers) {
+
+        return marketDataMapper.findPortfolioHistoryPrices(timestamps, tickers);
     }
 
     public void ensurePricesSchema() {
