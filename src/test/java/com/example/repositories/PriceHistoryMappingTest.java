@@ -10,12 +10,52 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PriceHistoryMappingTest {
+    @Test
+    void selectsLatestBidPriceAtOrBeforeEachPortfolioTimestamp() throws Exception {
+        var dataSource = new DriverManagerDataSource(
+                "jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=PostgreSQL", "sa", "");
+        try (var connection = dataSource.getConnection()) {
+            try (var statement = connection.createStatement()) {
+                statement.execute("""
+                        CREATE TABLE prices (
+                            ticker VARCHAR(20),
+                            bid_price NUMERIC(18,4),
+                            quote_timestamp TIMESTAMP WITH TIME ZONE,
+                            recorded_at TIMESTAMP WITH TIME ZONE
+                        )
+                        """);
+                statement.execute("""
+                        INSERT INTO prices VALUES
+                        ('AAPL', 100, '2026-10-26 10:00:00+00', '2026-10-26 10:00:01+00'),
+                        ('AAPL', 105, '2026-10-26 11:00:00+00', '2026-10-26 11:00:01+00')
+                        """);
+            }
+            var configuration = new Configuration(new Environment(
+                    "test", new JdbcTransactionFactory(), dataSource));
+            configuration.addMapper(MarketDataMapper.class);
+            try (var session = new SqlSessionFactoryBuilder().build(configuration).openSession()) {
+                var mapper = session.getMapper(MarketDataMapper.class);
+                var prices = mapper.findPortfolioHistoryPrices(
+                        List.of(
+                                OffsetDateTime.parse("2026-10-26T10:30:00Z"),
+                                OffsetDateTime.parse("2026-10-26T11:30:00Z")),
+                        List.of("AAPL"));
+
+                assertEquals(2, prices.size());
+                assertEquals(0, new BigDecimal("100").compareTo(prices.get(0).bidPrice()));
+                assertEquals(OffsetDateTime.parse("2026-10-26T10:00:00Z"), prices.get(0).priceTimestamp());
+                assertEquals(0, new BigDecimal("105").compareTo(prices.get(1).bidPrice()));
+            }
+        }
+    }
+
     @Test
     void mapsImmutableHistoryPointsInTimeOrderWithPriceFallback() throws Exception {
         var dataSource = new DriverManagerDataSource(
