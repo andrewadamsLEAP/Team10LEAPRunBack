@@ -110,7 +110,7 @@ public interface OrdersMapper {
             order_status,
             quantity,
             price,
-            order_date
+            order_date AT TIME ZONE 'UTC' AS order_date
         FROM orders
         WHERE order_status = 'FULFILLED'
           AND client_id = #{clientId}

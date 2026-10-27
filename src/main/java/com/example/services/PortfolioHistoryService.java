@@ -235,9 +235,9 @@ public class PortfolioHistoryService {
     private List<OffsetDateTime> sampleTimestamps(OffsetDateTime from, OffsetDateTime to) {
         Duration duration = Duration.between(from, to);
         Duration interval = duration.compareTo(Duration.ofDays(1)) <= 0
-                ? Duration.ofMinutes(15)
+            ? Duration.ofHours(1)
                 : duration.compareTo(Duration.ofDays(7)) <= 0
-                        ? Duration.ofHours(1)
+                ? Duration.ofHours(6)
                         : duration.compareTo(Duration.ofDays(31)) <= 0
                                 ? Duration.ofDays(1)
                                 : Duration.ofDays(7);
