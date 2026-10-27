@@ -360,29 +360,29 @@ public interface MarketDataMapper {
             </foreach>
         )
         SELECT
-            valuation_timestamp,
-            ticker,
-            bid_price,
-            price_timestamp
-        FROM (
-            SELECT
-                vp.valuation_time AS valuation_timestamp,
-                rt.ticker,
-                p.bid_price,
-                COALESCE(p.quote_timestamp, p.recorded_at) AS price_timestamp,
-                ROW_NUMBER() OVER (
-                    PARTITION BY vp.valuation_time, rt.ticker
-                    ORDER BY COALESCE(p.quote_timestamp, p.recorded_at) DESC,
-                             p.recorded_at DESC
-                ) AS price_rank
-            FROM valuation_points vp
-            CROSS JOIN requested_tickers rt
-            LEFT JOIN prices p
-                ON p.ticker = rt.ticker
-               AND COALESCE(p.quote_timestamp, p.recorded_at) &lt;= vp.valuation_time
-        ) ranked_quotes
-        WHERE price_rank = 1
-        ORDER BY valuation_timestamp, ticker
+            vp.valuation_time AS valuation_timestamp,
+            rt.ticker,
+            (
+                SELECT p.bid_price
+                FROM prices p
+                WHERE p.ticker = rt.ticker
+                  AND COALESCE(p.quote_timestamp, p.recorded_at) &lt;= vp.valuation_time
+                ORDER BY COALESCE(p.quote_timestamp, p.recorded_at) DESC,
+                         p.recorded_at DESC
+                LIMIT 1
+            ) AS bid_price,
+            (
+                SELECT COALESCE(p.quote_timestamp, p.recorded_at)
+                FROM prices p
+                WHERE p.ticker = rt.ticker
+                  AND COALESCE(p.quote_timestamp, p.recorded_at) &lt;= vp.valuation_time
+                ORDER BY COALESCE(p.quote_timestamp, p.recorded_at) DESC,
+                         p.recorded_at DESC
+                LIMIT 1
+            ) AS price_timestamp
+        FROM valuation_points vp
+        CROSS JOIN requested_tickers rt
+        ORDER BY vp.valuation_time, rt.ticker
         </script>
         """)
     @ConstructorArgs({
@@ -440,6 +440,14 @@ public interface MarketDataMapper {
                 idx_prices_ticker_recorded_at
             ON prices (
                 ticker,
+                recorded_at DESC
+            );
+
+            CREATE INDEX IF NOT EXISTS
+                idx_prices_ticker_effective_timestamp
+            ON prices (
+                ticker,
+                (COALESCE(quote_timestamp, recorded_at)) DESC,
                 recorded_at DESC
             );
 

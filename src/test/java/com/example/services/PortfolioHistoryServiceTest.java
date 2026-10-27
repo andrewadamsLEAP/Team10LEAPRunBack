@@ -67,7 +67,7 @@ class PortfolioHistoryServiceTest {
         PortfolioHistoryResponse response = service.getHistory(CLIENT_ID, FROM, TO);
 
         assertEquals("USD", response.currency());
-        assertEquals(5, response.points().size());
+        assertEquals(2, response.points().size());
         assertEquals(FROM, response.points().get(0).timestamp());
         assertEquals(TO, response.points().get(response.points().size() - 1).timestamp());
         assertEquals(new BigDecimal("1200.00"), response.points().get(0).cash());
@@ -88,11 +88,33 @@ class PortfolioHistoryServiceTest {
     }
 
     @Test
+    void usesHourlyDayAndSixHourWeekSamplesWithoutChangingMonthlySampling() {
+        OffsetDateTime to = OffsetDateTime.now(ZoneOffset.UTC)
+                .minusMinutes(1)
+                .withSecond(0)
+                .withNano(0);
+        when(clientsService.getClientProfile(CLIENT_ID)).thenReturn(
+                new ClientProfileView(CLIENT_ID, "client@example.com", "client", "A", "B",
+                        new BigDecimal("1200.00")));
+        when(holdingsService.getAllClientHoldings(CLIENT_ID)).thenReturn(List.of());
+        when(ordersService.getFulfilledOrders(CLIENT_ID)).thenReturn(List.of());
+        when(transactionsService.getTransactions(CLIENT_ID)).thenReturn(List.of());
+
+        PortfolioHistoryResponse day = service.getHistory(CLIENT_ID, to.minusDays(1), to);
+        PortfolioHistoryResponse week = service.getHistory(CLIENT_ID, to.minusDays(7), to);
+        PortfolioHistoryResponse month = service.getHistory(CLIENT_ID, to.minusDays(30), to);
+
+        assertEquals(25, day.points().size());
+        assertEquals(29, week.points().size());
+        assertEquals(31, month.points().size());
+    }
+
+    @Test
     void usesOrderDateToReverseCompletedTradesAtEachSample() {
-    OffsetDateTime from = OffsetDateTime.now(ZoneOffset.UTC).minusHours(2)
+    OffsetDateTime from = OffsetDateTime.now(ZoneOffset.UTC).minusDays(2)
         .withSecond(0).withNano(0);
     OffsetDateTime tradeTime = from.plusMinutes(30);
-    OffsetDateTime to = from.plusHours(1);
+    OffsetDateTime to = from.plusDays(1);
     Order completedBuy = new Order(
         1L,
         CLIENT_ID,
@@ -124,12 +146,12 @@ class PortfolioHistoryServiceTest {
 
     PortfolioHistoryResponse response = service.getHistory(CLIENT_ID, from, to);
 
-    assertEquals(new BigDecimal("970.00"), response.points().get(1).cash());
-    assertEquals(new BigDecimal("30.00"), response.points().get(1).invested());
-    assertEquals(new BigDecimal("950.00"), response.points().get(2).cash());
-    assertEquals(new BigDecimal("50.00"), response.points().get(2).invested());
+    assertEquals(new BigDecimal("970.00"), response.points().get(0).cash());
+    assertEquals(new BigDecimal("30.00"), response.points().get(0).invested());
+    assertEquals(new BigDecimal("950.00"), response.points().get(1).cash());
+    assertEquals(new BigDecimal("50.00"), response.points().get(1).invested());
+    assertTrue(response.points().get(0).complete());
     assertTrue(response.points().get(1).complete());
-    assertTrue(response.points().get(2).complete());
     }
 
     @Test

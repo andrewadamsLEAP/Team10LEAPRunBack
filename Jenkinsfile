@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        PROJECT_VERSION = '0.0.3'
+        PROJECT_VERSION = '1.0.0'
         DOCKER_REGISTRY = 'your-docker-registry'
     }
 

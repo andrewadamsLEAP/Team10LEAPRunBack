@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PriceHistoryMappingTest {
@@ -46,12 +47,15 @@ class PriceHistoryMappingTest {
                         List.of(
                                 OffsetDateTime.parse("2026-10-26T10:30:00Z"),
                                 OffsetDateTime.parse("2026-10-26T11:30:00Z")),
-                        List.of("AAPL"));
+                    List.of("AAPL", "NO_PRICE"));
 
-                assertEquals(2, prices.size());
+                assertEquals(4, prices.size());
                 assertEquals(0, new BigDecimal("100").compareTo(prices.get(0).bidPrice()));
                 assertEquals(OffsetDateTime.parse("2026-10-26T10:00:00Z"), prices.get(0).priceTimestamp());
-                assertEquals(0, new BigDecimal("105").compareTo(prices.get(1).bidPrice()));
+                assertNull(prices.get(1).bidPrice());
+                assertNull(prices.get(1).priceTimestamp());
+                assertEquals(0, new BigDecimal("105").compareTo(prices.get(2).bidPrice()));
+                assertNull(prices.get(3).bidPrice());
             }
         }
     }

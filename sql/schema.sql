@@ -123,3 +123,10 @@ CREATE TABLE prices (
 
 CREATE INDEX idx_prices_ticker_recorded_at
     ON prices (ticker, recorded_at DESC);
+
+CREATE INDEX idx_prices_ticker_effective_timestamp
+    ON prices (
+        ticker,
+        (COALESCE(quote_timestamp, recorded_at)) DESC,
+        recorded_at DESC
+    );
