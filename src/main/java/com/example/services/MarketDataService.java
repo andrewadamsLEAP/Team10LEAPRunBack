@@ -53,6 +53,8 @@ public class MarketDataService {
     private int lastSuccessfulTickerCount;
     private int lastFailedTickerCount;
         private LocalDate lastStockStatsRefreshDate;
+                private LocalDate lastCryptoStatsRefreshDate;
+                private LocalDate lastForexRefreshDate;
 
     public MarketDataService(
             MarketDataRepository marketDataRepository,
@@ -299,17 +301,25 @@ public class MarketDataService {
 
             refreshCrypto(
                     cryptoSymbols);
+
+                        LocalDate today = OffsetDateTime.now(ZoneOffset.UTC).toLocalDate();
+                        if (!today.equals(lastCryptoStatsRefreshDate)
+                                        && refreshCryptoPreviousCloses(cryptoSymbols)) {
+                                lastCryptoStatsRefreshDate = today;
+                        }
         }
 
         // =====================================================
         // FOREX
         // =====================================================
 
-        if (refreshForex
-                && !forexSymbols.isEmpty()) {
-
-            refreshForex(
-                    forexSymbols);
+                if (refreshForex
+                                && !forexSymbols.isEmpty()) {
+                        LocalDate today = OffsetDateTime.now(ZoneOffset.UTC).toLocalDate();
+                        if (!today.equals(lastForexRefreshDate)
+                                        && refreshForex(forexSymbols)) {
+                                lastForexRefreshDate = today;
+                        }
 
         } else if (!refreshForex
                 && !forexSymbols.isEmpty()) {
@@ -530,14 +540,62 @@ public class MarketDataService {
         }
     }
 
+        private boolean refreshCryptoPreviousCloses(List<String> symbols) {
+                try {
+                        List<String> alpacaSymbols = symbols.stream()
+                                        .map(marketSymbolMapper::toAlpacaCryptoSymbol)
+                                        .toList();
+                        AlpacaClient.AlpacaBarsResponse response = alpacaClient.getDailyCryptoBars(alpacaSymbols);
+                        if (response == null || response.bars() == null) {
+                                return false;
+                        }
+
+                        LocalDate today = OffsetDateTime.now(ZoneOffset.UTC).toLocalDate();
+                        boolean allUpdated = true;
+                        for (int index = 0; index < symbols.size(); index++) {
+                                String databaseTicker = symbols.get(index);
+                                String alpacaTicker = alpacaSymbols.get(index);
+                                List<AlpacaClient.AlpacaBar> bars = response.bars()
+                                                .getOrDefault(alpacaTicker, List.of());
+                                AlpacaClient.AlpacaBar previousCloseBar = bars.stream()
+                                                .filter(bar -> bar.timestamp() != null
+                                                                && bar.close() != null
+                                                                && bar.timestamp().withOffsetSameInstant(ZoneOffset.UTC)
+                                                                                .toLocalDate().isBefore(today))
+                                                .max(java.util.Comparator.comparing(bar -> bar.timestamp().toInstant()))
+                                                .orElse(null);
+
+                                double previousClose = previousCloseBar == null
+                                                ? 0.0
+                                                : previousCloseBar.close().doubleValue();
+                                if (previousCloseBar == null) {
+                                        logger.warn("No completed daily crypto bar available for {}", databaseTicker);
+                                }
+
+                                if (instrumentService.updatePreviousClose(databaseTicker, previousClose) != 1) {
+                                        allUpdated = false;
+                                        logger.warn("Unable to update previous close for {}", databaseTicker);
+                                }
+                        }
+                        return allUpdated;
+                } catch (Exception exception) {
+                        logger.error("Unable to refresh crypto previous closes", exception);
+                        return false;
+                }
+        }
+
     // =========================================================
     // Forex Refresh
     // =========================================================
 
-    private void refreshForex(
+        private boolean refreshForex(
             List<String> symbols) {
+                int failuresBeforeRefresh = lastFailedTickerCount;
 
         try {
+
+                        LocalDate to = LocalDate.now(ZoneOffset.UTC);
+                        LocalDate from = to.minusDays(10);
 
             Map<String, List<String>> quotesByBase = symbols.stream()
                     .map(symbol -> new String[] {
@@ -552,13 +610,48 @@ public class MarketDataService {
                                     java.util.stream.Collectors.toList())));
 
             quotesByBase.forEach((base, quotes) -> {
-                logger.info("Requesting Frankfurter rates for base {} and quotes {}", base, quotes);
+                logger.info(
+                        "Requesting Frankfurter rates for base {} and quotes {} from {} to {}",
+                        base,
+                        quotes,
+                        from,
+                        to);
                 List<FrankfurterClient.FrankfurterRate> response =
-                        frankfurterClient.getRates(base, quotes);
-                response.forEach(rate -> {
+                        frankfurterClient.getRates(base, quotes, from, to);
+
+                Map<String, List<FrankfurterClient.FrankfurterRate>> ratesByQuote = response.stream()
+                        .filter(rate -> rate.quote() != null && rate.date() != null && rate.rate() != null)
+                        .collect(java.util.stream.Collectors.groupingBy(
+                                rate -> rate.quote().toUpperCase(),
+                                java.util.LinkedHashMap::new,
+                                java.util.stream.Collectors.toList()));
+
+                quotes.forEach(quote -> {
+                    List<FrankfurterClient.FrankfurterRate> rates = ratesByQuote
+                            .getOrDefault(quote.toUpperCase(), List.of())
+                            .stream()
+                            .sorted(java.util.Comparator.comparing(
+                                    FrankfurterClient.FrankfurterRate::date).reversed())
+                            .toList();
+                    if (rates.isEmpty()) {
+                        logger.warn("No Frankfurter rates returned for {}/{}", base, quote);
+                        lastFailedTickerCount++;
+                        return;
+                    }
+
+                    FrankfurterClient.FrankfurterRate rate = rates.get(0);
+                    FrankfurterClient.FrankfurterRate previousRate = rates.stream()
+                            .filter(candidate -> candidate.date().isBefore(rate.date()))
+                            .findFirst()
+                            .orElse(null);
                     logger.info(
-                            "  {}/{} - Rate: {} @ {}",
-                            rate.base(), rate.quote(), rate.rate(), rate.date());
+                            "  {}/{} - Current rate: {} @ {}, previous close: {} @ {}",
+                            rate.base(),
+                            rate.quote(),
+                            rate.rate(),
+                            rate.date(),
+                            previousRate == null ? null : previousRate.rate(),
+                            previousRate == null ? null : previousRate.date());
                     try {
                         String normalizedPair = rate.base() + rate.quote();
                         String databaseTicker = symbols.stream()
@@ -580,10 +673,17 @@ public class MarketDataService {
                                 "FOREX",
                                 null,
                                 quoteTimestamp);
+                                                int updatedRows = instrumentService.updatePreviousClose(
+                                                                databaseTicker,
+                                                                previousRate == null ? 0.0 : previousRate.rate().doubleValue());
+                                                if (updatedRows != 1) {
+                                                        throw new IllegalStateException(
+                                                                        "Previous close was not updated for " + databaseTicker);
+                                                }
                         lastSuccessfulTickerCount++;
                     } catch (Exception ex) {
                         lastFailedTickerCount++;
-                        logger.error("Failed to save forex rate for {}/{}", rate.base(), rate.quote(), ex);
+                                                logger.error("Failed to save forex rate for {}/{}", base, quote, ex);
                     }
                 });
             });
@@ -599,7 +699,9 @@ public class MarketDataService {
             logger.error(
                     "Unable to refresh forex rates",
                     exception);
+                        return false;
         }
+                return lastFailedTickerCount == failuresBeforeRefresh;
     }
 
     // =========================================================

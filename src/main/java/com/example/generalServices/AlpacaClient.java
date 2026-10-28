@@ -183,6 +183,50 @@ public AlpacaQuotesResponse getCryptoQuotes(
             symbols);
 }
 
+/** Retrieves recent daily bars for the supplied Alpaca crypto symbols. */
+public AlpacaBarsResponse getDailyCryptoBars(List<String> symbols) {
+        if (symbols == null || symbols.isEmpty()) {
+                return new AlpacaBarsResponse(Map.of(), null);
+        }
+
+        OffsetDateTime end = OffsetDateTime.now(ZoneOffset.UTC);
+        OffsetDateTime start = end.minus(14, ChronoUnit.DAYS);
+        String symbolParameter = String.join(",", symbols);
+
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                        AlpacaBarsResponse response = cryptoClient.get()
+                                        .uri(uriBuilder -> uriBuilder
+                                                        .path("/bars")
+                                                        .queryParam("symbols", symbolParameter)
+                                                        .queryParam("timeframe", "1Day")
+                                                        .queryParam("start", start.toString())
+                                                        .queryParam("end", end.toString())
+                                                        .queryParam("limit", 20)
+                                                        .queryParam("sort", "asc")
+                                                        .build())
+                                        .header("APCA-API-KEY-ID", apiKey)
+                                        .header("APCA-API-SECRET-KEY", apiSecret)
+                                        .retrieve()
+                                        .body(AlpacaBarsResponse.class);
+                        return response == null
+                                        ? new AlpacaBarsResponse(Map.of(), null)
+                                        : response;
+                } catch (RestClientException exception) {
+                        if (attempt == maxRetries) {
+                                logger.error("Alpaca daily crypto bars request failed after {} retries", maxRetries,
+                                                exception);
+                                throw exception;
+                        }
+                        logger.warn("Alpaca daily crypto bars request failed. Retrying {}/{}: {}",
+                                        attempt + 1, maxRetries, exception.getMessage());
+                        sleepBeforeRetry();
+                }
+        }
+
+        return new AlpacaBarsResponse(Map.of(), null);
+}
+
 // =========================================================
 // Daily Stock Bars
 //
