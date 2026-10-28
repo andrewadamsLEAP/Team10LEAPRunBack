@@ -151,13 +151,13 @@ class ClientsRepositoryTest {
     void updateProfilePassesRequestFieldsToMapper() {
         ClientsMapper mapper = mock(ClientsMapper.class);
         ClientProfileUpdateRequest request = new ClientProfileUpdateRequest("updateduser", "Updated", "Name");
-        when(mapper.updateProfile(7L, "updateduser", "Updated", "Name")).thenReturn(1);
+        when(mapper.updateProfile(7L, "updateduser", "Updated", "Name", null)).thenReturn(1);
         ClientsRepository repository = new ClientsRepository(mapper);
 
         int actual = repository.updateProfile(7L, request);
 
         assertEquals(1, actual);
-        verify(mapper).updateProfile(7L, "updateduser", "Updated", "Name");
+        verify(mapper).updateProfile(7L, "updateduser", "Updated", "Name", null);
     }
 
     @Test

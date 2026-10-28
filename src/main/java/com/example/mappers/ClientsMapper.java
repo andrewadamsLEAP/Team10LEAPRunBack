@@ -145,6 +145,7 @@ public interface ClientsMapper {
             <if test="username != null and username.trim() != ''">username = #{username},</if>
             <if test="firstName != null and firstName.trim() != ''">first_name = #{firstName},</if>
             <if test="lastName != null and lastName.trim() != ''">last_name = #{lastName},</if>
+            <if test="email != null and email.trim() != ''">email = #{email},</if>
         </set>
         WHERE client_id = #{clientId}
         </script>
@@ -153,7 +154,8 @@ public interface ClientsMapper {
         @Param("clientId") Long clientId,
         @Param("username") String username,
         @Param("firstName") String firstName,
-        @Param("lastName") String lastName
+        @Param("lastName") String lastName,
+        @Param("email") String email
     );
 
     @Update("""

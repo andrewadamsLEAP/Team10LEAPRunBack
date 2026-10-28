@@ -10,9 +10,14 @@ import org.springframework.web.bind.annotation.RestController;
 import com.example.DTOs.clients.ClientAdminView;
 import com.example.DTOs.employees.*;
 import com.example.DTOs.clients.ClientReporterView;
+import com.example.DTOs.clients.ClientProfileUpdateRequest;
+import com.example.DTOs.clients.AdminClientProfileUpdateRequest;
 import com.example.services.ClientsService;
 import com.example.services.EmployeeService;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import jakarta.validation.Valid;
 
 
 @RestController
@@ -45,6 +50,15 @@ public class EmployeeController {
     @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
     public ResponseEntity<ClientAdminView> getClientAsAdmin(@PathVariable Long clientId) {
         return ResponseEntity.ok(clientsService.getClientDataAdmin(clientId));
+    }
+
+    @PatchMapping("/admin/update/{clientId}")
+    @PreAuthorize("hasRole('EMPLOYEE_ADMIN')")
+    public ResponseEntity<Void> updateClientAsAdmin(
+            @PathVariable Long clientId,
+            @RequestBody @Valid AdminClientProfileUpdateRequest request) {
+        clientsService.updateClientProfileAsAdmin(clientId, request);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/admin")

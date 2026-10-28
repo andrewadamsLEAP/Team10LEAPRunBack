@@ -70,11 +70,16 @@ public class ClientsRepository {
     }
 
      public int updateProfile(Long clientId, ClientProfileUpdateRequest request) {
+        return updateProfile(clientId, request.username(), request.firstName(), request.lastName(), null);
+    }
+
+    public int updateProfile(Long clientId, String username, String firstName, String lastName, String email) {
         return clientsMapper.updateProfile(
             clientId,
-            request.username(),
-            request.firstName(),
-            request.lastName()
+            username,
+            firstName,
+            lastName,
+            email
         );
     }
 

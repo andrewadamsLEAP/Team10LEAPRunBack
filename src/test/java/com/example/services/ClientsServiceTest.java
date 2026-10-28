@@ -1,10 +1,12 @@
 package com.example.services;
 
 import com.example.DTOs.clients.ClientAdminView;
+import com.example.DTOs.clients.AdminClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientProfileView;
 import com.example.DTOs.clients.ClientReporterView;
 import com.example.entities.Client;
+import com.example.exceptions.InvalidArgumentsException;
 import com.example.exceptions.UserNotFoundException;
 import com.example.repositories.ClientsRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,6 +84,37 @@ class ClientsServiceTest {
         clientsService.updateProfile(1L, request);
 
         verify(clientsRepository).updateProfile(1L, request);
+    }
+
+    @Test
+    void updateClientProfileAsAdminAcceptsEmailOnlyAndChecksEmailUniqueness() {
+        AdminClientProfileUpdateRequest request = new AdminClientProfileUpdateRequest(null, null, null, "new@example.com");
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(clientsRepository.findClientIdByEmail("new@example.com")).thenReturn(null);
+        when(clientsRepository.updateProfile(1L, null, null, null, "new@example.com")).thenReturn(1);
+
+        clientsService.updateClientProfileAsAdmin(1L, request);
+
+        verify(clientsRepository).updateProfile(1L, null, null, null, "new@example.com");
+    }
+
+    @Test
+    void updateClientProfileAsAdminRejectsEmailUsedByAnotherClient() {
+        AdminClientProfileUpdateRequest request = new AdminClientProfileUpdateRequest(null, null, null, "taken@example.com");
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+        when(clientsRepository.findClientIdByEmail("taken@example.com")).thenReturn(2L);
+
+        assertThrows(InvalidArgumentsException.class, () -> clientsService.updateClientProfileAsAdmin(1L, request));
+        verify(clientsRepository, never()).updateProfile(anyLong(), any());
+    }
+
+    @Test
+    void updateProfileRejectsEmptyRequest() {
+        ClientProfileUpdateRequest request = new ClientProfileUpdateRequest(null, null, null);
+        when(clientsRepository.findClientById(1L)).thenReturn(client(1L));
+
+        assertThrows(InvalidArgumentsException.class, () -> clientsService.updateProfile(1L, request));
+        verify(clientsRepository, never()).updateProfile(anyLong(), any());
     }
 
     @Test

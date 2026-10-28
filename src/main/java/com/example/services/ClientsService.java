@@ -3,6 +3,7 @@ package com.example.services;
 import org.springframework.stereotype.Service;
 
 import com.example.DTOs.clients.ClientAdminView;
+import com.example.DTOs.clients.AdminClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientProfileUpdateRequest;
 import com.example.DTOs.clients.ClientProfileView;
 import com.example.DTOs.clients.ClientReporterView;
@@ -170,22 +171,41 @@ public class ClientsService {
      * @throws UpdateFailedException if the update fails
      */
     public void updateProfile(Long clientId, ClientProfileUpdateRequest request) {
+        updateProfile(clientId, request.username(), request.firstName(), request.lastName(), null,
+                request.hasUpdates());
+    }
+
+    public void updateClientProfileAsAdmin(Long clientId, AdminClientProfileUpdateRequest request) {
+        updateProfile(clientId, request.username(), request.firstName(), request.lastName(), request.email(),
+                request.hasUpdates());
+    }
+
+    private void updateProfile(Long clientId, String username, String firstName, String lastName,
+            String email, boolean hasUpdates) {
         Client client = Validate.validateUser(clientsRepository.findClientById(clientId), "client");
     
 
-        if (!request.hasUpdates()) {
+        if (!hasUpdates) {
             throw new InvalidArgumentsException("Invalid Profile Update", "No profile changes were provided");
         }
 
-        if (request.username() != null) {
-            Long existingClientId = clientsRepository.findClientIdByUsername(request.username());
+        if (username != null && !username.isBlank()) {
+            Long existingClientId = clientsRepository.findClientIdByUsername(username);
 
             if (existingClientId != null && !existingClientId.equals(clientId)) {
                 throw new InvalidArgumentsException("Invalid Username Change", "Username is not unique");
             }
         }
+
+        if (email != null && !email.isBlank()) {
+            Long existingClientId = clientsRepository.findClientIdByEmail(email);
+
+            if (existingClientId != null && !existingClientId.equals(clientId)) {
+                throw new InvalidArgumentsException("Invalid Email Change", "Email is not unique");
+            }
+        }
         
-        int updatedRows = clientsRepository.updateProfile(clientId, request);
+        int updatedRows = clientsRepository.updateProfile(clientId, username, firstName, lastName, email);
 
         if (updatedRows != 1) {
             throw new UpdateFailedException("Profile update failed");
