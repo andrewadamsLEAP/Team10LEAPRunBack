@@ -41,10 +41,7 @@ services:
       SERVER_PORT: 8085
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       JWT_SECRET: ${JWT_SECRET}
-      ALPACA_API_KEY: ${ALPACA_API_KEY}
-      ALPACA_API_SECRET: ${ALPACA_API_SECRET}
-      MARKET_NEWS_API: ${MARKET_NEWS_API}
-
+            
     ports:
       - "8085:8085"
     depends_on:
@@ -59,6 +56,6 @@ services:
 
 networks:
   app-network:
-    driver: overlay
+    driver: bridge
 
   
