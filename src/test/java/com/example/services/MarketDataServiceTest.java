@@ -167,32 +167,83 @@ class MarketDataServiceTest {
         instrument.setTicker("EUR-USD");
         instrument.setAssetType("FOREX");
 
+        java.time.LocalDate latestDate = java.time.LocalDate.now(java.time.ZoneOffset.UTC).minusDays(1);
+        java.time.LocalDate previousDate = latestDate.minusDays(1);
+        java.time.LocalDate to = java.time.LocalDate.now(java.time.ZoneOffset.UTC);
+        java.time.LocalDate from = to.minusDays(10);
+
         when(marketDataRepository.findInstruments()).thenReturn(List.of(instrument));
         when(marketSymbolMapper.toFrankfurterBase("EUR-USD")).thenReturn("EUR");
         when(marketSymbolMapper.toFrankfurterQuote("EUR-USD")).thenReturn("USD");
-        when(frankfurterClient.getRates("EUR", List.of("USD")))
-                .thenReturn(List.of(new FrankfurterClient.FrankfurterRate(
-                        java.time.LocalDate.of(2026, 10, 19),
+        when(instrumentService.updatePreviousClose("EUR-USD", 1.12)).thenReturn(1);
+        when(frankfurterClient.getRates("EUR", List.of("USD"), from, to))
+            .thenReturn(List.of(
+                new FrankfurterClient.FrankfurterRate(
+                previousDate,
                         "EUR",
                         "USD",
-                        new java.math.BigDecimal("1.1238"))));
+                new java.math.BigDecimal("1.1200")),
+                new FrankfurterClient.FrankfurterRate(
+                    latestDate,
+                    "EUR",
+                    "USD",
+                    new java.math.BigDecimal("1.1238"))));
 
         marketDataService.refreshMarketData();
+        marketDataService.refreshMarketData();
 
-        verify(frankfurterClient).getRates("EUR", List.of("USD"));
-    verify(marketDataRepository).saveQuote(
+        verify(frankfurterClient, times(1)).getRates("EUR", List.of("USD"), from, to);
+        verify(marketDataRepository, times(1)).saveQuote(
                 eq("EUR-USD"),
                 eq(new java.math.BigDecimal("1.1238")),
                 eq(java.math.BigDecimal.ZERO),
-                eq("FRANKFURT"),
+                eq("FOREX"),
                 eq(new java.math.BigDecimal("1.1238")),
                 eq(java.math.BigDecimal.ZERO),
-                eq("FRANKFURT"),
+                eq("FOREX"),
                 isNull(),
-                eq(java.time.LocalDate.of(2026, 10, 19)
+                eq(latestDate
                         .atStartOfDay()
                         .atOffset(java.time.ZoneOffset.UTC)));
+            verify(instrumentService, times(1)).updatePreviousClose("EUR-USD", 1.12);
     }
+
+            @Test
+            void refreshMarketData_usesLastCompletedCryptoDailyBarAsPreviousClose() {
+            MarketDataService.Instrument instrument = new MarketDataService.Instrument();
+            instrument.setTicker("BTC-USD");
+            instrument.setAssetType("CRYPTO");
+
+            java.time.LocalDate today = java.time.OffsetDateTime.now(java.time.ZoneOffset.UTC).toLocalDate();
+            java.time.LocalDate yesterday = today.minusDays(1);
+            java.time.OffsetDateTime previousBarTime = yesterday.atStartOfDay().atOffset(java.time.ZoneOffset.UTC);
+            java.time.OffsetDateTime todayBarTime = today.atStartOfDay().atOffset(java.time.ZoneOffset.UTC);
+
+            when(marketDataRepository.findInstruments()).thenReturn(List.of(instrument));
+            when(marketSymbolMapper.toAlpacaCryptoSymbols(List.of("BTC-USD"))).thenReturn("BTC/USD");
+            when(marketSymbolMapper.toAlpacaCryptoSymbol("BTC-USD")).thenReturn("BTC/USD");
+            when(alpacaClient.getDailyCryptoBars(List.of("BTC/USD"))).thenReturn(
+                new AlpacaClient.AlpacaBarsResponse(
+                    Map.of("BTC/USD", List.of(
+                        new AlpacaClient.AlpacaBar(
+                            new java.math.BigDecimal("99"),
+                            new java.math.BigDecimal("101"),
+                            java.math.BigDecimal.ZERO,
+                            previousBarTime),
+                        new AlpacaClient.AlpacaBar(
+                            new java.math.BigDecimal("101"),
+                            new java.math.BigDecimal("150"),
+                            java.math.BigDecimal.ZERO,
+                            todayBarTime))),
+                    null));
+            when(instrumentService.updatePreviousClose("BTC-USD", 101.0)).thenReturn(1);
+
+            marketDataService.refreshMarketData();
+            marketDataService.refreshMarketData();
+
+            verify(instrumentService, times(1)).updatePreviousClose("BTC-USD", 101.0);
+            verify(alpacaClient, times(1)).getDailyCryptoBars(List.of("BTC/USD"));
+            }
 
     /**
      * Tests that getting latest prices doesn't modify repository data

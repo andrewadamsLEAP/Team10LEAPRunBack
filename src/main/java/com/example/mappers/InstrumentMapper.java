@@ -66,4 +66,13 @@ public interface InstrumentMapper {
             @Param("open") Double open,
             @Param("volume") Integer volume,
             @Param("avgVolume") Double avgVolume);
+
+    @Update("""
+        UPDATE instruments
+        SET previous_close = #{previousClose}
+        WHERE ticker = #{ticker}
+        """)
+    int updatePreviousClose(
+            @Param("ticker") String ticker,
+            @Param("previousClose") Double previousClose);
 }

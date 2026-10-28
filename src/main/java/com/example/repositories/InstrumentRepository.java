@@ -33,4 +33,8 @@ public class InstrumentRepository {
         return instrumentMapper.updateMarketStats(
                 ticker, previousClose, open, volume, avgVolume);
     }
+
+    public int updatePreviousClose(String ticker, Double previousClose) {
+        return instrumentMapper.updatePreviousClose(ticker, previousClose);
+    }
 }

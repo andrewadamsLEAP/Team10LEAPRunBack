@@ -86,6 +86,10 @@ public class InstrumentService {
                 ticker, previousClose, open, volume, avgVolume);
     }
 
+    public int updatePreviousClose(String ticker, Double previousClose) {
+        return instrumentRepository.updatePreviousClose(ticker, previousClose);
+    }
+
     private Instrument applyDisplayNameFallback(Instrument instrument) {
         if (instrument != null
                 && (instrument.getDisplayName() == null

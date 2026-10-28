@@ -44,8 +44,22 @@ public class FrankfurterClient {
     }
 
     public List<FrankfurterRate> getRates(String base, List<String> quotes) {
+        return getRates(base, quotes, null, null);
+    }
+
+    public List<FrankfurterRate> getRates(
+            String base,
+            List<String> quotes,
+            LocalDate from,
+            LocalDate to) {
         if (quotes == null || quotes.isEmpty()) {
             return List.of();
+        }
+        if ((from == null) != (to == null)) {
+            throw new IllegalArgumentException("Both from and to dates must be provided together");
+        }
+        if (from != null && from.isAfter(to)) {
+            throw new IllegalArgumentException("from date must not be after to date");
         }
 
         String quoteParameter = String.join(",", quotes);
@@ -55,6 +69,8 @@ public class FrankfurterClient {
                         .uri(uriBuilder -> uriBuilder
                                 .queryParam("base", base)
                                 .queryParam("quotes", quoteParameter)
+                                .queryParamIfPresent("from", java.util.Optional.ofNullable(from))
+                                .queryParamIfPresent("to", java.util.Optional.ofNullable(to))
                                 .build())
                         .retrieve()
                         .body(FrankfurterRate[].class);
