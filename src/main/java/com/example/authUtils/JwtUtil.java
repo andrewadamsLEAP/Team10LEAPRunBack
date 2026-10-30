@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 public class JwtUtil {
     private static final Logger logger = LoggerFactory.getLogger(JwtUtil.class);
     
-    @Value("${jwt.secret}")
+    @Value("${JWT_SECRET:${jwt.secret}}")
     private String jwtSecret;
     
     /**
@@ -125,6 +125,10 @@ public class JwtUtil {
     }
 
     private SecretKey signingKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+        String secret = jwtSecret == null ? "" : jwtSecret.trim();
+        if (secret.isEmpty()) {
+            throw new IllegalStateException("JWT_SECRET must be configured");
+        }
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 }
